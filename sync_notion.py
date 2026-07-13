@@ -17,6 +17,11 @@ import sys
 import db
 import notion_sync
 
+# La consola de Windows (cp1252) no sabe imprimir tildes ni símbolos como ✓/✗;
+# con errors="replace" el script nunca se cae por eso, en el peor caso
+# muestra un "?" en vez de crashear.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 
 def main():
     db.init_db()
@@ -28,7 +33,7 @@ def main():
                 print("Copiá .env.example como .env y llená NOTION_TOKEN y NOTION_PARENT_PAGE_ID.")
                 sys.exit(1)
             ok, mensaje = notion_sync.verificar_conexion()
-            print(("✓ " if ok else "✗ ") + mensaje)
+            print(("OK: " if ok else "FALLO: ") + mensaje)
             sys.exit(0 if ok else 1)
 
         if "--reset" in sys.argv:

@@ -1076,12 +1076,29 @@ $('#btn-check-notion').addEventListener('click', async () => {
   btn.disabled = false; btn.textContent = 'Probar conexión';
 });
 
+// Arma un mensaje breve resumiendo lo que trajo la Bandeja de gastos de Notion
+function mensajeBandeja(r) {
+  const partes = [];
+  if (r.bandeja_importados) {
+    const desc = r.bandeja_detalle.slice(0, 3).map(g => `${g.descripcion} (${fmtQ(g.monto)})`).join(', ');
+    partes.push(`${r.bandeja_importados} gasto(s) importado(s) de Notion: ${desc}` +
+      (r.bandeja_importados > 3 ? '…' : ''));
+  }
+  if (r.bandeja_rechazados && r.bandeja_rechazados.length) {
+    partes.push(`${r.bandeja_rechazados.length} fila(s) en la Bandeja tienen datos inválidos ` +
+      `y siguen ahí para que las corrijas (revisá categoría/método/monto).`);
+  }
+  return partes;
+}
+
 $('#btn-sync-notion').addEventListener('click', async () => {
   const btn = $('#btn-sync-notion');
   btn.disabled = true; btn.textContent = 'Sincronizando...';
   try {
-    await api('/api/notion/sync', { method: 'POST' });
+    const r = await api('/api/notion/sync', { method: 'POST' });
     toast('Sincronizado con Notion ✓');
+    mensajeBandeja(r).forEach((m, i) => setTimeout(() => toast(m), 900 + i * 2600));
+    if (r.bandeja_importados && $('#vista-movimientos').classList.contains('activa')) cargarMovimientos();
   } catch (err) { toast(err.message, true); }
   btn.disabled = false; btn.textContent = 'Sincronizar con Notion';
   cargarEstadoNotion();
@@ -1128,4 +1145,15 @@ $('#btn-import').addEventListener('click', async () => {
   } catch (err) {
     toast('No se pudo conectar con la API: ' + err.message, true);
   }
+
+  // Al abrir la app: si Notion está configurado, sincroniza sola en segundo
+  // plano (trae lo que hayas anotado en la Bandeja de gastos desde el celular).
+  // Totalmente silencioso si falla — no interrumpe el arranque de la app.
+  try {
+    const estadoNotion = await api('/api/notion/estado');
+    if (estadoNotion.configurado) {
+      const r = await api('/api/notion/sync', { method: 'POST' });
+      mensajeBandeja(r).forEach((m, i) => setTimeout(() => toast(m), 400 + i * 2600));
+    }
+  } catch { /* offline o Notion no responde: no molestamos al usuario */ }
 })();

@@ -17,7 +17,10 @@ tus tarjetas y alertas hacia **Notion** para que puedas consultarlos desde el ce
   gastos más grandes
 - Salario recurrente con confirmación mensual
 - Exportar/importar CSV para respaldos y carga de históricos
-- Sincronización en un solo sentido hacia Notion (la fuente de verdad es tu base local)
+- Sincronización con Notion (la fuente de verdad **sigue siendo** tu base local):
+  - **App → Notion**: Resumen del mes, Tarjetas y Alertas, siempre actualizados
+  - **Notion → App**: la **Bandeja de gastos** — anotás un gasto desde el celular
+    cuando no tenés la app a mano, y se importa solo a tu base local
 
 ## Instalación y arranque
 
@@ -87,22 +90,64 @@ En ambos casos, abrí **http://localhost:8000** en el navegador. Listo.
    - *"la página no aparece (404)"* → te olvidaste el paso 3 (compartir la
      página con la integración) o el `NOTION_PARENT_PAGE_ID` está mal.
 7. Una vez que "Probar conexión" diga ✓, tocá **Sincronizar con Notion** — ahí
-   sí se crean automáticamente tres bases de datos dentro de tu página:
+   sí se crean automáticamente cuatro bases de datos dentro de tu página, cada
+   una con su ícono, y la primera vez le pone una portada (una de las de
+   degradado oficiales de Notion, azul marino → celeste → crema) tanto a tu
+   página "Finanzas" como a cada base. **Es solo la primera vez**: si después
+   le cambiás la portada a mano en Notion —tu propio GIF, una foto, lo que
+   quieras—, la sincronización nunca te la pisa.
 
-   | Base | Contenido |
-   |---|---|
-   | **Resumen del mes** | Ingresos, gastos, balance, deuda en tarjetas, dinero en cuentas, patrimonio y top 5 categorías (se actualizan las mismas filas, sin duplicar) |
-   | **Tarjetas** | Una fila por tarjeta: banco, saldo, disponible, % uso, próximo corte y pago |
-   | **Alertas** | Avisos con fecha, tipo y estado (Pendiente/Vista) — el estado que marqués desde el celular se respeta |
+   | Base | Sentido | Contenido |
+   |---|---|---|
+   | 📊 **Resumen del mes** | App → Notion | Ingresos, gastos, balance, deuda en tarjetas, dinero en cuentas, patrimonio y top 5 categorías (se actualizan las mismas filas, sin duplicar) |
+   | 💳 **Tarjetas** | App → Notion | Una fila por tarjeta: banco, saldo, disponible, % uso (con ícono 🟢🟡🔴 según qué tan alto esté), próximo corte y pago |
+   | 🔔 **Alertas** | App → Notion | Avisos con fecha, tipo y estado (Pendiente/Vista) — el estado que marqués desde el celular se respeta |
+   | 📥 **Bandeja de gastos** | **Notion → App** | La única vía de entrada: anotás un gasto desde el celular y la app lo importa solo (ver abajo) |
 
 **Cuándo sincroniza:** al tocar el botón en Ajustes, automáticamente después de
-cada registro nuevo (si hay conexión), o corriendo `python sync_notion.py`
+cada registro nuevo (si hay conexión), **al abrir la app** (revisa la Bandeja
+en segundo plano, sin interrumpir el arranque), o corriendo `python sync_notion.py`
 (que también podés programar con el Programador de tareas de Windows).
 Si Notion no responde, **la app sigue funcionando normal**: el cambio queda
 marcado como pendiente y se sube en el próximo intento.
 
 `python sync_notion.py --reset` hace que la app "olvide" las bases creadas
 (útil si las borraste en Notion; se recrean en la próxima sincronización).
+
+### Anotar un gasto desde el celular (Bandeja de gastos)
+
+Es el único canal de **entrada**: normalmente Notion es solo para consultar,
+pero cuando estás en un comercio y no tenés la computadora a mano, podés
+anotar el gasto ahí mismo y la app lo toma como propio la próxima vez que
+sincronice.
+
+1. Desde Notion en el celular, abrí tu página → base **"Bandeja de gastos"**
+2. Tocá **"+ Nueva"** y llená:
+   - **Gasto** (título): qué compraste, ej. "Almuerzo"
+   - **Monto**: el número, sin `Q`
+   - **Categoría**: elegí de la lista desplegable (ya trae tus categorías)
+   - **Método**: `Efectivo`, `Débito`, `Transferencia`, o el nombre de una tarjeta
+   - **Fecha** (opcional): solo si es de un día anterior — si la dejás vacía,
+     usa el día en que creaste la fila en Notion
+3. Cuando abrís la app en la computadora (o corre cualquier sincronización), esa
+   fila se convierte en un gasto real y **desaparece de la Bandeja** (se archiva).
+4. Si algo está mal — categoría con typo, monto vacío — la fila **se queda en
+   la Bandeja** sin tocar (nunca se pierde ni se inventa un dato) y te avisa
+   con un mensaje explicando qué corregir.
+
+La Bandeja siempre tiene las categorías/tarjetas activas como opciones —
+si agregás una categoría nueva en la app, aparece ahí en la próxima sincronización.
+
+### Personalizar la portada (poner tu propio GIF)
+
+La sincronización pone una portada por defecto solo la primera vez. Para
+cambiarla por tu propio GIF (ej. de [Giphy](https://giphy.com) o cualquier
+imagen que tengas):
+
+1. Abrí la página o base en Notion → pasá el mouse arriba → **"Cambiar portada"**
+2. Pegá el link directo a la imagen/GIF, o subí un archivo tuyo
+3. Listo — la app nunca vuelve a tocarla, porque solo la pone si detecta que
+   la base o página **no tiene ninguna** portada todavía.
 
 ## Uso diario
 

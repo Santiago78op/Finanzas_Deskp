@@ -167,6 +167,15 @@ def init_db():
         page_id TEXT NOT NULL,
         PRIMARY KEY (tipo, clave)
     );
+
+    -- Páginas de la "Bandeja de gastos" (Notion -> app) ya importadas como gasto.
+    -- Evita duplicar un gasto si la sincronización se corta justo después de
+    -- crearlo pero antes de poder archivar la página en Notion.
+    CREATE TABLE IF NOT EXISTS notion_bandeja_procesados (
+        page_id      TEXT PRIMARY KEY,
+        gasto_id     INTEGER REFERENCES gastos(id),
+        procesado_en TEXT NOT NULL
+    );
     """)
 
     # Migraciones: agregar columnas nuevas a bases creadas con versiones anteriores
@@ -232,6 +241,42 @@ def saldo_tarjeta(conn, tarjeta_id):
         "SELECT COALESCE(SUM(monto), 0) AS t FROM pagos_tarjetas WHERE tarjeta_id = ?", (tarjeta_id,)
     ).fetchone()["t"]
     return round(inicial + gastos - pagos, 2)
+
+
+def resolver_categoria_gasto(conn, nombre):
+    """
+    Resuelve un nombre de categoría de GASTO activa a su id (sin importar
+    mayúsculas/minúsculas). Lanza ValueError si no existe o está desactivada.
+    Compartido entre el import de CSV y el import de la Bandeja de Notion.
+    """
+    nombre = (nombre or "").strip()
+    fila = conn.execute(
+        "SELECT id FROM categorias WHERE lower(nombre) = lower(?) AND tipo = 'gasto' AND activa = 1",
+        (nombre,),
+    ).fetchone()
+    if not fila:
+        raise ValueError(f"categoría de gasto desconocida: '{nombre}'")
+    return fila["id"]
+
+
+def resolver_metodo_gasto(conn, texto):
+    """
+    Resuelve un texto de método de pago a (metodo, tarjeta_id). Acepta
+    'Efectivo'/'Débito'/'Transferencia' (sin tilde tolerado) o el nombre de
+    una tarjeta activa. Lanza ValueError si no coincide con nada.
+    """
+    texto = (texto or "").strip()
+    low = texto.lower()
+    fijos = {m.lower(): m for m in METODOS_FIJOS}
+    fijos["debito"] = "Débito"  # tolerar sin tilde
+    if low in fijos:
+        return fijos[low], None
+    fila = conn.execute(
+        "SELECT id FROM tarjetas WHERE lower(nombre) = ? AND activa = 1", (low,)
+    ).fetchone()
+    if fila:
+        return "Tarjeta", fila["id"]
+    raise ValueError(f"método/tarjeta desconocido: '{texto}'")
 
 
 def saldo_cuenta(conn, cuenta_id):

@@ -1163,7 +1163,11 @@ def sync_notion_manual():
     try:
         db.config_set(conn, "sync_pendiente", "1")
         resultado = notion_sync.sincronizar(conn)
+        bandeja = resultado["bandeja"]
         return {"ok": True, "alertas": resultado["alertas"],
+                "bandeja_importados": bandeja["importados"],
+                "bandeja_detalle": bandeja["detalle"],
+                "bandeja_rechazados": bandeja["rechazados"],
                 "ultima_sync": db.config_get(conn, "ultima_sync")}
     except Exception as e:
         raise HTTPException(502, f"Notion no respondió: {e}. Tus datos locales están bien; "
