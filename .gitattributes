@@ -1,0 +1,10 @@
+# Normalizar finales de línea entre Windows y macOS
+* text=auto
+
+# Los scripts de shell SIEMPRE con LF (si llevan CRLF fallan en Mac/Linux)
+*.sh text eol=lf
+
+# Binarios
+*.db binary
+*.zip binary
+*.xlsx binary
