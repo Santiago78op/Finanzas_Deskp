@@ -1172,6 +1172,25 @@ def sync_notion_manual():
         conn.close()
 
 
+@app.post("/api/notion/check")
+def notion_check():
+    """
+    Botón "Probar conexión": valida el token y el acceso a la página padre
+    SIN crear ni modificar nada en Notion. Útil para diagnosticar el .env
+    antes de sincronizar de verdad.
+    """
+    if not notion_sync.esta_configurado():
+        raise HTTPException(400, "Notion no está configurado. Copiá .env.example como .env "
+                                 "y llená NOTION_TOKEN y NOTION_PARENT_PAGE_ID (ver README).")
+    try:
+        ok, mensaje = notion_sync.verificar_conexion()
+    except Exception as e:
+        raise HTTPException(502, f"No se pudo contactar a Notion: {e}")
+    if not ok:
+        raise HTTPException(400, mensaje)
+    return {"ok": True, "mensaje": mensaje}
+
+
 @app.get("/api/notion/estado")
 def notion_estado():
     conn = db.get_conn()

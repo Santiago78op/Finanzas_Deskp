@@ -79,8 +79,15 @@ En ambos casos, abrí **http://localhost:8000** en el navegador. Listo.
    NOTION_PARENT_PAGE_ID=1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c
    ```
 
-6. Reiniciá la app. En **Ajustes → Sincronizar con Notion** se crean
-   automáticamente tres bases de datos dentro de tu página:
+6. **Validá que quedó bien** antes de sincronizar de verdad: reiniciá la app y
+   en **Ajustes → Notion → "Probar conexión"** (o `python sync_notion.py --check`
+   desde la terminal). Esto solo valida el token y el acceso a la página —
+   **no crea nada todavía**. Si falla, te dice exactamente qué revisar:
+   - *"Token inválido (401)"* → el `NOTION_TOKEN` está mal copiado o vencido.
+   - *"la página no aparece (404)"* → te olvidaste el paso 3 (compartir la
+     página con la integración) o el `NOTION_PARENT_PAGE_ID` está mal.
+7. Una vez que "Probar conexión" diga ✓, tocá **Sincronizar con Notion** — ahí
+   sí se crean automáticamente tres bases de datos dentro de tu página:
 
    | Base | Contenido |
    |---|---|

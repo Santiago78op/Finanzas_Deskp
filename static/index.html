@@ -326,7 +326,12 @@
     <div class="panel">
       <h3>Notion</h3>
       <p id="estado-notion" class="texto-suave"></p>
-      <button id="btn-sync-notion" class="guardar">Sincronizar con Notion</button>
+      <p id="resultado-check-notion" class="texto-suave oculto"></p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button id="btn-check-notion" class="mini-btn"
+                title="Valida el token y el acceso a la página, sin crear nada">Probar conexión</button>
+        <button id="btn-sync-notion" class="guardar" style="margin-top:0">Sincronizar con Notion</button>
+      </div>
     </div>
 
     <div class="panel">

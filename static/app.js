@@ -1060,6 +1060,22 @@ async function cargarEstadoNotion() {
   } catch { /* sin conexión con la API */ }
 }
 
+$('#btn-check-notion').addEventListener('click', async () => {
+  const btn = $('#btn-check-notion');
+  const p = $('#resultado-check-notion');
+  btn.disabled = true; btn.textContent = 'Probando...';
+  p.classList.remove('oculto');
+  try {
+    const r = await api('/api/notion/check', { method: 'POST' });
+    p.textContent = '✓ ' + r.mensaje;
+    p.style.color = 'var(--ingreso)';
+  } catch (err) {
+    p.textContent = '✗ ' + err.message;
+    p.style.color = 'var(--gasto)';
+  }
+  btn.disabled = false; btn.textContent = 'Probar conexión';
+});
+
 $('#btn-sync-notion').addEventListener('click', async () => {
   const btn = $('#btn-sync-notion');
   btn.disabled = true; btn.textContent = 'Sincronizando...';

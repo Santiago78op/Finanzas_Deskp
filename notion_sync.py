@@ -38,6 +38,48 @@ def esta_configurado():
     return bool(os.getenv("NOTION_TOKEN")) and bool(os.getenv("NOTION_PARENT_PAGE_ID"))
 
 
+def verificar_conexion():
+    """
+    Valida el .env SIN crear ni modificar nada en Notion: confirma que el
+    token autentica y que la página padre es visible para la integración.
+    Devuelve (ok: bool, mensaje: str) con un diagnóstico legible.
+    """
+    if not os.getenv("NOTION_TOKEN"):
+        return False, "Falta NOTION_TOKEN en el archivo .env"
+    if not os.getenv("NOTION_PARENT_PAGE_ID"):
+        return False, "Falta NOTION_PARENT_PAGE_ID en el archivo .env"
+
+    # 1) ¿El token autentica?
+    r = _get("/users/me")
+    if r.status_code == 401:
+        return False, "Token inválido o vencido (401). Revisá NOTION_TOKEN en .env."
+    if r.status_code != 200:
+        return False, f"No se pudo validar el token (HTTP {r.status_code}): {r.text[:200]}"
+    nombre_integracion = r.json().get("name", "tu integración")
+
+    # 2) ¿La integración puede ver la página padre?
+    page_id = os.getenv("NOTION_PARENT_PAGE_ID")
+    r = _get(f"/pages/{page_id}")
+    if r.status_code == 404:
+        return False, (
+            f"Token OK (integración '{nombre_integracion}'), pero la página "
+            f"{page_id} no aparece (404). Lo más probable: falta compartirla "
+            "con la integración — abrí la página en Notion → menú ··· → "
+            "Connections → agregá tu integración."
+        )
+    if r.status_code != 200:
+        return False, f"No se pudo leer la página (HTTP {r.status_code}): {r.text[:200]}"
+
+    titulo = "(sin título)"
+    props = r.json().get("properties", {})
+    for prop in props.values():
+        if prop.get("type") == "title" and prop.get("title"):
+            titulo = "".join(t["plain_text"] for t in prop["title"])
+            break
+
+    return True, f"Todo listo — integración '{nombre_integracion}' ve la página '{titulo}'"
+
+
 def _headers():
     return {
         "Authorization": f"Bearer {os.getenv('NOTION_TOKEN')}",

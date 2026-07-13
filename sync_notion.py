@@ -3,6 +3,8 @@ sync_notion.py — Script para sincronizar con Notion desde la terminal.
 
 Uso:
     python sync_notion.py           # sincroniza ahora
+    python sync_notion.py --check   # valida el token y el acceso a la página,
+                                    # SIN crear ni tocar nada en Notion
     python sync_notion.py --reset   # olvida las bases de Notion guardadas
                                     # (se recrean en la próxima sincronización)
 
@@ -20,6 +22,15 @@ def main():
     db.init_db()
     conn = db.get_conn()
     try:
+        if "--check" in sys.argv:
+            if not notion_sync.esta_configurado():
+                print("Notion no está configurado todavía.")
+                print("Copiá .env.example como .env y llená NOTION_TOKEN y NOTION_PARENT_PAGE_ID.")
+                sys.exit(1)
+            ok, mensaje = notion_sync.verificar_conexion()
+            print(("✓ " if ok else "✗ ") + mensaje)
+            sys.exit(0 if ok else 1)
+
         if "--reset" in sys.argv:
             # Olvidar los IDs de las bases y el mapa de páginas
             for clave in ("notion_db_resumen", "notion_db_tarjetas", "notion_db_alertas"):
