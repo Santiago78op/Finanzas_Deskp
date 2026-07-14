@@ -226,10 +226,13 @@ El proyecto está pensado para vivir en un repo y clonarse en cualquier
 sistema (Windows, macOS, Linux):
 
 1. **Lo que viaja en el repo**: el código (`app.py`, `db.py`, `notion_sync.py`,
-   `sync_notion.py`, `static/`), los scripts de arranque y este README.
+   `sync_notion.py`, `frontend/` — el frontend React/Vite), los scripts de
+   arranque y este README.
 2. **Lo que NO viaja** (está en `.gitignore`): `finanzas.db` (tus datos),
-   `.env` (tu token de Notion), `.venv/` y los Excel. **Tus datos y secretos
-   nunca deben subir al repo.**
+   `.env` (tu token de Notion), `.venv/`, `frontend/node_modules/`, los Excel,
+   y **`static/`** (es el build generado por `npm run build` a partir de
+   `frontend/src` — `start.sh`/`start.bat` lo compilan solos la primera vez
+   que no lo encuentran). **Tus datos y secretos nunca deben subir al repo.**
 3. Para **migrar tus datos** a la otra máquina, copiá `finanzas.db` por un
    medio privado (AirDrop, USB, tu Drive personal) a la carpeta clonada,
    o usá Exportar/Importar CSV. Igual con el `.env` (o volvé a crear el archivo
@@ -260,10 +263,31 @@ Dedun/
 ├── db.py             ← esquema SQLite y helpers
 ├── notion_sync.py    ← lógica de sincronización con Notion
 ├── sync_notion.py    ← script manual/programable de sincronización
-├── static/           ← frontend (HTML/CSS/JS + Chart.js)
-├── start.bat         ← arranque en Windows (crea .venv la primera vez)
-├── start.sh          ← arranque en macOS/Linux (crea .venv la primera vez)
+├── frontend/         ← frontend en React + Vite (código fuente, sí va al repo)
+│   └── src/
+├── static/           ← build del frontend (generado, NO va al repo)
+├── start.bat         ← arranque en Windows (crea .venv y compila el frontend la primera vez)
+├── start.sh          ← arranque en macOS/Linux (ídem)
 ├── finanzas.db       ← TU BASE DE DATOS (respaldá este archivo; no va al repo)
 ├── .env              ← token de Notion (NO compartir; no va al repo)
 └── requirements.txt
 ```
+
+## Desarrollo del frontend
+
+El frontend vive en `frontend/` (React + Vite). `static/` es solo el
+resultado de compilarlo — no se edita a mano.
+
+```bash
+cd frontend
+npm install          # una sola vez (o de nuevo si cambia package.json)
+npm run dev           # servidor de desarrollo con recarga en caliente,
+                      # proxyea /api hacia python app.py (corrélo aparte)
+npm run build         # genera el build de producción en ../static
+```
+
+Para probar cambios del día a día: corré `python app.py` en una terminal y
+`npm run dev` en otra (`frontend/`) — abrí la URL que imprime Vite (típicamente
+`http://localhost:5173/static/`). Cuando quedes conforme, `npm run build`
+actualiza `static/` para que `python app.py` sirva la versión nueva sin el
+servidor de Vite.

@@ -10,5 +10,16 @@ if not exist ".venv" (
     .venv\Scripts\python -m pip install -r requirements.txt
 )
 
+rem Compilar el frontend (React/Vite) si todavia no existe el build en static/
+rem (clone nuevo, o primera vez tras la migracion). Para reconstruirlo a mano
+rem despues de tocar frontend\src: cd frontend && npm run build
+if not exist "static\index.html" (
+    echo Compilando el frontend...
+    cd frontend
+    call npm install
+    call npm run build
+    cd ..
+)
+
 echo Finanzas Personales — http://localhost:8000
 .venv\Scripts\python app.py

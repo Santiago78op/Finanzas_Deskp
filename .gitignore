@@ -11,6 +11,11 @@ __pycache__/
 .venv/
 venv/
 
+# Frontend (React/Vite) — static/ es el build generado por `npm run build`
+frontend/node_modules/
+frontend/dist/
+static/
+
 # Sistema
 .DS_Store
 Thumbs.db

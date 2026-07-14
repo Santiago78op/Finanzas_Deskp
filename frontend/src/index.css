@@ -1,9 +1,15 @@
-/* style.css — Diseño inspirado en la plantilla "Dsign" (Tailwind/Next.js):
-   claro y aireado, tipografía navy bold, acento azul real, botones pill y
-   cards muy redondeadas. Implementado en CSS puro, con modo oscuro incluido. */
+/* index.css — Inspirado en la demo GSAP/Webflow: fondo crema cálido, tinta
+   casi negra, tipografía display bien condensada (Anton) para títulos y
+   cifras grandes, y bloques de color plano bien saturado (no pastel, no
+   gradiente) para las cards de cuentas/tarjetas. CSS puro, modo oscuro incluido.
+   Portado 1:1 desde static/style.css al migrar a React. */
 
-/* ---------- Tipografía: Poppins (misma que usa la plantilla Dsign), autohospedada.
+/* ---------- Tipografía: Poppins (UI) + Anton (display/hero), autohospedadas.
    Solo latin + latin-ext (cubre tildes/ñ) para no bajar los otros scripts. ---------- */
+@font-face {
+  font-family: 'Anton'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('/static/fonts/anton.woff2') format('woff2');
+}
 @font-face {
   font-family: 'Poppins'; font-style: normal; font-weight: 400; font-display: swap;
   src: url('/static/fonts/poppins-400-latin.woff2') format('woff2');
@@ -55,65 +61,99 @@
   unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* ---------- Tokens (tema CLARO por defecto, estilo Dsign) ---------- */
+/* ---------- Tokens (tema CLARO por defecto): crema cálido + tinta casi negra ---------- */
 :root, :root[data-theme="light"] {
-  --fondo: #ffffff;
-  --panel: #ffffff;
-  --panel-2: #f4f7fb;          /* superficies suaves (inputs, chips) */
-  --texto: #0f2a43;            /* navy Dsign */
-  --suave: #5b6b7e;
-  --borde: #e7ecf3;
-  --borde-fuerte: #d4dde9;
-  --primario: #2563eb;         /* azul real Dsign */
-  --primario-texto: #ffffff;
-  --primario-suave: #e8f0fe;   /* pill secundaria "Sign In" */
-  --anillo: rgba(37, 99, 235, 0.35);
+  --fondo: #fbe8cd;            /* crema cálido, como el fondo de la demo */
+  --panel: #fff8ec;            /* superficie ligeramente más clara que el fondo */
+  --panel-2: #f3e2c4;          /* superficies suaves (inputs, chips) */
+  --texto: #241206;            /* tinta casi negra, tono café, no gris frío */
+  --suave: #7a6650;
+  --borde: #e8d4ac;
+  --borde-fuerte: #d9bf8d;
+  --primario: #241206;         /* acento = tinta, botones sólidos */
+  --primario-texto: #fbe8cd;
+  --primario-suave: #eeddbb;
+  --anillo: rgba(36, 18, 6, .18);
+  --ink-on-acc: #201004;       /* texto sobre los colores de acento (cards) */
 
-  --gasto: #d03b3b;
-  --ingreso: #0e8a2f;
-  --pago: #b06c00;
+  --gasto: #b23b3b;
+  --ingreso: #157a3d;
+  --pago: #a16207;
   --azul: #2563eb;
   --violeta: #7c6cf0;
-  --verde: #0ca30c;
-  --amarillo: #eda100;
-  --rojo: #d03b3b;
+  --verde: #157a3d;
+  --amarillo: #a16207;
+  --rojo: #b23b3b;
 
-  --grid-grafica: #e7e6e1;
-  --tinta-grafica: #52514e;
+  /* Paleta de acento saturada, como los bloques de color de la demo:
+     se usa SOLO en cards de cuentas/tarjetas, nunca en la UI densa */
+  --acc-0: #1abcb2;   /* teal */
+  --acc-1: #ef8130;   /* naranja */
+  --acc-2: #f0c93e;   /* amarillo/oro */
+  --acc-3: #c7b6f2;   /* lavanda */
+  --acc-4: #7ed957;   /* verde */
+  --acc-5: #f5a3c4;   /* rosa */
 
-  --radio: 20px;
-  --radio-sm: 12px;
-  --sombra: 0 10px 30px -18px rgba(15, 42, 67, .18);
-  --glow: 0 16px 44px -20px rgba(37, 99, 235, .35);
+  --grid-grafica: #e3cfa4;
+  --tinta-grafica: #5c4a34;
+
+  --radio: 18px;
+  --radio-sm: 10px;
+  --sombra: 0 2px 10px -4px rgba(36, 18, 6, .1);
 }
 
 :root[data-theme="dark"] {
-  --fondo: #0b0f16;
-  --panel: #121826;
-  --panel-2: #1b2334;
-  --texto: #f2f6fb;
-  --suave: #93a1b5;
-  --borde: rgba(255, 255, 255, 0.08);
-  --borde-fuerte: rgba(255, 255, 255, 0.16);
-  --primario: #3987e5;
-  --primario-texto: #ffffff;
-  --primario-suave: rgba(57, 135, 229, .16);
-  --anillo: rgba(57, 135, 229, 0.5);
+  --fondo: #1b1108;
+  --panel: #241708;
+  --panel-2: #2e1e0d;
+  --texto: #f5e9d3;
+  --suave: #b8a486;
+  --borde: rgba(245, 233, 211, 0.1);
+  --borde-fuerte: rgba(245, 233, 211, 0.2);
+  --primario: #f5e9d3;
+  --primario-texto: #1b1108;
+  --primario-suave: rgba(245, 233, 211, .1);
+  --anillo: rgba(245, 233, 211, .25);
+  --ink-on-acc: #201004;
 
-  --gasto: #e66767;
-  --ingreso: #2fbf57;
-  --pago: #c98500;
+  --gasto: #e08080;
+  --ingreso: #4fbf7a;
+  --pago: #d1a13d;
   --azul: #3987e5;
   --violeta: #9085e9;
-  --verde: #0ca30c;
-  --amarillo: #fab219;
-  --rojo: #e05252;
+  --verde: #4fbf7a;
+  --amarillo: #d1a13d;
+  --rojo: #e08080;
 
-  --grid-grafica: rgba(255, 255, 255, .07);
-  --tinta-grafica: #93a1b5;
+  --acc-0: #1abcb2;
+  --acc-1: #ef8130;
+  --acc-2: #f0c93e;
+  --acc-3: #c7b6f2;
+  --acc-4: #7ed957;
+  --acc-5: #f5a3c4;
 
-  --sombra: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px -16px rgba(0, 0, 0, .55);
-  --glow: 0 16px 44px -18px rgba(57, 135, 229, .35);
+  --grid-grafica: rgba(245, 233, 211, .08);
+  --tinta-grafica: #b8a486;
+
+  --sombra: 0 2px 10px -4px rgba(0, 0, 0, .5);
+}
+
+/* ---------- Escala de espaciado y tipografía (independiente de tema) ----------
+   La UI densa (paneles, forms, tablas) no cambia de tamaño: la escala "hero"
+   y la tipografía Anton solo se usan en título de vista y cifras de las
+   cards, para el look editorial inspirado en la demo GSAP/Webflow, sin
+   sacrificar legibilidad en el uso diario. ---------- */
+:root {
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px;
+
+  --fs-xs: 11px;  --fs-sm: 13px;  --fs-base: 15px; --fs-md: 17px;
+  --fs-lg: 21px;  --fs-xl: 28px;
+  --fs-hero: clamp(36px, 6vw, 64px);
+  --fs-display: clamp(22px, 3vw, 30px);
+  --lh-tight: 0.95; --lh-normal: 1.5;
+  --tracking-tight: -.01em; --tracking-wide: .08em;
+  --ff-display: 'Anton', 'Poppins', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -129,169 +169,150 @@ body {
   transition: background .25s ease, color .25s ease;
 }
 
-/* Formas decorativas suaves al estilo Dsign (hoja naranja / burbuja azul) */
-body::before {
-  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: -1;
-  background:
-    radial-gradient(360px 220px at 8% -40px, rgba(244, 152, 30, .10), transparent 70%),
-    radial-gradient(420px 260px at 96% 10%, rgba(37, 99, 235, .10), transparent 70%),
-    radial-gradient(300px 200px at 70% 100%, rgba(124, 108, 240, .07), transparent 70%);
-}
+/* ---------- Layout: barra superior minimalista (nav de texto, sin sidebar) ---------- */
+#app { display: block; min-height: 100vh; }
 
-/* ---------- Layout con sidebar (como el dashboard del hero de Dsign) ---------- */
-#app { display: flex; min-height: 100vh; }
-
-#sidebar {
-  width: 232px; flex: none;
-  background: var(--panel); border-right: 1px solid var(--borde);
-  padding: 22px 14px; display: flex; flex-direction: column; gap: 4px;
-  position: sticky; top: 0; height: 100vh;
+#topnav {
+  display: flex; align-items: center; gap: var(--sp-6);
+  padding: var(--sp-4) var(--sp-6);
+  background: var(--panel); border-bottom: 1px solid var(--borde);
+  position: sticky; top: 0; z-index: 20;
 }
 .logo {
   display: flex; align-items: center; gap: 10px;
   font-weight: 800; font-size: 18px; letter-spacing: -.02em;
-  padding: 4px 10px 22px;
 }
 .logo-ico {
-  width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center;
-  background: var(--primario-suave); color: var(--primario); flex: none;
+  width: 36px; height: 36px; border-radius: var(--radio-sm); display: grid; place-items: center;
+  background: var(--primario); color: var(--primario-texto); flex: none;
 }
 .logo-ico .ico { width: 19px; height: 19px; }
-.logo-txt b { color: var(--primario); }
+.logo-txt b { color: var(--suave); font-weight: 400; }
 
 /* Ícono base: hereda el color del texto (currentColor), como los íconos Lucide */
 .ico { width: 20px; height: 20px; flex: none; display: inline-block; }
 
-#nav { display: flex; flex-direction: column; gap: 4px; }
+#nav { display: flex; align-items: center; gap: var(--sp-2); overflow-x: auto; }
 .nav-btn {
-  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
-  border: none; background: transparent; color: var(--suave);
-  padding: 12px 14px; border-radius: 12px; font-size: 14px; font-weight: 600;
-  cursor: pointer; transition: color .15s, background .15s;
+  border: 1.5px solid transparent; background: transparent; color: var(--suave);
+  padding: 8px 16px; border-radius: 999px; font-size: var(--fs-sm); font-weight: 700;
+  white-space: nowrap; text-transform: uppercase; letter-spacing: var(--tracking-wide);
+  cursor: pointer; transition: color .15s, border-color .15s;
 }
-.nav-btn:hover { color: var(--primario); background: var(--primario-suave); }
-.nav-btn.active {
-  background: var(--primario-suave); color: var(--primario);
-  box-shadow: inset 3px 0 0 var(--primario);
-}
-.nav-ico { width: 19px; height: 19px; }
+.nav-btn:hover { color: var(--texto); }
+.nav-btn.active { color: var(--texto); border-color: var(--texto); }
 
 .tema-btn {
-  margin-top: auto; border: 1px solid var(--borde); background: var(--panel-2);
-  color: var(--texto); border-radius: 12px; width: 100%; height: 42px;
+  margin-left: auto; border: 1px solid var(--borde); background: var(--panel-2);
+  color: var(--texto); border-radius: var(--radio-sm); width: 38px; height: 38px; flex: none;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: transform .15s, border-color .15s;
 }
-.tema-btn:hover { border-color: var(--primario); }
+.tema-btn:hover { border-color: var(--texto); }
 /* Muestra el ícono del modo AL QUE SE CAMBIA al hacer click (sol en oscuro, luna en claro) */
 .tema-btn .icon-sol, .tema-btn .icon-luna { display: none; }
 :root[data-theme="dark"] .tema-btn .icon-sol { display: inline-block; }
 :root[data-theme="light"] .tema-btn .icon-luna { display: inline-block; }
 
+/* Ticker global: franja angosta con cifras clave, loop infinito por CSS */
+#ticker-global {
+  overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--borde);
+  background: var(--panel-2);
+}
+#ticker-global .ticker-pista {
+  display: inline-flex; width: max-content;
+  animation: marquee 26s linear infinite;
+}
+#ticker-global:hover .ticker-pista { animation-play-state: paused; }
+#ticker-global .ticker-item {
+  padding: 8px var(--sp-5); font-size: var(--fs-xs); font-weight: 700;
+  color: var(--suave); text-transform: uppercase; letter-spacing: var(--tracking-wide);
+}
+#ticker-global .ticker-item b {
+  color: var(--texto); font-variant-numeric: tabular-nums; letter-spacing: normal;
+  text-transform: none; margin-left: 6px;
+}
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
 #contenido { flex: 1; min-width: 0; }
 
-/* Encabezado tipo hero: saludo + título grande navy */
+/* Encabezado editorial: saludo chico + título enorme en mayúsculas */
 #topbar {
-  padding: 26px 26px 0; max-width: 940px; margin: 0 auto;
-  position: relative;
+  padding: var(--sp-7) var(--sp-6) 0; max-width: 940px; margin: 0 auto;
 }
-.saludo { font-size: 13px; color: var(--suave); font-weight: 600; margin-bottom: 4px; }
-#titulo-vista { font-size: 30px; font-weight: 800; letter-spacing: -.035em; }
-/* Formas decorativas Dsign junto al título */
-#topbar::before, #topbar::after {
-  content: ''; position: absolute; pointer-events: none; opacity: .85;
-}
-#topbar::before {
-  right: 60px; top: 18px; width: 26px; height: 26px;
-  background: #f4981e; border-radius: 70% 0 70% 0; transform: rotate(12deg);
-}
-#topbar::after {
-  right: 26px; top: 40px; width: 14px; height: 14px;
-  background: #22c55e; border-radius: 50%;
+.saludo { font-size: 13px; color: var(--suave); font-weight: 600; margin-bottom: 6px; }
+#titulo-vista {
+  font-family: var(--ff-display);
+  font-size: var(--fs-hero); font-weight: 400; letter-spacing: var(--tracking-tight);
+  line-height: var(--lh-tight); text-transform: uppercase;
 }
 
-main { max-width: 940px; margin: 0 auto; padding: 20px 26px 24px; }
+main { max-width: 940px; margin: 0 auto; padding: var(--sp-6) var(--sp-6) 24px; }
 
-/* Responsive: en pantallas angostas el sidebar pasa a barra superior */
+/* Responsive: topnav angosto */
 @media (max-width: 780px) {
-  #app { flex-direction: column; }
-  #sidebar {
-    width: 100%; height: auto; flex-direction: row; align-items: center;
-    padding: 10px 12px; border-right: none; border-bottom: 1px solid var(--borde);
-    z-index: 20; overflow-x: auto;
-  }
-  .logo { padding: 0 6px 0 0; }
+  #topnav { padding: var(--sp-3) var(--sp-4); gap: var(--sp-4); }
   .logo-txt { display: none; }
-  #nav { flex-direction: row; gap: 2px; }
-  .nav-btn { padding: 9px 12px; border-radius: 999px; white-space: nowrap; }
-  .nav-btn.active { box-shadow: none; }
-  .nav-txt { font-size: 13px; }
-  .tema-btn { margin-top: 0; margin-left: auto; width: 38px; height: 38px; flex: none; border-radius: 999px; }
-  #topbar { padding: 18px 16px 0; }
-  #titulo-vista { font-size: 24px; }
+  #nav { gap: var(--sp-4); }
+  #topbar { padding: var(--sp-5) 16px 0; }
   main { padding: 14px 16px 24px; }
 }
 
-/* Transición de vistas */
-.vista { display: none; }
-.vista.activa { display: block; animation: aparecer .25s ease both; }
-@keyframes aparecer {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
-}
+/* Vistas: cada vista solo se monta en React mientras está activa (ver
+   useViewTransition) — no hace falta display:none/block por CSS, pero se
+   deja .vista como hook de targeting para GSAP. */
+.vista { display: block; }
 .oculto { display: none !important; }
 
-/* ---------- Panel base (card Dsign: muy redondeada, sombra suave) ---------- */
+/* ---------- Panel base: borde fino, sombra casi nula (look editorial plano) ---------- */
 .panel {
   background: var(--panel); border: 1px solid var(--borde);
-  border-radius: var(--radio); padding: 22px; margin-bottom: 16px;
+  border-radius: var(--radio); padding: var(--sp-6); margin-bottom: var(--sp-4);
   box-shadow: var(--sombra);
 }
 .panel h3 {
-  font-size: 17px; margin-bottom: 14px; font-weight: 750; letter-spacing: -.02em;
+  font-size: 17px; margin-bottom: 14px; font-weight: 700; letter-spacing: -.02em;
 }
 
 /* ---------- Registro rápido ---------- */
 .aviso-salario {
-  background: color-mix(in srgb, var(--amarillo) 9%, var(--panel));
-  border: 1px solid color-mix(in srgb, var(--amarillo) 40%, transparent);
+  background: var(--panel-2);
+  border: 1px solid var(--borde-fuerte);
   border-radius: var(--radio); padding: 16px; margin-bottom: 16px; font-size: 14px;
   display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-  box-shadow: var(--sombra);
 }
 .aviso-salario input {
   width: 120px; padding: 9px 12px; border: 1px solid var(--borde-fuerte);
-  border-radius: 999px; font-size: 14px;
+  border-radius: var(--radio-sm); font-size: 14px;
   background: var(--panel); color: var(--texto);
 }
 .aviso-salario button {
-  background: var(--ingreso); color: #fff; border: none; border-radius: 999px;
+  background: var(--ingreso); color: #fff; border: none; border-radius: var(--radio-sm);
   padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
   transition: filter .15s, transform .1s;
 }
 .aviso-salario button:hover { filter: brightness(1.08); transform: translateY(-1px); }
-.aviso-salario button.mini-btn { background: var(--panel-2); color: var(--suave); }
+.aviso-salario button.mini-btn { background: var(--panel); color: var(--suave); border: 1px solid var(--borde-fuerte); }
 
 .selector-tipo { display: flex; gap: 10px; margin-bottom: 16px; }
 .tipo-btn {
   border: 1px solid var(--borde); border-radius: var(--radio); cursor: pointer;
-  font-weight: 700; transition: transform .12s ease, box-shadow .2s, border-color .15s;
+  font-weight: 700; transition: transform .12s ease, border-color .15s;
   background: var(--panel); letter-spacing: -.01em;
 }
 .tipo-btn:active { transform: scale(.98); }
 .tipo-btn.gasto {
   flex: 2; color: #fff; font-size: 22px; padding: 20px 10px; border: none;
-  background: linear-gradient(135deg, #ef4444, #c22b30);
-  box-shadow: 0 14px 30px -12px rgba(217, 45, 50, .55);
+  background: var(--gasto);
 }
-.tipo-btn.gasto:hover { box-shadow: 0 16px 38px -10px rgba(217, 45, 50, .7); transform: translateY(-1px); }
+.tipo-btn.gasto:hover { filter: brightness(1.08); transform: translateY(-1px); }
 .tipo-btn.secundario { flex: 1; color: var(--texto); font-size: 13.5px; padding: 12px; }
-.tipo-btn.secundario:hover { border-color: var(--primario); color: var(--primario); background: var(--primario-suave); }
+.tipo-btn.secundario:hover { border-color: var(--texto); background: var(--panel-2); }
 .tipo-btn.activo { outline: 2px solid var(--anillo); outline-offset: 2px; }
 
 .form-registro {
   background: var(--panel); border: 1px solid var(--borde);
-  border-radius: var(--radio); padding: 22px; box-shadow: var(--sombra);
+  border-radius: var(--radio); padding: var(--sp-6); box-shadow: var(--sombra);
   display: flex; flex-direction: column; gap: 8px;
 }
 .form-registro label {
@@ -311,7 +332,7 @@ main { max-width: 940px; margin: 0 auto; padding: 20px 26px 24px; }
 #modal-cuerpo input:focus, #modal-cuerpo select:focus,
 .form-inline input:focus, .form-inline select:focus,
 .aviso-salario input:focus {
-  outline: none; border-color: var(--primario); background: var(--panel);
+  outline: none; border-color: var(--texto); background: var(--panel);
   box-shadow: 0 0 0 4px var(--anillo);
 }
 .form-registro input[name="monto"] {
@@ -319,41 +340,33 @@ main { max-width: 940px; margin: 0 auto; padding: 20px 26px 24px; }
   font-variant-numeric: tabular-nums;
 }
 
-/* Chips: pills estilo Dsign */
+/* Chips: selección única, plano */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   border: 1px solid var(--borde-fuerte); background: var(--panel); color: var(--texto);
-  border-radius: 999px; padding: 9px 16px; font-size: 13.5px; font-weight: 600;
+  border-radius: var(--radio-sm); padding: 9px 16px; font-size: 13.5px; font-weight: 600;
   cursor: pointer; transition: all .15s ease;
 }
-.chip:hover { border-color: var(--primario); color: var(--primario); transform: translateY(-1px); }
+.chip:hover { border-color: var(--texto); transform: translateY(-1px); }
 .chip.sel {
   background: var(--primario); border-color: var(--primario); color: var(--primario-texto);
-  box-shadow: 0 8px 18px -8px var(--primario);
 }
 
-/* Botón primario: pill azul con shimmer */
+/* Botón primario: plano, sin shimmer ni gradiente */
 .guardar {
-  margin-top: 16px; border: none; border-radius: 999px;
+  margin-top: 16px; border: none; border-radius: var(--radio-sm);
   color: var(--primario-texto); background: var(--primario);
   font-size: 16px; font-weight: 700; padding: 14px; cursor: pointer;
   text-align: center; text-decoration: none; display: inline-block;
-  position: relative; overflow: hidden; letter-spacing: -.01em;
-  box-shadow: 0 12px 26px -12px var(--primario);
-  transition: transform .12s ease, box-shadow .2s, filter .15s;
+  letter-spacing: -.01em;
+  transition: transform .12s ease, filter .15s;
 }
-.guardar::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.3) 50%, transparent 70%);
-  transform: translateX(-120%);
-}
-.guardar:hover::after { animation: shimmer .9s ease; }
-@keyframes shimmer { to { transform: translateX(120%); } }
-.guardar:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.guardar:hover { filter: brightness(1.15); transform: translateY(-1px); }
+:root[data-theme="dark"] .guardar:hover { filter: brightness(.85); }
 .guardar:active { transform: scale(.985); }
-.guardar.gasto { background: linear-gradient(135deg, #ef4444, #c22b30); box-shadow: 0 12px 26px -12px #d92d32; }
-.guardar.ingreso { background: linear-gradient(135deg, #17a34a, #0c7a34); box-shadow: 0 12px 26px -12px #128a3e; }
-.guardar.pago { background: linear-gradient(135deg, #d98e0b, #b06c00); box-shadow: 0 12px 26px -12px #c47d05; }
+.guardar.gasto { background: var(--gasto); }
+.guardar.ingreso { background: var(--ingreso); }
+.guardar.pago { background: var(--pago); }
 
 /* ---------- Dashboard ---------- */
 .fila-selector {
@@ -362,11 +375,11 @@ main { max-width: 940px; margin: 0 auto; padding: 20px 26px 24px; }
 }
 .mini-btn {
   border: 1px solid var(--borde-fuerte); background: var(--panel);
-  color: var(--texto); border-radius: 999px;
+  color: var(--texto); border-radius: var(--radio-sm);
   padding: 7px 15px; font-size: 13px; font-weight: 600; cursor: pointer;
   transition: background .15s, border-color .15s, color .15s, transform .1s;
 }
-.mini-btn:hover { border-color: var(--primario); color: var(--primario); background: var(--primario-suave); }
+.mini-btn:hover { border-color: var(--texto); background: var(--panel-2); }
 .mini-btn:active { transform: scale(.96); }
 .mini-btn.ancho { padding: 9px 22px; }
 .mini-btn.peligro:hover {
@@ -374,8 +387,7 @@ main { max-width: 940px; margin: 0 auto; padding: 20px 26px 24px; }
   background: color-mix(in srgb, var(--rojo) 10%, transparent);
 }
 
-/* Stat cards estilo Dashnext: ícono en chip pastel a la izquierda,
-   número grande arriba y etiqueta abajo */
+/* Stat cards: ícono a la izquierda, número grande arriba y etiqueta abajo */
 .metricas {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
   gap: 12px; margin-bottom: 14px;
@@ -384,13 +396,13 @@ main { max-width: 940px; margin: 0 auto; padding: 20px 26px 24px; }
   background: var(--panel); border: 1px solid var(--borde); border-radius: var(--radio);
   padding: 16px; box-shadow: var(--sombra);
   display: flex; align-items: center; gap: 14px;
-  transition: transform .18s ease, box-shadow .18s;
+  transition: transform .18s ease, border-color .18s;
 }
-.metrica:hover { transform: translateY(-3px); box-shadow: var(--glow); }
+.metrica:hover { transform: translateY(-3px); border-color: var(--texto); }
 .icono-metrica {
-  width: 46px; height: 46px; border-radius: 13px; flex: none;
+  width: 46px; height: 46px; border-radius: var(--radio-sm); flex: none;
   display: grid; place-items: center; font-size: 20px;
-  background: color-mix(in srgb, var(--tinte, var(--primario)) 15%, var(--panel));
+  background: var(--panel-2);
 }
 .metrica-info { min-width: 0; }
 .metrica .titulo {
@@ -404,25 +416,13 @@ main { max-width: 940px; margin: 0 auto; padding: 20px 26px 24px; }
 .valor.positivo { color: var(--ingreso); }
 .valor.negativo { color: var(--gasto); }
 
-/* Tarjeta del salario: borde de gradiente animado */
-@property --angulo {
-  syntax: '<angle>'; initial-value: 0deg; inherits: false;
-}
+/* Tarjeta del salario: plana, sin borde animado */
 .tarjeta-salario {
-  position: relative; border-radius: var(--radio); padding: 20px; margin-bottom: 16px;
-  background: var(--panel); border: 1px solid transparent;
-  background-clip: padding-box;
+  border-radius: var(--radio); padding: 20px; margin-bottom: 16px;
+  background: var(--panel); border: 1px solid var(--borde-fuerte);
   display: flex; flex-wrap: wrap; gap: 26px; align-items: center;
-  box-shadow: var(--glow);
+  box-shadow: var(--sombra);
 }
-.tarjeta-salario::before {
-  content: ''; position: absolute; inset: -1.5px; z-index: -1;
-  border-radius: inherit;
-  background: conic-gradient(from var(--angulo),
-    var(--azul), var(--violeta), #17a34a, var(--azul));
-  animation: girar 7s linear infinite;
-}
-@keyframes girar { to { --angulo: 360deg; } }
 .tarjeta-salario .grande {
   font-size: 28px; font-weight: 800; letter-spacing: -.03em;
   font-variant-numeric: tabular-nums;
@@ -439,11 +439,11 @@ main { max-width: 940px; margin: 0 auto; padding: 20px 26px 24px; }
 
 /* Banner de alerta */
 .banner-alerta {
-  background: color-mix(in srgb, var(--rojo) 10%, var(--panel));
-  border: 1px solid color-mix(in srgb, var(--rojo) 45%, transparent);
+  background: var(--panel-2);
+  border: 1px solid var(--rojo);
   color: var(--texto);
   border-radius: var(--radio); padding: 14px 18px; margin-bottom: 14px;
-  font-size: 14px; font-weight: 650; box-shadow: var(--sombra);
+  font-size: 14px; font-weight: 650;
 }
 
 /* Análisis del mes */
@@ -461,28 +461,75 @@ main { max-width: 940px; margin: 0 auto; padding: 20px 26px 24px; }
   letter-spacing: .07em; font-weight: 700; margin: 16px 0 4px;
 }
 
-/* Tarjetas en dashboard */
-.tarjeta-fila { border-top: 1px solid var(--borde); padding: 14px 0; }
-.tarjeta-fila:first-child { border-top: none; }
-.tarjeta-cab { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
-.tarjeta-cab b { font-size: 14.5px; }
-.tarjeta-datos { font-size: 13px; color: var(--suave); margin-top: 6px; }
 .barra-uso {
-  height: 9px; background: var(--panel-2); border-radius: 999px; margin-top: 10px;
+  height: 6px; background: var(--panel-2); border-radius: 3px; margin-top: 10px;
   overflow: hidden;
 }
 .barra-uso > div {
-  height: 100%; border-radius: 999px;
+  height: 100%; border-radius: 3px;
   transition: width .8s cubic-bezier(.2, .8, .2, 1);
 }
-.uso-verde { background: linear-gradient(90deg, #0e8a2f, #22c55e); }
-.uso-amarillo { background: linear-gradient(90deg, #d98e0b, #fbbf24); }
-.uso-rojo { background: linear-gradient(90deg, #c22b30, #ef4444); }
+.uso-verde { background: var(--verde); }
+.uso-amarillo { background: var(--amarillo); }
+.uso-rojo { background: var(--rojo); }
+
+/* ---------- Cards de cuentas y tarjetas: bloques de color plano y saturado,
+   como los product-cards de la demo (número/ícono arriba, cifra grande abajo).
+   Rotan por id entre --acc-0..--acc-5 para que cada cuenta/tarjeta se
+   distinga a simple vista. ---------- */
+.tarjetas-grid, .cuentas-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--sp-4); margin-bottom: var(--sp-4);
+}
+.credit-card, .account-card {
+  border-radius: 20px; padding: var(--sp-5); color: var(--ink-on-acc);
+  display: flex; flex-direction: column; gap: 10px; min-height: 168px;
+  box-shadow: var(--sombra); transition: transform .18s ease, box-shadow .18s ease;
+}
+.credit-card:hover, .account-card:hover { transform: translateY(-3px); }
+.credit-card.compacta, .account-card.compacta { min-height: 128px; padding: var(--sp-4); gap: 6px; }
+.credit-card.inactiva, .account-card.inactiva { opacity: .5; filter: grayscale(.4); }
+.acc-0 { background: var(--acc-0); }
+.acc-1 { background: var(--acc-1); }
+.acc-2 { background: var(--acc-2); }
+.acc-3 { background: var(--acc-3); }
+.acc-4 { background: var(--acc-4); }
+.acc-5 { background: var(--acc-5); }
+
+.cc-top, .ac-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.cc-banco, .ac-banco {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; opacity: .75;
+}
+.cc-chip { width: 32px; height: 22px; border-radius: 5px; background: rgba(0, 0, 0, .16); flex: none; }
+.ac-tipo {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
+  background: rgba(0, 0, 0, .12); padding: 3px 9px; border-radius: 999px;
+}
+.cc-nombre, .ac-nombre {
+  font-family: var(--ff-display); font-weight: 400; font-size: 24px; text-transform: uppercase;
+  line-height: 1; letter-spacing: -.01em;
+}
+.credit-card.compacta .cc-nombre, .account-card.compacta .ac-nombre { font-size: 19px; }
+.cc-saldo, .ac-saldo {
+  font-family: var(--ff-display); font-weight: 400; font-size: 30px; margin-top: auto;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.credit-card.compacta .cc-saldo, .account-card.compacta .ac-saldo { font-size: 22px; }
+.cc-datos, .ac-datos {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 10px;
+  font-size: 11.5px; font-weight: 700; opacity: .8;
+}
+.credit-card .barra-uso, .account-card .barra-uso { background: rgba(0, 0, 0, .15); }
+.cc-editar, .ac-editar {
+  align-self: flex-start; margin-top: 4px;
+  background: rgba(0, 0, 0, .12); border: none; color: var(--ink-on-acc);
+}
+.cc-editar:hover, .ac-editar:hover { background: rgba(0, 0, 0, .22); border-color: transparent; }
 
 /* ---------- Movimientos ---------- */
 .filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .filtros input, .filtros select {
-  padding: 10px 14px; border: 1px solid var(--borde-fuerte); border-radius: 999px;
+  padding: 10px 14px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-sm);
   font-size: 13px; background: var(--panel); color: var(--texto); font-weight: 500;
 }
 table {
@@ -490,7 +537,7 @@ table {
 }
 .tabla-scroll {
   overflow-x: auto; border: 1px solid var(--borde); border-radius: var(--radio);
-  box-shadow: var(--sombra); background: var(--panel);
+  background: var(--panel);
 }
 th, td { padding: 12px 11px; text-align: left; font-size: 13.5px;
          border-bottom: 1px solid var(--borde); }
@@ -500,13 +547,13 @@ th {
   text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
 }
 table tr { transition: background .12s; }
-table tr:hover td { background: color-mix(in srgb, var(--panel-2) 55%, transparent); }
+table tr:hover td { background: var(--panel-2); }
 td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .mov-ingreso td.num { color: var(--ingreso); }
 .mov-gasto td.num { color: var(--gasto); }
 .mov-pago td.num { color: var(--pago); }
 .etq {
-  font-size: 10.5px; padding: 4px 10px; border-radius: 999px; font-weight: 700;
+  font-size: 10.5px; padding: 4px 10px; border-radius: var(--radio-sm); font-weight: 700;
   letter-spacing: .02em;
 }
 .etq.ingreso { color: var(--ingreso); background: color-mix(in srgb, var(--ingreso) 13%, transparent); }
@@ -514,7 +561,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700
 .etq.pago { color: var(--pago); background: color-mix(in srgb, var(--pago) 14%, transparent); }
 .accion {
   border: none; background: transparent; cursor: pointer; font-size: 14px;
-  padding: 4px 7px; border-radius: 999px; transition: background .12s, transform .1s;
+  padding: 4px 7px; border-radius: var(--radio-sm); transition: background .12s, transform .1s;
 }
 .accion:hover { background: var(--panel-2); transform: scale(1.15); }
 
@@ -536,7 +583,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700
 
 .form-inline { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
 .form-inline input, .form-inline select {
-  padding: 10px 14px; border: 1px solid var(--borde-fuerte); border-radius: 999px;
+  padding: 10px 14px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-sm);
   font-size: 13px; background: var(--panel-2); color: var(--texto);
 }
 
@@ -551,30 +598,30 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700
 
 .importar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
 .importar select, .importar input {
-  padding: 9px 12px; border: 1px solid var(--borde-fuerte); border-radius: 999px;
+  padding: 9px 12px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-sm);
   font-size: 12.5px; background: var(--panel-2); color: var(--texto);
 }
 .enlace-btn { margin-top: 0; padding: 11px 22px; font-size: 14px; }
 
 /* ---------- Modal y toast ---------- */
 .modal {
-  position: fixed; inset: 0; background: rgba(15, 42, 67, .45);
+  position: fixed; inset: 0; background: rgba(17, 17, 17, .45);
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px;
 }
 :root[data-theme="dark"] .modal { background: rgba(0, 0, 0, .6); }
 .modal-caja {
   background: var(--panel); border: 1px solid var(--borde);
-  border-radius: var(--radio); padding: 22px;
+  border-radius: var(--radio); padding: var(--sp-6);
   width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto;
-  box-shadow: 0 30px 80px -24px rgba(15, 42, 67, .35);
+  box-shadow: 0 20px 60px -24px rgba(17, 17, 17, .25);
   animation: modalEntra .2s cubic-bezier(.2, .9, .3, 1.2) both;
 }
 @keyframes modalEntra {
   from { opacity: 0; transform: scale(.94) translateY(8px); }
   to { opacity: 1; transform: none; }
 }
-.modal-caja h3 { margin-bottom: 14px; font-size: 16px; font-weight: 750; }
+.modal-caja h3 { margin-bottom: 14px; font-size: 16px; font-weight: 700; }
 #modal-cuerpo { display: flex; flex-direction: column; gap: 8px; }
 #modal-cuerpo label {
   font-size: 11px; color: var(--suave); text-transform: uppercase;
@@ -591,9 +638,9 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
   background: var(--texto); color: var(--fondo);
-  padding: 13px 24px; border-radius: 999px;
+  padding: 13px 24px; border-radius: var(--radio-sm);
   font-size: 14px; font-weight: 700; z-index: 60;
-  box-shadow: 0 16px 44px -10px rgba(15, 42, 67, .4);
+  box-shadow: 0 16px 44px -10px rgba(17, 17, 17, .3);
   animation: toastEntra .25s cubic-bezier(.2, .9, .3, 1.2) both;
 }
 @keyframes toastEntra {

@@ -12,5 +12,13 @@ if [ ! -d ".venv" ]; then
     ./.venv/bin/pip install -r requirements.txt
 fi
 
+# Compilar el frontend (React/Vite) si todavía no existe el build en static/
+# (clone nuevo, o primera vez tras la migración). Para reconstruirlo a mano
+# después de tocar frontend/src: cd frontend && npm run build
+if [ ! -f "static/index.html" ]; then
+    echo "Compilando el frontend (frontend/ -> static/)..."
+    (cd frontend && npm install && npm run build)
+fi
+
 echo "Finanzas Personales — http://localhost:8000"
 ./.venv/bin/python app.py
