@@ -51,6 +51,7 @@ const estado = {
   dashAnio: new Date().getFullYear(),
   dashMes: new Date().getMonth() + 1,
   graficaBarras: null, graficaPastel: null,
+  graficaPatrimonio: null, graficaMetodo: null, graficaTendencia: null, graficaUsoTarjetas: null,
 };
 
 // ---------- Navegación entre vistas ----------
@@ -287,12 +288,12 @@ async function omitirPendienteGasto(i) {
 // Paleta categórica validada (CVD-safe) por tema; ver README de diseño.
 const PALETA = {
   dark: {
-    ingresos: '#3987e5', gastos: '#e66767',
+    ingresos: '#3987e5', gastos: '#e66767', patrimonio: '#9085e9',
     pie: ['#3987e5', '#199e70', '#c98500', '#008300', '#9085e9', '#e66767', '#d55181', '#d95926'],
     tinta: '#a1a1aa', grid: 'rgba(255,255,255,.07)', superficie: '#131316',
   },
   light: {
-    ingresos: '#2a78d6', gastos: '#e34948',
+    ingresos: '#2a78d6', gastos: '#e34948', patrimonio: '#4a3aa7',
     pie: ['#2a78d6', '#1baf7a', '#eda100', '#008300', '#4a3aa7', '#e34948', '#e87ba4', '#eb6834'],
     tinta: '#52514e', grid: '#e7e6e1', superficie: '#ffffff',
   },
@@ -456,6 +457,115 @@ async function cargarDashboard() {
         legend: { position: 'bottom',
                   labels: { color: pal.tinta, boxWidth: 12, boxHeight: 12 } },
         tooltip: { callbacks: { label: c => `${c.label}: ${fmtQ(c.raw)}` } },
+      },
+    },
+  });
+
+  // Línea: evolución del patrimonio en los últimos 12 meses
+  if (estado.graficaPatrimonio) { estado.graficaPatrimonio.destroy(); estado.graficaPatrimonio = null; }
+  const hayPatrimonio = d.patrimonio_hist.datos.some(v => v);
+  $('#grafica-patrimonio').classList.toggle('oculto', !hayPatrimonio);
+  $('#vacio-patrimonio').classList.toggle('oculto', hayPatrimonio);
+  if (hayPatrimonio) estado.graficaPatrimonio = new Chart($('#grafica-patrimonio'), {
+    type: 'line',
+    data: {
+      labels: d.patrimonio_hist.labels,
+      datasets: [{
+        label: 'Patrimonio', data: d.patrimonio_hist.datos,
+        borderColor: pal.patrimonio, backgroundColor: pal.patrimonio + '33',
+        fill: true, tension: 0.3, pointRadius: 3,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => fmtQ(c.raw) } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: pal.tinta }, border: { color: pal.grid } },
+        y: { grid: { color: pal.grid }, border: { display: false },
+             ticks: { color: pal.tinta, callback: v => 'Q ' + v.toLocaleString() } },
+      },
+    },
+  });
+
+  // Dona: gastos por método de pago del mes
+  if (estado.graficaMetodo) { estado.graficaMetodo.destroy(); estado.graficaMetodo = null; }
+  const hayMetodo = d.metodo_pago.datos.length > 0;
+  $('#grafica-metodo').classList.toggle('oculto', !hayMetodo);
+  $('#vacio-metodo').classList.toggle('oculto', hayMetodo);
+  if (hayMetodo) estado.graficaMetodo = new Chart($('#grafica-metodo'), {
+    type: 'doughnut',
+    data: {
+      labels: d.metodo_pago.labels,
+      datasets: [{ data: d.metodo_pago.datos, backgroundColor: pal.pie,
+                   borderColor: pal.superficie, borderWidth: 2 }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: pal.tinta, boxWidth: 12, boxHeight: 12 } },
+        tooltip: { callbacks: { label: c => `${c.label}: ${fmtQ(c.raw)}` } },
+      },
+    },
+  });
+
+  // Línea: tendencia mensual de las top 3 categorías del mes (6 meses)
+  if (estado.graficaTendencia) { estado.graficaTendencia.destroy(); estado.graficaTendencia = null; }
+  const hayTendencia = d.tendencia_categorias.series.length > 0;
+  $('#grafica-tendencia').classList.toggle('oculto', !hayTendencia);
+  $('#vacio-tendencia').classList.toggle('oculto', hayTendencia);
+  if (hayTendencia) estado.graficaTendencia = new Chart($('#grafica-tendencia'), {
+    type: 'line',
+    data: {
+      labels: d.tendencia_categorias.labels,
+      datasets: d.tendencia_categorias.series.map((s, i) => ({
+        label: s.nombre, data: s.datos, borderColor: pal.pie[i], backgroundColor: pal.pie[i],
+        tension: 0.3, pointRadius: 3,
+      })),
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: pal.tinta, boxWidth: 12, boxHeight: 12 } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmtQ(c.raw)}` } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: pal.tinta }, border: { color: pal.grid } },
+        y: { grid: { color: pal.grid }, border: { display: false },
+             ticks: { color: pal.tinta, callback: v => 'Q ' + v.toLocaleString() } },
+      },
+    },
+  });
+
+  // Barras horizontales: % de uso de cada tarjeta vs. su límite
+  if (estado.graficaUsoTarjetas) { estado.graficaUsoTarjetas.destroy(); estado.graficaUsoTarjetas = null; }
+  const hayTarjetas = d.tarjetas.length > 0;
+  $('#grafica-uso-tarjetas').classList.toggle('oculto', !hayTarjetas);
+  $('#vacio-uso-tarjetas').classList.toggle('oculto', hayTarjetas);
+  if (hayTarjetas) estado.graficaUsoTarjetas = new Chart($('#grafica-uso-tarjetas'), {
+    type: 'bar',
+    data: {
+      labels: d.tarjetas.map(t => t.nombre),
+      datasets: [{
+        label: '% de uso', data: d.tarjetas.map(t => t.pct_uso),
+        backgroundColor: d.tarjetas.map(t =>
+          t.pct_uso < 30 ? pal.ingresos : t.pct_uso <= 70 ? '#c98500' : pal.gastos),
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => `${c.raw}% de uso` } },
+      },
+      scales: {
+        x: { min: 0, max: 100, grid: { color: pal.grid }, border: { display: false },
+             ticks: { color: pal.tinta, callback: v => v + '%' } },
+        y: { grid: { display: false }, ticks: { color: pal.tinta }, border: { color: pal.grid } },
       },
     },
   });

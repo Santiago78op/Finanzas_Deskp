@@ -1,14 +1,22 @@
 """
 notion_sync.py — Sincronización con Notion.
 
-Sube a Notion (app -> Notion):
-  1. "Resumen del mes": ingresos, gastos, balance, deuda en tarjetas y top 5
-     categorías de gasto. Se actualizan las mismas filas (no se acumulan).
-  2. "Tarjetas": una fila por tarjeta (upsert por nombre).
-  3. "Alertas": avisos generados por la app, con fecha, tipo y estado.
+Sube a Notion (app -> Notion), modelo relacional (una página por fila real):
+  1. "Cuentas": una fila por cuenta bancaria activa (upsert por nombre).
+  2. "Meses": una fila POR MES con datos (se acumula, nunca se pisa) —
+     habilita una vista de Gráfica (Chart) nativa con el historial.
+  3. "Tarjetas": una fila por tarjeta (upsert por nombre).
+  4. "Gastos" / "Ingresos" / "Pagos de tarjetas": una página por transacción,
+     relacionada con su Cuenta/Tarjeta y su Mes. El saldo SIEMPRE lo calcula
+     y empuja la app (SQLite es la fuente de verdad); las relaciones son
+     para poder navegar/filtrar desde Notion, no recalculan nada. El
+     historial ya sincronizado no se re-sube en cada corrida (solo el mes en
+     curso y las filas nuevas, acotadas por corrida) para no pegarle a
+     cientos de páginas en cada sync.
+  5. "Alertas": avisos generados por la app, con fecha, tipo y estado.
 
 Baja de Notion (Notion -> app), único canal de entrada:
-  4. "Bandeja de gastos": la anotás desde el celular cuando no tenés la app
+  6. "Bandeja de gastos": la anotás desde el celular cuando no tenés la app
      a mano. Cada sincronización la lee, crea el gasto real en la base local
      y archiva la fila en Notion. Las filas con datos inválidos se quedan
      en la bandeja (no se pierden) para que las corrijas.
@@ -46,16 +54,6 @@ MESES_ES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
 # al azar: mismo orden siempre, como recomienda un buen sistema de color).
 COLORES_NOTION = ["blue", "green", "yellow", "orange", "red", "purple", "pink", "brown", "gray"]
 
-# Íconos por concepto del Resumen del mes (el resto usa 🏷️, ver más abajo)
-ICONOS_RESUMEN = {
-    "Mes": "📅",
-    "Ingresos del mes": "📈",
-    "Gastos del mes": "📉",
-    "Balance del mes": "⚖️",
-    "Deuda total en tarjetas": "💳",
-    "Dinero en cuentas": "🏦",
-    "Patrimonio (cuentas − deuda)": "💎",
-}
 ICONOS_ALERTA = {"tarjeta": "💳", "balance": "⚠️", "ritmo": "🏃"}
 
 
@@ -154,13 +152,36 @@ def proxima_fecha(dia_del_mes, desde=None):
 # ---------- Creación / verificación de las bases en Notion ----------
 
 ESQUEMAS = {
-    "resumen": {
-        "titulo": "Resumen del mes",
-        "config_key": "notion_db_resumen",
-        "icono": "📊",
+    "cuentas": {
+        "titulo": "Cuentas",
+        "config_key": "notion_db_cuentas",
+        "icono": "🏦",
+        "callout": ("🏦 Cuentas", "Tus cuentas bancarias (Monetaria/Ahorro) y su saldo actual."),
         "properties": {
-            "Concepto": {"title": {}},
-            "Valor": {"rich_text": {}},
+            "Cuenta": {"title": {}},
+            "Banco": {"rich_text": {}},
+            "Tipo": {"select": {"options": [
+                {"name": "Monetaria", "color": "blue"},
+                {"name": "Ahorro", "color": "green"},
+            ]}},
+            "Saldo": {"number": {"format": "number_with_commas"}},
+        },
+    },
+    "meses": {
+        "titulo": "Meses",
+        "config_key": "notion_db_meses",
+        "icono": "📅",
+        "callout": ("📅 Meses", "Historial mensual: ingresos, gastos, balance y patrimonio. "
+                                 "Agregale una vista de Gráfica (Chart) para ver la tendencia."),
+        "properties": {
+            "Mes": {"title": {}},
+            "Ingresos": {"number": {"format": "number_with_commas"}},
+            "Gastos": {"number": {"format": "number_with_commas"}},
+            "Balance": {"number": {"format": "number_with_commas"}},
+            "Deuda en tarjetas": {"number": {"format": "number_with_commas"}},
+            "Dinero en cuentas": {"number": {"format": "number_with_commas"}},
+            "Patrimonio": {"number": {"format": "number_with_commas"}},
+            "Top categorías": {"rich_text": {}},
             "Actualizado": {"date": {}},
         },
     },
@@ -168,6 +189,7 @@ ESQUEMAS = {
         "titulo": "Tarjetas",
         "config_key": "notion_db_tarjetas",
         "icono": "💳",
+        "callout": ("💳 Tarjetas", "Tus tarjetas de crédito: saldo, disponible y próximas fechas de corte/pago."),
         "properties": {
             "Tarjeta": {"title": {}},
             "Banco": {"rich_text": {}},
@@ -182,6 +204,7 @@ ESQUEMAS = {
         "titulo": "Alertas",
         "config_key": "notion_db_alertas",
         "icono": "🔔",
+        "callout": ("🔔 Alertas", "Avisos automáticos: pagos próximos, balance negativo o ritmo de gasto alto."),
         "properties": {
             "Alerta": {"title": {}},
             "Fecha": {"date": {}},
@@ -200,6 +223,8 @@ ESQUEMAS = {
         "titulo": "Bandeja de gastos",
         "config_key": "notion_db_bandeja",
         "icono": "📥",
+        "callout": ("📥 Bandeja de gastos", "Anotá un gasto rápido desde el celular; "
+                                            "la próxima sincronización lo pasa a tu base real."),
         "properties": {
             "Gasto": {"title": {}},
             "Monto": {"number": {"format": "number_with_commas"}},
@@ -208,6 +233,59 @@ ESQUEMAS = {
             "Fecha": {"date": {}},
         },
     },
+    "gastos_mov": {
+        "titulo": "Gastos",
+        "config_key": "notion_db_gastos_mov",
+        "icono": "💸",
+        "callout": ("💸 Gastos", "Cada gasto registrado, relacionado con su cuenta o tarjeta y su mes."),
+        "properties": lambda conn: {
+            "Descripción": {"title": {}},
+            "Monto": {"number": {"format": "number_with_commas"}},
+            "Fecha": {"date": {}},
+            "Categoría": {"select": {"options": []}},
+            "Método": {"select": {"options": []}},
+            "Cuenta": {"relation": {"database_id": db.config_get(conn, "notion_db_cuentas"), "dual_property": {}}},
+            "Tarjeta": {"relation": {"database_id": db.config_get(conn, "notion_db_tarjetas"), "dual_property": {}}},
+            "Mes": {"relation": {"database_id": db.config_get(conn, "notion_db_meses"), "dual_property": {}}},
+        },
+    },
+    "ingresos_mov": {
+        "titulo": "Ingresos",
+        "config_key": "notion_db_ingresos_mov",
+        "icono": "💵",
+        "callout": ("💵 Ingresos", "Cada ingreso registrado, relacionado con su cuenta y su mes."),
+        "properties": lambda conn: {
+            "Descripción": {"title": {}},
+            "Monto": {"number": {"format": "number_with_commas"}},
+            "Fecha": {"date": {}},
+            "Categoría": {"select": {"options": []}},
+            "Cuenta": {"relation": {"database_id": db.config_get(conn, "notion_db_cuentas"), "dual_property": {}}},
+            "Mes": {"relation": {"database_id": db.config_get(conn, "notion_db_meses"), "dual_property": {}}},
+        },
+    },
+    "pagos_mov": {
+        "titulo": "Pagos de tarjetas",
+        "config_key": "notion_db_pagos_mov",
+        "icono": "🧾",
+        "callout": ("🧾 Pagos de tarjetas", "Cada pago hecho a una tarjeta, relacionado con la tarjeta, "
+                                            "la cuenta de origen y el mes."),
+        "properties": lambda conn: {
+            "Descripción": {"title": {}},
+            "Monto": {"number": {"format": "number_with_commas"}},
+            "Fecha": {"date": {}},
+            "Tarjeta": {"relation": {"database_id": db.config_get(conn, "notion_db_tarjetas"), "dual_property": {}}},
+            "Cuenta": {"relation": {"database_id": db.config_get(conn, "notion_db_cuentas"), "dual_property": {}}},
+            "Mes": {"relation": {"database_id": db.config_get(conn, "notion_db_meses"), "dual_property": {}}},
+        },
+    },
+}
+
+
+# Opciones de select a mantener sincronizadas por esquema (nombre_propiedad -> valores)
+_OPCIONES_SELECT_POR_ESQUEMA = {
+    "bandeja": lambda conn: {"Categoría": _categorias_gasto(conn), "Método": _metodos_gasto(conn)},
+    "gastos_mov": lambda conn: {"Categoría": _categorias_gasto(conn), "Método": _metodos_gasto(conn)},
+    "ingresos_mov": lambda conn: {"Categoría": _categorias_ingreso(conn)},
 }
 
 
@@ -232,27 +310,32 @@ def _asegurar_base(conn, clave_esquema):
                 faltantes["cover"] = {"type": "external", "external": {"url": COVER_URL}}
             if faltantes:
                 _patch(f"/databases/{db_id}", faltantes)
-            if clave_esquema == "bandeja":
-                _refrescar_opciones_bandeja(conn, db_id)
-            return db_id
-        db_id = None  # fue borrada/archivada: crear de nuevo
+        else:
+            db_id = None  # fue borrada/archivada: crear de nuevo
 
-    payload = {
-        "parent": {"type": "page_id", "page_id": os.getenv("NOTION_PARENT_PAGE_ID")},
-        "icon": {"type": "emoji", "emoji": esquema["icono"]},
-        "cover": {"type": "external", "external": {"url": COVER_URL}},
-        "title": [{"type": "text", "text": {"content": esquema["titulo"]}}],
-        "properties": esquema["properties"],
-    }
-    r = _post("/databases", payload)
-    r.raise_for_status()
-    db_id = r.json()["id"]
-    db.config_set(conn, esquema["config_key"], db_id)
-    # El mapa de páginas viejo ya no sirve si la base es nueva
-    conn.execute("DELETE FROM notion_map WHERE tipo = ?", (clave_esquema,))
-    conn.commit()
-    if clave_esquema == "bandeja":
-        _refrescar_opciones_bandeja(conn, db_id)
+    if not db_id:
+        propiedades = esquema["properties"]
+        if callable(propiedades):
+            propiedades = propiedades(conn)  # relaciones a bases creadas en runtime (Cuentas/Tarjetas/Meses)
+        payload = {
+            "parent": {"type": "page_id", "page_id": os.getenv("NOTION_PARENT_PAGE_ID")},
+            "icon": {"type": "emoji", "emoji": esquema["icono"]},
+            "cover": {"type": "external", "external": {"url": COVER_URL}},
+            "title": [{"type": "text", "text": {"content": esquema["titulo"]}}],
+            "properties": propiedades,
+        }
+        r = _post("/databases", payload)
+        r.raise_for_status()
+        db_id = r.json()["id"]
+        db.config_set(conn, esquema["config_key"], db_id)
+        # El mapa de páginas viejo ya no sirve si la base es nueva
+        conn.execute("DELETE FROM notion_map WHERE tipo = ?", (clave_esquema,))
+        conn.commit()
+
+    opciones_fn = _OPCIONES_SELECT_POR_ESQUEMA.get(clave_esquema)
+    if opciones_fn:
+        _fusionar_opciones_select(conn, db_id, opciones_fn(conn))
+
     return db_id
 
 
@@ -276,12 +359,28 @@ def _asegurar_portada_pagina_padre():
         _patch(f"/pages/{page_id}", faltantes)
 
 
-def _refrescar_opciones_bandeja(conn, db_id):
+def _categorias_gasto(conn):
+    return [c["nombre"] for c in conn.execute(
+        "SELECT nombre FROM categorias WHERE tipo = 'gasto' AND activa = 1 ORDER BY nombre")]
+
+
+def _categorias_ingreso(conn):
+    return [c["nombre"] for c in conn.execute(
+        "SELECT nombre FROM categorias WHERE tipo = 'ingreso' AND activa = 1 ORDER BY nombre")]
+
+
+def _metodos_gasto(conn):
+    return list(db.METODOS_FIJOS) + [t["nombre"] for t in conn.execute(
+        "SELECT nombre FROM tarjetas WHERE activa = 1 ORDER BY nombre")]
+
+
+def _fusionar_opciones_select(conn, db_id, valores_por_propiedad):
     """
-    Agrega a los selects Categoría/Método de la Bandeja las categorías y
-    tarjetas activas que todavía no estén — SIN tocar las que ya existen
-    (Notion borra el color/id de una opción si se la omite en el PATCH, así
-    que siempre se fusiona con lo que ya hay en vez de reemplazar la lista).
+    Agrega a las propiedades select indicadas (ej. {"Categoría": [...],
+    "Método": [...]}) los valores que todavía no estén — SIN tocar las que ya
+    existen (Notion borra el color/id de una opción si se la omite en el
+    PATCH, así que siempre se fusiona con lo que ya hay en vez de reemplazar
+    la lista).
     """
     r = _get(f"/databases/{db_id}")
     r.raise_for_status()
@@ -299,19 +398,14 @@ def _refrescar_opciones_bandeja(conn, db_id):
                 cambio = True
         return list(por_nombre.values()), cambio
 
-    cats = [c["nombre"] for c in conn.execute(
-        "SELECT nombre FROM categorias WHERE tipo = 'gasto' AND activa = 1 ORDER BY nombre")]
-    metodos = list(db.METODOS_FIJOS) + [t["nombre"] for t in conn.execute(
-        "SELECT nombre FROM tarjetas WHERE activa = 1 ORDER BY nombre")]
+    patch_props = {}
+    for propiedad, deseados in valores_por_propiedad.items():
+        opciones, cambio = fusionar(opciones_actuales(propiedad), deseados)
+        if cambio:
+            patch_props[propiedad] = {"select": {"options": opciones}}
 
-    opciones_cat, cambio_cat = fusionar(opciones_actuales("Categoría"), cats)
-    opciones_met, cambio_met = fusionar(opciones_actuales("Método"), metodos)
-
-    if cambio_cat or cambio_met:
-        _patch(f"/databases/{db_id}", {"properties": {
-            "Categoría": {"select": {"options": opciones_cat}},
-            "Método": {"select": {"options": opciones_met}},
-        }})
+    if patch_props:
+        _patch(f"/databases/{db_id}", {"properties": patch_props})
 
 
 def _upsert_pagina(conn, tipo, clave, db_id, propiedades, props_solo_crear=None, icono=None):
@@ -396,6 +490,149 @@ def datos_del_mes(conn, anio=None, mes=None):
         "dinero_total": round(dinero_total, 2),
         "top_categorias": [(f["nombre"], round(f["total"], 2)) for f in top],
     }
+
+
+def _meses_con_datos(conn):
+    """Set de 'aaaa-mm' distintos que aparecen en gastos/ingresos/pagos_tarjetas."""
+    yms = set()
+    for tabla in ("gastos", "ingresos", "pagos_tarjetas"):
+        for f in conn.execute(f"SELECT DISTINCT strftime('%Y-%m', fecha) ym FROM {tabla}"):
+            if f["ym"]:
+                yms.add(f["ym"])
+    return yms
+
+
+def _upsertear_mes(conn, db_meses, anio, mes):
+    """
+    Sube una fila del mes (anio, mes) a la base Meses. Ingresos/Gastos/Balance
+    salen de datos_del_mes (ya filtran por mes); Deuda/Dinero/Patrimonio usan
+    los saldos "hasta esa fecha" (db.saldo_cuentas_hasta/saldo_tarjetas_hasta)
+    para que un mes viejo muestre el patrimonio de ESE momento, no el de hoy.
+    """
+    datos = datos_del_mes(conn, anio, mes)
+    ym = f"{anio:04d}-{mes:02d}"
+    dinero_total = round(db.saldo_cuentas_hasta(conn, ym), 2)
+    deuda_total = round(db.saldo_tarjetas_hasta(conn, ym), 2)
+    top_txt = ", ".join(f"{nombre}: {fmt_q(total)}" for nombre, total in datos["top_categorias"]) or "—"
+    _upsert_pagina(conn, "meses", ym, db_meses, {
+        "Mes": {"title": [{"text": {"content": f"{MESES_ES[mes]} {anio}"}}]},
+        "Ingresos": {"number": datos["ingresos"]},
+        "Gastos": {"number": datos["gastos"]},
+        "Balance": {"number": datos["balance"]},
+        "Deuda en tarjetas": {"number": deuda_total},
+        "Dinero en cuentas": {"number": dinero_total},
+        "Patrimonio": {"number": round(dinero_total - deuda_total, 2)},
+        "Top categorías": {"rich_text": [{"text": {"content": top_txt}}]},
+        "Actualizado": {"date": {"start": date.today().isoformat()}},
+    }, icono="📅")
+
+
+# ---------- Transacciones (Gastos/Ingresos/Pagos como páginas relacionadas) ----------
+
+def _agregar_relacion(propiedades, nombre_prop, conn, tipo_map, clave):
+    """Fija una propiedad 'relation' apuntando a la página ya mapeada (tipo_map, clave); vacía si no aplica."""
+    pagina = None
+    if clave:
+        pagina = conn.execute(
+            "SELECT page_id FROM notion_map WHERE tipo = ? AND clave = ?", (tipo_map, clave)
+        ).fetchone()
+    propiedades[nombre_prop] = {"relation": [{"id": pagina["page_id"]}] if pagina else []}
+
+
+def _propiedades_gasto(conn, fila):
+    cat = conn.execute("SELECT nombre FROM categorias WHERE id = ?", (fila["categoria_id"],)).fetchone()
+    tarjeta = conn.execute("SELECT nombre FROM tarjetas WHERE id = ?", (fila["tarjeta_id"],)).fetchone() \
+        if fila["tarjeta_id"] else None
+    cuenta = conn.execute("SELECT nombre FROM cuentas WHERE id = ?", (fila["cuenta_id"],)).fetchone() \
+        if fila["cuenta_id"] else None
+    metodo_txt = tarjeta["nombre"] if tarjeta else fila["metodo"]
+
+    props = {
+        "Descripción": {"title": [{"text": {"content": fila["descripcion"] or "(sin descripción)"}}]},
+        "Monto": {"number": fila["monto"]},
+        "Fecha": {"date": {"start": fila["fecha"]}},
+        "Categoría": {"select": {"name": cat["nombre"]}} if cat else {"select": None},
+        "Método": {"select": {"name": metodo_txt}},
+    }
+    _agregar_relacion(props, "Cuenta", conn, "cuentas", cuenta["nombre"] if cuenta else None)
+    _agregar_relacion(props, "Tarjeta", conn, "tarjetas", tarjeta["nombre"] if tarjeta else None)
+    _agregar_relacion(props, "Mes", conn, "meses", fila["fecha"][:7])
+    return props, "💸"
+
+
+def _propiedades_ingreso(conn, fila):
+    cat = conn.execute("SELECT nombre FROM categorias WHERE id = ?", (fila["categoria_id"],)).fetchone()
+    cuenta = conn.execute("SELECT nombre FROM cuentas WHERE id = ?", (fila["cuenta_id"],)).fetchone() \
+        if fila["cuenta_id"] else None
+
+    props = {
+        "Descripción": {"title": [{"text": {"content": fila["descripcion"] or "(sin descripción)"}}]},
+        "Monto": {"number": fila["monto"]},
+        "Fecha": {"date": {"start": fila["fecha"]}},
+        "Categoría": {"select": {"name": cat["nombre"]}} if cat else {"select": None},
+    }
+    _agregar_relacion(props, "Cuenta", conn, "cuentas", cuenta["nombre"] if cuenta else None)
+    _agregar_relacion(props, "Mes", conn, "meses", fila["fecha"][:7])
+    return props, "💵"
+
+
+def _propiedades_pago(conn, fila):
+    tarjeta = conn.execute("SELECT nombre FROM tarjetas WHERE id = ?", (fila["tarjeta_id"],)).fetchone()
+    cuenta = conn.execute("SELECT nombre FROM cuentas WHERE id = ?", (fila["cuenta_id"],)).fetchone() \
+        if fila["cuenta_id"] else None
+    nombre_tarjeta = tarjeta["nombre"] if tarjeta else "?"
+
+    props = {
+        "Descripción": {"title": [{"text": {"content": f"Pago {nombre_tarjeta}"}}]},
+        "Monto": {"number": fila["monto"]},
+        "Fecha": {"date": {"start": fila["fecha"]}},
+    }
+    _agregar_relacion(props, "Tarjeta", conn, "tarjetas", nombre_tarjeta if tarjeta else None)
+    _agregar_relacion(props, "Cuenta", conn, "cuentas", cuenta["nombre"] if cuenta else None)
+    _agregar_relacion(props, "Mes", conn, "meses", fila["fecha"][:7])
+    return props, "🧾"
+
+
+# tabla local -> (clave de esquema = tipo en notion_map, constructor de propiedades)
+_TRANSACCIONES = [
+    ("gastos", "gastos_mov", _propiedades_gasto),
+    ("ingresos", "ingresos_mov", _propiedades_ingreso),
+    ("pagos_tarjetas", "pagos_mov", _propiedades_pago),
+]
+
+
+def _sincronizar_transacciones(conn, tabla, tipo, db_id, construir_propiedades, ym_actual, cap_nuevas=40):
+    """
+    Sincroniza una tabla de transacciones como páginas individuales en Notion.
+    Para no pegarle a cientos de filas en cada sync (Notion limita ~3 req/seg
+    y cada edición ya dispara un sync completo en segundo plano): las filas
+    YA mapeadas de un mes anterior no se vuelven a tocar; las del mes en
+    curso siempre se refrescan (barato); las nuevas se crean hasta un tope
+    por corrida (el resto se completa en las sync siguientes).
+    """
+    ids_locales = set()
+    creadas = 0
+    for fila in conn.execute(f"SELECT * FROM {tabla}").fetchall():
+        clave = str(fila["id"])
+        ids_locales.add(clave)
+        ya_mapeada = conn.execute(
+            "SELECT 1 FROM notion_map WHERE tipo = ? AND clave = ?", (tipo, clave)
+        ).fetchone()
+        if ya_mapeada and fila["fecha"][:7] != ym_actual:
+            continue  # historial ya sincronizado: no se re-toca por performance
+        if not ya_mapeada:
+            if creadas >= cap_nuevas:
+                continue  # tope por corrida: el resto se completa en syncs siguientes
+            creadas += 1
+        propiedades, icono = construir_propiedades(conn, fila)
+        _upsert_pagina(conn, tipo, clave, db_id, propiedades, icono=icono)
+
+    # Reconciliación de borrados: páginas mapeadas cuya fila local ya no existe
+    for m in conn.execute("SELECT clave, page_id FROM notion_map WHERE tipo = ?", (tipo,)).fetchall():
+        if m["clave"] not in ids_locales:
+            _patch(f"/pages/{m['page_id']}", {"archived": True})
+            conn.execute("DELETE FROM notion_map WHERE tipo = ? AND clave = ?", (tipo, m["clave"]))
+    conn.commit()
 
 
 # ---------- Generación de alertas ----------
@@ -541,6 +778,133 @@ def importar_bandeja_notion(conn):
     return {"importados": len(importados), "detalle": importados, "rechazados": rechazados}
 
 
+# ---------- Layout: callout descriptivo antes de cada base ----------
+
+def _organizar_layout(conn):
+    """
+    Inserta, una única vez, un callout a modo de encabezado justo antes de
+    cada base ya creada en la página Finanzas (inspirado en plantillas
+    prolijas de Notion). Se controla con la bandera 'notion_layout_v1' para
+    no volver a tocar el contenido de la página en cada sincronización — si
+    el usuario borra o mueve un callout después, la app no lo repone.
+    """
+    if db.config_get(conn, "notion_layout_v1"):
+        return
+    page_id = os.getenv("NOTION_PARENT_PAGE_ID")
+    r = _get(f"/blocks/{page_id}/children?page_size=100")
+    if r.status_code != 200:
+        return
+    orden_ids = [b["id"] for b in r.json().get("results", [])]
+
+    for clave in ("cuentas", "meses", "tarjetas", "alertas", "bandeja",
+                  "gastos_mov", "ingresos_mov", "pagos_mov"):
+        esquema = ESQUEMAS[clave]
+        if "callout" not in esquema:
+            continue
+        db_id = db.config_get(conn, esquema["config_key"])
+        if not db_id or db_id not in orden_ids:
+            continue
+        idx = orden_ids.index(db_id)
+        if idx == 0:
+            continue  # es el primer bloque de la página: no hay dónde anclar "antes"
+        titulo, texto = esquema["callout"]
+        _patch(f"/blocks/{page_id}/children", {
+            "after": orden_ids[idx - 1],
+            "children": [{
+                "object": "block", "type": "callout",
+                "callout": {
+                    "rich_text": [
+                        {"text": {"content": titulo + "\n"}, "annotations": {"bold": True}},
+                        {"text": {"content": texto}},
+                    ],
+                    "icon": {"type": "emoji", "emoji": esquema["icono"]},
+                    "color": "gray_background",
+                },
+            }],
+        })
+
+    db.config_set(conn, "notion_layout_v1", "1")
+
+
+# ---------- Layout: encabezado visual (menú + saldos actuales) ----------
+
+def _rich_text_menu(conn):
+    """Rich text con un link (mention) a cada base ya creada, a modo de menú."""
+    partes = [{"type": "text", "text": {"content": "🧭 Menú\n"}, "annotations": {"bold": True}}]
+    for clave in ("cuentas", "meses", "tarjetas", "alertas", "bandeja",
+                  "gastos_mov", "ingresos_mov", "pagos_mov"):
+        db_id = db.config_get(conn, ESQUEMAS[clave]["config_key"])
+        if not db_id:
+            continue
+        partes.append({"type": "mention", "mention": {"type": "database", "database": {"id": db_id}}})
+        partes.append({"type": "text", "text": {"content": "\n"}})
+    return partes
+
+
+def _rich_text_saldos(datos):
+    """Rich text con el resumen de saldos actuales (se refresca en cada sync)."""
+    partes = [{"type": "text", "text": {"content": "💰 Saldos actuales\n"}, "annotations": {"bold": True}}]
+    patrimonio = round(datos["dinero_total"] - datos["deuda_total"], 2)
+    for etiqueta, valor in [
+        ("Ingresos del mes", datos["ingresos"]),
+        ("Gastos del mes", datos["gastos"]),
+        ("Balance del mes", datos["balance"]),
+        ("Dinero en cuentas", datos["dinero_total"]),
+        ("Deuda en tarjetas", datos["deuda_total"]),
+        ("Patrimonio", patrimonio),
+    ]:
+        partes.append({"type": "text", "text": {"content": f"{etiqueta}: "}})
+        partes.append({"type": "text", "text": {"content": f"{fmt_q(valor)}\n"}, "annotations": {"bold": True}})
+    return partes
+
+
+def _actualizar_dashboard_visual(conn, datos):
+    """
+    Crea, una única vez, un encabezado de dos columnas al estilo de las
+    plantillas prolijas de Notion: "Menú" (links a cada base) + "Saldos
+    actuales". El menú se arma una sola vez (bandera 'notion_layout_v2');
+    el callout de saldos se actualiza en CADA sincronización porque muestra
+    el mes en curso.
+
+    Nota (limitación real de la API de Notion): no se pueden reordenar
+    bloques existentes, así que este encabezado se agrega DESPUÉS del
+    contenido que ya hubiera en la página — no llega automáticamente al
+    principio. Si la página ya tenía bases creadas, hay que arrastrarlo
+    arriba a mano en Notion una sola vez.
+    """
+    page_id = os.getenv("NOTION_PARENT_PAGE_ID")
+
+    if not db.config_get(conn, "notion_layout_v2"):
+        r = _patch(f"/blocks/{page_id}/children", {"children": [{
+            "object": "block", "type": "column_list",
+            "column_list": {"children": [
+                {"object": "block", "type": "column", "column": {"children": [{
+                    "object": "block", "type": "callout",
+                    "callout": {"rich_text": _rich_text_menu(conn),
+                                "icon": {"type": "emoji", "emoji": "🧭"},
+                                "color": "gray_background"},
+                }]}},
+                {"object": "block", "type": "column", "column": {"children": [{
+                    "object": "block", "type": "callout",
+                    "callout": {"rich_text": _rich_text_saldos(datos),
+                                "icon": {"type": "emoji", "emoji": "💰"},
+                                "color": "blue_background"},
+                }]}},
+            ]},
+        }]})
+        if r.status_code == 200:
+            column_list_id = r.json()["results"][0]["id"]
+            columnas = _get(f"/blocks/{column_list_id}/children").json()["results"]
+            hijos_saldos = _get(f"/blocks/{columnas[1]['id']}/children").json()["results"]
+            db.config_set(conn, "notion_block_saldos", hijos_saldos[0]["id"])
+        db.config_set(conn, "notion_layout_v2", "1")
+        return
+
+    callout_saldos_id = db.config_get(conn, "notion_block_saldos")
+    if callout_saldos_id:
+        _patch(f"/blocks/{callout_saldos_id}", {"callout": {"rich_text": _rich_text_saldos(datos)}})
+
+
 # ---------- Sincronización completa ----------
 
 def sincronizar(conn):
@@ -561,31 +925,27 @@ def sincronizar(conn):
     hoy = date.today()
     datos = datos_del_mes(conn)
 
-    # --- 1. Resumen del mes (upsert por concepto, sin duplicar filas) ---
-    db_resumen = _asegurar_base(conn, "resumen")
-    filas = [
-        ("Mes", f"{MESES_ES[datos['mes']]} {datos['anio']}"),
-        ("Ingresos del mes", fmt_q(datos["ingresos"])),
-        ("Gastos del mes", fmt_q(datos["gastos"])),
-        ("Balance del mes", fmt_q(datos["balance"])),
-        ("Deuda total en tarjetas", fmt_q(datos["deuda_total"])),
-        ("Dinero en cuentas", fmt_q(datos["dinero_total"])),
-        ("Patrimonio (cuentas − deuda)", fmt_q(datos["dinero_total"] - datos["deuda_total"])),
-    ]
-    for i in range(5):
-        if i < len(datos["top_categorias"]):
-            nombre, total = datos["top_categorias"][i]
-            filas.append((f"Top {i + 1} categoría de gasto", f"{nombre}: {fmt_q(total)}"))
-        else:
-            filas.append((f"Top {i + 1} categoría de gasto", "—"))
+    # --- 1a. Cuentas (upsert por nombre, mismo patrón que Tarjetas) ---
+    db_cuentas = _asegurar_base(conn, "cuentas")
+    for c in conn.execute("SELECT * FROM cuentas WHERE activa = 1").fetchall():
+        saldo = db.saldo_cuenta(conn, c["id"])
+        _upsert_pagina(conn, "cuentas", c["nombre"], db_cuentas, {
+            "Cuenta": {"title": [{"text": {"content": c["nombre"]}}]},
+            "Banco": {"rich_text": [{"text": {"content": c["banco"]}}]},
+            "Tipo": {"select": {"name": c["tipo"]}},
+            "Saldo": {"number": saldo},
+        }, icono="💰")
 
-    for concepto, valor in filas:
-        icono = ICONOS_RESUMEN.get(concepto, "🏷️")
-        _upsert_pagina(conn, "resumen", concepto, db_resumen, {
-            "Concepto": {"title": [{"text": {"content": concepto}}]},
-            "Valor": {"rich_text": [{"text": {"content": valor}}]},
-            "Actualizado": {"date": {"start": hoy.isoformat()}},
-        }, icono=icono)
+    # --- 1b. Meses: una fila POR MES con datos (se acumula, nunca se pisa) para
+    #          poder armar una vista de Gráfica (Chart) con el historial en
+    #          Notion, y para que los Gastos/Ingresos históricos tengan a qué
+    #          "Mes" relacionarse ---
+    db_meses = _asegurar_base(conn, "meses")
+    ym_actual = f"{datos['anio']:04d}-{datos['mes']:02d}"
+    yms = _meses_con_datos(conn)
+    yms.add(ym_actual)
+    for ym in sorted(yms):
+        _upsertear_mes(conn, db_meses, int(ym[:4]), int(ym[5:7]))
 
     # --- 2. Tarjetas (upsert por nombre; ícono semáforo según % de uso) ---
     db_tarjetas = _asegurar_base(conn, "tarjetas")
@@ -604,12 +964,19 @@ def sincronizar(conn):
             "Próximo pago": {"date": {"start": proxima_fecha(t["dia_pago"]).isoformat()}},
         }, icono=icono)
 
+    # --- 2b. Gastos/Ingresos/Pagos de tarjetas: una página por transacción,
+    #         relacionada con su Cuenta/Tarjeta/Mes (Cuentas/Tarjetas/Meses ya
+    #         están mapeados arriba, así que las relaciones resuelven bien) ---
+    for tabla, clave_esquema, construir in _TRANSACCIONES:
+        db_mov = _asegurar_base(conn, clave_esquema)
+        _sincronizar_transacciones(conn, tabla, clave_esquema, db_mov, construir, ym_actual)
+
     # --- 3. Alertas (upsert por clave; el Estado solo se fija al crear,
     #        así lo que marqués como "Vista" desde el celular se respeta) ---
     db_alertas = _asegurar_base(conn, "alertas")
     for a in generar_alertas(conn):
         _upsert_pagina(
-            conn, "alerta", a["clave"], db_alertas,
+            conn, "alertas", a["clave"], db_alertas,
             {
                 "Alerta": {"title": [{"text": {"content": a["mensaje"]}}]},
                 "Fecha": {"date": {"start": hoy.isoformat()}},
@@ -618,6 +985,13 @@ def sincronizar(conn):
             props_solo_crear={"Estado": {"select": {"name": "Pendiente"}}},
             icono=ICONOS_ALERTA.get(a["tipo"], "🔔"),
         )
+
+    # Layout visual: cosmético, nunca debe tumbar la sincronización de datos
+    try:
+        _actualizar_dashboard_visual(conn, datos)
+        _organizar_layout(conn)
+    except Exception:
+        pass
 
     # Todo salió bien: limpiar bandera y registrar la hora
     db.config_set(conn, "sync_pendiente", "0")

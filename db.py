@@ -297,3 +297,35 @@ def saldo_cuenta(conn, cuenta_id):
         "SELECT COALESCE(SUM(monto), 0) AS t FROM pagos_tarjetas WHERE cuenta_id = ?", (cuenta_id,)
     ).fetchone()["t"]
     return round(inicial + entradas - salidas - pagos, 2)
+
+
+def saldo_cuentas_hasta(conn, ym):
+    """Suma de saldos de cuentas activas considerando solo movimientos hasta el mes ym ('aaaa-mm')."""
+    base = conn.execute("SELECT COALESCE(SUM(saldo_inicial), 0) t FROM cuentas WHERE activa = 1").fetchone()["t"]
+    ingresos = conn.execute(
+        """SELECT COALESCE(SUM(monto), 0) t FROM ingresos
+           WHERE cuenta_id IN (SELECT id FROM cuentas WHERE activa = 1)
+             AND strftime('%Y-%m', fecha) <= ?""", (ym,)).fetchone()["t"]
+    gastos = conn.execute(
+        """SELECT COALESCE(SUM(monto), 0) t FROM gastos
+           WHERE cuenta_id IN (SELECT id FROM cuentas WHERE activa = 1)
+             AND strftime('%Y-%m', fecha) <= ?""", (ym,)).fetchone()["t"]
+    pagos = conn.execute(
+        """SELECT COALESCE(SUM(monto), 0) t FROM pagos_tarjetas
+           WHERE cuenta_id IN (SELECT id FROM cuentas WHERE activa = 1)
+             AND strftime('%Y-%m', fecha) <= ?""", (ym,)).fetchone()["t"]
+    return base + ingresos - gastos - pagos
+
+
+def saldo_tarjetas_hasta(conn, ym):
+    """Suma de deuda de tarjetas activas considerando solo movimientos hasta el mes ym ('aaaa-mm')."""
+    base = conn.execute("SELECT COALESCE(SUM(saldo_inicial), 0) t FROM tarjetas WHERE activa = 1").fetchone()["t"]
+    gastos = conn.execute(
+        """SELECT COALESCE(SUM(monto), 0) t FROM gastos
+           WHERE tarjeta_id IN (SELECT id FROM tarjetas WHERE activa = 1)
+             AND strftime('%Y-%m', fecha) <= ?""", (ym,)).fetchone()["t"]
+    pagos = conn.execute(
+        """SELECT COALESCE(SUM(monto), 0) t FROM pagos_tarjetas
+           WHERE tarjeta_id IN (SELECT id FROM tarjetas WHERE activa = 1)
+             AND strftime('%Y-%m', fecha) <= ?""", (ym,)).fetchone()["t"]
+    return base + gastos - pagos

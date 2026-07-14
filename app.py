@@ -700,13 +700,55 @@ def dashboard(anio: Optional[int] = None, mes: Optional[int] = None):
 
         # Pastel: gastos por categoría del mes
         pastel = {"labels": [], "datos": []}
+        top_cat_ids = []
         for f in conn.execute(
-            """SELECT c.nombre, SUM(g.monto) t FROM gastos g
+            """SELECT c.id, c.nombre, SUM(g.monto) t FROM gastos g
                JOIN categorias c ON c.id = g.categoria_id
-               WHERE strftime('%Y-%m', g.fecha) = ? GROUP BY c.nombre ORDER BY t DESC""", (ym,)
+               WHERE strftime('%Y-%m', g.fecha) = ? GROUP BY c.id ORDER BY t DESC""", (ym,)
         ):
             pastel["labels"].append(f["nombre"])
             pastel["datos"].append(round(f["t"], 2))
+            top_cat_ids.append((f["id"], f["nombre"]))
+
+        # Dona: gastos por método de pago del mes (cada tarjeta se muestra por su nombre)
+        metodo_pago = {"labels": [], "datos": []}
+        for f in conn.execute(
+            """SELECT CASE WHEN g.metodo = 'Tarjeta' THEN t.nombre ELSE g.metodo END AS etiqueta,
+                      SUM(g.monto) t
+               FROM gastos g LEFT JOIN tarjetas t ON t.id = g.tarjeta_id
+               WHERE strftime('%Y-%m', g.fecha) = ? GROUP BY etiqueta ORDER BY t DESC""", (ym,)
+        ):
+            metodo_pago["labels"].append(f["etiqueta"])
+            metodo_pago["datos"].append(round(f["t"], 2))
+
+        # Evolución del patrimonio: últimos 12 meses terminando en el mes seleccionado
+        patrimonio_hist = {"labels": [], "datos": []}
+        for i in range(11, -1, -1):
+            y, m = anio, mes - i
+            while m < 1:
+                m += 12; y -= 1
+            ym_i = f"{y:04d}-{m:02d}"
+            patrimonio_hist["labels"].append(f"{MESES_ES[m][:3].capitalize()} {str(y)[2:]}")
+            patrimonio_hist["datos"].append(
+                round(db.saldo_cuentas_hasta(conn, ym_i) - db.saldo_tarjetas_hasta(conn, ym_i), 2))
+
+        # Tendencia: gasto mensual de las 3 categorías top del mes, últimos 6 meses
+        top3 = top_cat_ids[:3]
+        tendencia_categorias = {"labels": [], "series": [{"nombre": nombre, "datos": []} for _, nombre in top3]}
+        meses_tendencia = []
+        for i in range(5, -1, -1):
+            y, m = anio, mes - i
+            while m < 1:
+                m += 12; y -= 1
+            meses_tendencia.append((y, m))
+            tendencia_categorias["labels"].append(f"{MESES_ES[m][:3].capitalize()} {str(y)[2:]}")
+        for idx, (cat_id, _) in enumerate(top3):
+            gasto_por_mes = {f["ym"]: f["t"] for f in conn.execute(
+                """SELECT strftime('%Y-%m', fecha) ym, SUM(monto) t FROM gastos
+                   WHERE categoria_id = ? GROUP BY ym""", (cat_id,))}
+            for y, m in meses_tendencia:
+                ym_i = f"{y:04d}-{m:02d}"
+                tendencia_categorias["series"][idx]["datos"].append(round(gasto_por_mes.get(ym_i, 0), 2))
 
         tarjetas = [_tarjeta_con_saldo(conn, t)
                     for t in conn.execute("SELECT * FROM tarjetas WHERE activa = 1 ORDER BY nombre")]
@@ -756,6 +798,8 @@ def dashboard(anio: Optional[int] = None, mes: Optional[int] = None):
             "analisis": {"top_categorias": top_categorias, "top_gastos": top_gastos,
                          "gastos_mes_anterior": round(sum(gasto_ant_por_cat.values()), 2)},
             "barras": barras, "pastel": pastel, "tarjetas": tarjetas,
+            "metodo_pago": metodo_pago, "patrimonio_hist": patrimonio_hist,
+            "tendencia_categorias": tendencia_categorias,
         }
     finally:
         conn.close()
