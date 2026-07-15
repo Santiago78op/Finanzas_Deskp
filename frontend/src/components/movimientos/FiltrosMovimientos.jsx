@@ -11,7 +11,8 @@ export default function FiltrosMovimientos({ onFiltrar }) {
   const [categoriaId, setCategoriaId] = useState('');
   const [metodoVal, setMetodoVal] = useState('');
 
-  const aplicar = () => {
+  const aplicar = (e) => {
+    e?.preventDefault();
     const params = {};
     if (mes) params.mes = mes;
     if (categoriaId) params.categoria_id = categoriaId;
@@ -25,7 +26,8 @@ export default function FiltrosMovimientos({ onFiltrar }) {
   };
 
   return (
-    <Stack direction="row" flexWrap="wrap" gap={2} className="items-center mb-3">
+    <Stack component="form" aria-label="Filtrar movimientos" onSubmit={aplicar}
+      direction="row" flexWrap="wrap" gap={2} className="items-center mb-3">
       <TextField type="month" value={mes} onChange={e => setMes(e.target.value)} />
       <TextField select label="Categoría" value={categoriaId} onChange={e => setCategoriaId(e.target.value)}
         className="!min-w-[220px]">
@@ -42,7 +44,7 @@ export default function FiltrosMovimientos({ onFiltrar }) {
           return <MenuItem key={val} value={val}>{m.etiqueta}</MenuItem>;
         })}
       </TextField>
-      <Button variant="contained" onClick={aplicar}>Filtrar</Button>
+      <Button type="submit" variant="contained">Filtrar</Button>
     </Stack>
   );
 }

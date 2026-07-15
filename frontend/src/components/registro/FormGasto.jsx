@@ -49,7 +49,7 @@ export default function FormGasto({ inputRef }) {
 
   return (
     <Card className="p-4">
-      <form className="flex flex-col gap-3" autoComplete="off" onSubmit={submit}>
+      <form aria-label="Registrar gasto" className="flex flex-col gap-3" autoComplete="off" onSubmit={submit}>
         <TextField label="Monto (Q)" type="number" inputProps={{ step: 0.01, min: 0.01, inputMode: 'decimal' }}
           inputRef={inputRef} required autoFocus placeholder="0.00"
           value={monto} onChange={e => setMonto(e.target.value)} />

@@ -39,7 +39,7 @@ export default function FormPago({ inputRef }) {
 
   return (
     <Card className="p-4">
-      <form className="flex flex-col gap-3" autoComplete="off" onSubmit={submit}>
+      <form aria-label="Registrar pago de tarjeta" className="flex flex-col gap-3" autoComplete="off" onSubmit={submit}>
         <TextField label="Monto (Q)" type="number" inputProps={{ step: 0.01, min: 0.01, inputMode: 'decimal' }}
           inputRef={inputRef} required placeholder="0.00"
           value={monto} onChange={e => setMonto(e.target.value)} />

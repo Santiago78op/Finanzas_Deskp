@@ -41,7 +41,7 @@ export default function MovimientosView() {
   return (
     <div id="vista-movimientos" className="vista">
       <FiltrosMovimientos onFiltrar={setFiltros} />
-      <Card className="p-2">
+      <Card component="section" aria-label="Resultados de movimientos" className="p-2">
         <TablaMovimientos movs={movs} onEditar={setEditandoIdx} onEliminar={eliminar} />
       </Card>
       {editandoIdx != null && (

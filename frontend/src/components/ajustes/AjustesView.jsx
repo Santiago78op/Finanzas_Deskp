@@ -9,11 +9,11 @@ import NotionPanel from './NotionPanel.jsx';
 import RespaldoPanel from './RespaldoPanel.jsx';
 
 const PESTANAS = [
-  { label: 'Recurrentes', render: () => <FormRecurrente /> },
-  { label: 'Pagos frecuentes', render: () => <FormGastoRecurrente /> },
-  { label: 'Categorías', render: () => <CategoriaManager /> },
-  { label: 'Notion', render: () => <NotionPanel /> },
-  { label: 'Respaldo', render: () => <RespaldoPanel /> },
+  { label: 'Recurrentes', slug: 'recurrentes', render: () => <FormRecurrente /> },
+  { label: 'Pagos frecuentes', slug: 'pagos-frecuentes', render: () => <FormGastoRecurrente /> },
+  { label: 'Categorías', slug: 'categorias', render: () => <CategoriaManager /> },
+  { label: 'Notion', slug: 'notion', render: () => <NotionPanel /> },
+  { label: 'Respaldo', slug: 'respaldo', render: () => <RespaldoPanel /> },
 ];
 
 export default function AjustesView() {
@@ -23,10 +23,14 @@ export default function AjustesView() {
     <div id="vista-ajustes" className="vista">
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
-          {PESTANAS.map((p, i) => <Tab key={p.label} label={p.label} value={i} />)}
+          {PESTANAS.map((p, i) => (
+            <Tab key={p.label} label={p.label} value={i} id={`tab-${p.slug}`} aria-controls={`panel-${p.slug}`} />
+          ))}
         </Tabs>
       </Box>
-      {PESTANAS[tab].render()}
+      <div role="tabpanel" id={`panel-${PESTANAS[tab].slug}`} aria-labelledby={`tab-${PESTANAS[tab].slug}`}>
+        {PESTANAS[tab].render()}
+      </div>
     </div>
   );
 }

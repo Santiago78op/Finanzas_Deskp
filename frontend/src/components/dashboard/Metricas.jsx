@@ -13,10 +13,10 @@ export default function Metricas({ d }) {
   ];
 
   return (
-    <div className="grid gap-3 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+    <section aria-label="Métricas del mes" className="grid gap-3 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
       {tiles.map(m => (
         <StatTile key={m.t} icono={m.icono} tinte={m.tinte} titulo={m.t} valor={m.v} cls={m.cls} />
       ))}
-    </div>
+    </section>
   );
 }
