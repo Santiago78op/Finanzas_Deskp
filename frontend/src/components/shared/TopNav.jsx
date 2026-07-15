@@ -25,7 +25,7 @@ export default function TopNav({ vista, onNavigate }) {
           <span className="inline-flex text-[var(--texto)]"><svg className="ico" style={{ width: 22, height: 22 }}><use href="#ico-billetera" /></svg></span>
           <span className="font-display text-lg tracking-wide hidden sm:inline">Finanzas<b className="font-sans font-normal text-[var(--suave)]">Q</b></span>
         </Box>
-        <Box className="flex flex-wrap gap-1 flex-1">
+        <Box component="nav" aria-label="Navegación principal" className="flex flex-wrap gap-1 flex-1">
           {VISTAS.map(v => (
             <Button
               key={v.key}

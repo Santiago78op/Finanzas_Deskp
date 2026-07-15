@@ -8,7 +8,7 @@ export default function AccountCard({ cuenta, onEditar }) {
   const acento = ACC[cuenta.id % 6];
 
   return (
-    <Card className={`overflow-hidden${cuenta.activa ? '' : ' opacity-50'}`} sx={{ width: compacta ? 240 : '100%', maxWidth: 300 }}>
+    <Card component="article" className={`overflow-hidden${cuenta.activa ? '' : ' opacity-50'}`} sx={{ width: compacta ? 240 : '100%', maxWidth: 300 }}>
       <div className="p-3" style={{ backgroundColor: acento, color: INK_ON_ACC }}>
         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide">
           <span>{cuenta.banco}</span>

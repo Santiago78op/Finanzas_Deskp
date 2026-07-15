@@ -64,34 +64,34 @@ export default function DashboardView() {
       <PanelSalario d={d} />
 
       <div className="paneles-graficas">
-        <Card className="p-4">
-          <Typography variant="h6" className="mb-2">Ingresos vs Gastos ({anio})</Typography>
+        <Card component="section" aria-labelledby="sec-ingresos-gastos" className="p-4">
+          <Typography id="sec-ingresos-gastos" variant="h6" className="mb-2">Ingresos vs Gastos ({anio})</Typography>
           <GraficaBarras d={d} tema={tema} />
         </Card>
-        <Card className="p-4">
-          <Typography variant="h6" className="mb-2">Gastos por categoría del mes</Typography>
+        <Card component="section" aria-labelledby="sec-gastos-categoria" className="p-4">
+          <Typography id="sec-gastos-categoria" variant="h6" className="mb-2">Gastos por categoría del mes</Typography>
           <GraficaPastel d={d} tema={tema} />
         </Card>
       </div>
 
-      <Card className="p-4">
-        <Typography variant="h6" className="mb-2">Evolución del patrimonio (últimos 12 meses)</Typography>
+      <Card component="section" aria-labelledby="sec-evolucion-patrimonio" className="p-4">
+        <Typography id="sec-evolucion-patrimonio" variant="h6" className="mb-2">Evolución del patrimonio (últimos 12 meses)</Typography>
         <GraficaPatrimonio d={d} tema={tema} />
       </Card>
 
       <div className="paneles-graficas">
-        <Card className="p-4">
-          <Typography variant="h6" className="mb-2">Gastos por método de pago del mes</Typography>
+        <Card component="section" aria-labelledby="sec-gastos-metodo" className="p-4">
+          <Typography id="sec-gastos-metodo" variant="h6" className="mb-2">Gastos por método de pago del mes</Typography>
           <GraficaMetodo d={d} tema={tema} />
         </Card>
-        <Card className="p-4">
-          <Typography variant="h6" className="mb-2">Tendencia de tus top categorías (6 meses)</Typography>
+        <Card component="section" aria-labelledby="sec-tendencia-categorias" className="p-4">
+          <Typography id="sec-tendencia-categorias" variant="h6" className="mb-2">Tendencia de tus top categorías (6 meses)</Typography>
           <GraficaTendencia d={d} tema={tema} />
         </Card>
       </div>
 
-      <Card className="p-4">
-        <Typography variant="h6" className="mb-3">Mis cuentas (¿cuánto dinero tengo?)</Typography>
+      <Card component="section" aria-labelledby="sec-mis-cuentas" className="p-4">
+        <Typography id="sec-mis-cuentas" variant="h6" className="mb-3">Mis cuentas (¿cuánto dinero tengo?)</Typography>
         <GridOCarrusel
           items={d.cuentas}
           vacio="Sin cuentas registradas. Agregalas en la pestaña Bancos para saber cuánto dinero tenés."
@@ -104,8 +104,8 @@ export default function DashboardView() {
         )}
       </Card>
 
-      <Card className="p-4">
-        <Typography variant="h6" className="mb-2">Tarjetas</Typography>
+      <Card component="section" aria-labelledby="sec-tarjetas" className="p-4">
+        <Typography id="sec-tarjetas" variant="h6" className="mb-2">Tarjetas</Typography>
         <GraficaUsoTarjetas d={d} tema={tema} />
         <div className="mt-3">
           <GridOCarrusel
@@ -116,8 +116,8 @@ export default function DashboardView() {
         </div>
       </Card>
 
-      <Card className="p-4">
-        <Typography variant="h6" className="mb-2">Análisis del mes (¿en qué gasto más?)</Typography>
+      <Card component="section" aria-labelledby="sec-analisis-mes" className="p-4">
+        <Typography id="sec-analisis-mes" variant="h6" className="mb-2">Análisis del mes (¿en qué gasto más?)</Typography>
         <PanelAnalisis d={d} />
       </Card>
     </div>

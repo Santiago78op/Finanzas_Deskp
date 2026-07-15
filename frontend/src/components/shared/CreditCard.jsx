@@ -18,6 +18,7 @@ export default function CreditCard({ tarjeta, onEditar }) {
 
   return (
     <Card
+      component="article"
       className={`overflow-hidden${tarjeta.activa ? '' : ' opacity-50'}`}
       sx={{ width: compacta ? 260 : '100%', maxWidth: 320 }}
     >

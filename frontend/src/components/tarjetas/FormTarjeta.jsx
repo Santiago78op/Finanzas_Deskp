@@ -42,8 +42,8 @@ export default function FormTarjeta({ editando, onGuardado, onCancelar }) {
   };
 
   return (
-    <Card className="p-4 flex flex-col gap-4">
-      <Typography variant="h6">{editando ? `Editar: ${editando.nombre}` : 'Nueva tarjeta'}</Typography>
+    <Card component="section" aria-labelledby="sec-form-tarjeta" className="p-4 flex flex-col gap-4">
+      <Typography id="sec-form-tarjeta" variant="h6">{editando ? `Editar: ${editando.nombre}` : 'Nueva tarjeta'}</Typography>
       <form className="grid gap-3 sm:grid-cols-2" autoComplete="off" onSubmit={submit}>
         <TextField label="Banco" placeholder="ej. BI" required
           value={form.banco} onChange={e => setForm(f => ({ ...f, banco: e.target.value }))} />

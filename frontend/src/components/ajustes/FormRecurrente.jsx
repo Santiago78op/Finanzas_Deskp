@@ -71,8 +71,8 @@ export default function FormRecurrente({ onCambio }) {
   };
 
   return (
-    <Card className="p-4 flex flex-col gap-4">
-      <Typography variant="h6">{editando ? `Editar: ${editando.descripcion}` : 'Ingresos recurrentes (salario)'}</Typography>
+    <Card component="section" aria-labelledby="sec-ingresos-recurrentes" className="p-4 flex flex-col gap-4">
+      <Typography id="sec-ingresos-recurrentes" variant="h6">{editando ? `Editar: ${editando.descripcion}` : 'Ingresos recurrentes (salario)'}</Typography>
       <form className="grid gap-3 sm:grid-cols-2" autoComplete="off" onSubmit={submit}>
         <TextField label="Descripción" placeholder="ej. Salario" required
           value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} />

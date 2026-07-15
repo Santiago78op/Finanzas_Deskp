@@ -45,16 +45,17 @@ export default function App() {
       <TickerGlobal />
 
       <Box id="contenido" sx={{ flex: 1, minWidth: 0 }}>
-        <Container maxWidth="md" component="header" id="topbar" className="pt-7 pb-0">
-          <div>
+        <Container maxWidth="md" component="main">
+          {/* header propio de <main>: el saludo + título de la vista activa
+              (no el header de sitio — ese es el AppBar/nav de arriba). Un
+              <main> puede anidar su propio <header> sin problema. */}
+          <header id="topbar" className="pt-7 pb-0">
             <div id="saludo" className="saludo">
               👋 Hola — {fechaLarga.charAt(0).toUpperCase() + fechaLarga.slice(1)}
             </div>
             <h1 id="titulo-vista">{TITULOS[activa]}</h1>
-          </div>
-        </Container>
+          </header>
 
-        <Container maxWidth="md" component="main" className="py-6">
           {/* La vista saliente solo existe mientras se anima su salida — al
               terminar, useViewTransition la desmonta (no queda un nodo
               persistente con estilos inline residuales). key={saliendo} es
@@ -63,10 +64,12 @@ export default function App() {
               MISMO nodo DOM para la nueva vista saliente en vez de crear uno
               fresco — justo el bug de "opacity pegada" que ya habíamos
               resuelto, pero reintroducido por faltar esta key. */}
-          {saliendo && (
-            <div className="vista-transicion" ref={refSaliendo} key={saliendo}>{renderVista(saliendo)}</div>
-          )}
-          <div className="vista-transicion" ref={refActiva} key={activa}>{renderVista(activa)}</div>
+          <div className="py-6">
+            {saliendo && (
+              <div className="vista-transicion" ref={refSaliendo} key={saliendo}>{renderVista(saliendo)}</div>
+            )}
+            <div className="vista-transicion" ref={refActiva} key={activa}>{renderVista(activa)}</div>
+          </div>
         </Container>
       </Box>
 

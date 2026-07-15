@@ -30,8 +30,8 @@ export default function TarjetasView() {
         onGuardado={() => { setEditandoCuenta(null); cargarCuentas(); }}
         onCancelar={() => setEditandoCuenta(null)}
       />
-      <Card className="p-4">
-        <Typography variant="h6" className="mb-3">Mis cuentas</Typography>
+      <Card component="section" aria-labelledby="sec-mis-cuentas-bancos" className="p-4">
+        <Typography id="sec-mis-cuentas-bancos" variant="h6" className="mb-3">Mis cuentas</Typography>
         <GridOCarrusel
           items={cuentas}
           vacio="Registrá tus cuentas Monetaria y de Ahorro para saber cuánto dinero tenés."
@@ -44,8 +44,8 @@ export default function TarjetasView() {
         onGuardado={() => { setEditandoTarjeta(null); cargarTarjetas(); }}
         onCancelar={() => setEditandoTarjeta(null)}
       />
-      <Card className="p-4">
-        <Typography variant="h6" className="mb-3">Mis tarjetas</Typography>
+      <Card component="section" aria-labelledby="sec-mis-tarjetas-bancos" className="p-4">
+        <Typography id="sec-mis-tarjetas-bancos" variant="h6" className="mb-3">Mis tarjetas</Typography>
         <GridOCarrusel
           items={tarjetas}
           vacio="Todavía no tenés tarjetas registradas."
