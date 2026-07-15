@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import Card from '@mui/material/Card';
 import FiltrosMovimientos from './FiltrosMovimientos.jsx';
 import TablaMovimientos from './TablaMovimientos.jsx';
 import ModalEditarMovimiento from './ModalEditarMovimiento.jsx';
@@ -40,7 +41,9 @@ export default function MovimientosView() {
   return (
     <div id="vista-movimientos" className="vista">
       <FiltrosMovimientos onFiltrar={setFiltros} />
-      <TablaMovimientos movs={movs} onEditar={setEditandoIdx} onEliminar={eliminar} />
+      <Card className="p-2">
+        <TablaMovimientos movs={movs} onEditar={setEditandoIdx} onEliminar={eliminar} />
+      </Card>
       {editandoIdx != null && (
         <ModalEditarMovimiento
           mov={movs[editandoIdx]}

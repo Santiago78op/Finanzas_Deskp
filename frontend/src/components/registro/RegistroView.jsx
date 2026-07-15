@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 import AvisoSalario from './AvisoSalario.jsx';
 import FormGasto from './FormGasto.jsx';
 import FormPago from './FormPago.jsx';
@@ -17,20 +19,27 @@ export default function RegistroView() {
     <div id="vista-registro" className="vista">
       <AvisoSalario />
 
-      <div className="selector-tipo">
-        <button
-          className={'tipo-btn gasto' + (tipo === 'gasto' ? ' activo' : '')}
+      <Stack direction="row" gap={1.5} className="mb-4">
+        <Button
+          variant={tipo === 'gasto' ? 'contained' : 'outlined'}
+          color="error"
+          size="large"
+          className="flex-[2] text-lg"
           onClick={() => elegirTipo('gasto')}
-        >+ Gasto</button>
-        <button
-          className={'tipo-btn secundario' + (tipo === 'pago' ? ' activo' : '')}
+        >+ Gasto</Button>
+        <Button
+          variant={tipo === 'pago' ? 'contained' : 'outlined'}
+          color="warning"
+          className="flex-1"
           onClick={() => elegirTipo('pago')}
-        >+ Pago tarjeta</button>
-        <button
-          className={'tipo-btn secundario' + (tipo === 'ingreso' ? ' activo' : '')}
+        >+ Pago tarjeta</Button>
+        <Button
+          variant={tipo === 'ingreso' ? 'contained' : 'outlined'}
+          color="success"
+          className="flex-1"
           onClick={() => elegirTipo('ingreso')}
-        >+ Ingreso</button>
-      </div>
+        >+ Ingreso</Button>
+      </Stack>
 
       {tipo === 'gasto' && <FormGasto inputRef={montoRef} />}
       {tipo === 'pago' && <FormPago inputRef={montoRef} />}

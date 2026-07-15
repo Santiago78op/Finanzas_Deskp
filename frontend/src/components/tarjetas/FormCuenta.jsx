@@ -1,4 +1,12 @@
 import { useEffect, useState } from 'react';
+import Card from '@mui/material/Card';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { api } from '../../api.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
@@ -33,33 +41,30 @@ export default function FormCuenta({ editando, onGuardado, onCancelar }) {
   };
 
   return (
-    <div className="panel">
-      <h3>{editando ? `Editar: ${editando.nombre}` : 'Nueva cuenta (Monetaria / Ahorro)'}</h3>
-      <form className="form-grid" autoComplete="off" onSubmit={submit}>
-        <label>Banco
-          <input type="text" placeholder="ej. BI" required
-                 value={form.banco} onChange={e => setForm(f => ({ ...f, banco: e.target.value }))} />
-        </label>
-        <label>Nombre único
-          <input type="text" placeholder="ej. Monetaria BI" required
-                 value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
-        </label>
-        <label>Tipo
-          <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
-            <option value="Monetaria">Monetaria</option>
-            <option value="Ahorro">Ahorro</option>
-          </select>
-        </label>
-        <label>Saldo actual (Q) <span className="opcional">— opcional, lo que tenés hoy</span>
-          <input type="number" step="0.01" min="0"
-                 value={form.saldo_inicial} onChange={e => setForm(f => ({ ...f, saldo_inicial: e.target.value }))} />
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={form.activa} onChange={e => setForm(f => ({ ...f, activa: e.target.checked }))} /> Activa
-        </label>
-        <button type="submit" className="guardar">Guardar cuenta</button>
-        {editando && <button type="button" className="mini-btn" onClick={onCancelar}>Cancelar edición</button>}
+    <Card className="p-4 flex flex-col gap-4">
+      <Typography variant="h6">{editando ? `Editar: ${editando.nombre}` : 'Nueva cuenta (Monetaria / Ahorro)'}</Typography>
+      <form className="grid gap-3 sm:grid-cols-2" autoComplete="off" onSubmit={submit}>
+        <TextField label="Banco" placeholder="ej. BI" required
+          value={form.banco} onChange={e => setForm(f => ({ ...f, banco: e.target.value }))} />
+        <TextField label="Nombre único" placeholder="ej. Monetaria BI" required
+          value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+        <TextField select label="Tipo" value={form.tipo}
+          onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
+          <MenuItem value="Monetaria">Monetaria</MenuItem>
+          <MenuItem value="Ahorro">Ahorro</MenuItem>
+        </TextField>
+        <TextField label="Saldo actual (Q)" type="number" inputProps={{ step: 0.01, min: 0 }}
+          helperText="Opcional, lo que tenés hoy"
+          value={form.saldo_inicial} onChange={e => setForm(f => ({ ...f, saldo_inicial: e.target.value }))} />
+        <FormControlLabel
+          control={<Checkbox checked={form.activa} onChange={e => setForm(f => ({ ...f, activa: e.target.checked }))} />}
+          label="Activa"
+        />
+        <Stack direction="row" gap={1} className="sm:col-span-2">
+          <Button type="submit" variant="contained">Guardar cuenta</Button>
+          {editando && <Button type="button" variant="outlined" size="small" onClick={onCancelar}>Cancelar edición</Button>}
+        </Stack>
       </form>
-    </div>
+    </Card>
   );
 }

@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import Card from '@mui/material/Card';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 import { api } from '../../api.js';
 import { useToast } from '../shared/Toast.jsx';
 
@@ -60,23 +64,27 @@ export default function NotionPanel() {
   };
 
   return (
-    <div className="panel">
-      <h3>Notion</h3>
-      <p className="texto-suave">{estadoTexto}</p>
+    <Card className="p-4 flex flex-col gap-3">
+      <Typography variant="h6">Notion</Typography>
+      <Typography variant="body2" className="text-[var(--suave)]">{estadoTexto}</Typography>
       {check && (
-        <p className="texto-suave" style={{ color: check.ok ? 'var(--ingreso)' : 'var(--gasto)' }}>
+        <Typography variant="body2" sx={{ color: check.ok ? 'success.main' : 'error.main' }}>
           {check.ok ? '✓ ' : '✗ '}{check.mensaje}
-        </p>
+        </Typography>
       )}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button className="mini-btn" disabled={probando} onClick={probarConexion}
-                title="Valida el token y el acceso a la página, sin crear nada">
+      <Stack direction="row" gap={1} flexWrap="wrap">
+        <Button
+          variant="outlined"
+          disabled={probando}
+          onClick={probarConexion}
+          title="Valida el token y el acceso a la página, sin crear nada"
+        >
           {probando ? 'Probando...' : 'Probar conexión'}
-        </button>
-        <button className="guardar" style={{ marginTop: 0 }} disabled={sincronizando} onClick={sincronizar}>
+        </Button>
+        <Button variant="contained" disabled={sincronizando} onClick={sincronizar}>
           {sincronizando ? 'Sincronizando...' : 'Sincronizar con Notion'}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Stack>
+    </Card>
   );
 }

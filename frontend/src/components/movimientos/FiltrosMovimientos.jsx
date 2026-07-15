@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 
 export default function FiltrosMovimientos({ onFiltrar }) {
@@ -21,22 +25,24 @@ export default function FiltrosMovimientos({ onFiltrar }) {
   };
 
   return (
-    <div className="filtros">
-      <input type="month" value={mes} onChange={e => setMes(e.target.value)} />
-      <select value={categoriaId} onChange={e => setCategoriaId(e.target.value)}>
-        <option value="">Todas las categorías</option>
+    <Stack direction="row" flexWrap="wrap" gap={2} className="items-center mb-3">
+      <TextField type="month" value={mes} onChange={e => setMes(e.target.value)} />
+      <TextField select label="Categoría" value={categoriaId} onChange={e => setCategoriaId(e.target.value)}
+        className="min-w-[220px]">
+        <MenuItem value="">Todas las categorías</MenuItem>
         {[...catGasto, ...catIngreso].map(c => (
-          <option key={`${c.tipo}-${c.id}`} value={c.id}>{c.nombre} ({c.tipo})</option>
+          <MenuItem key={`${c.tipo}-${c.id}`} value={c.id}>{c.nombre} ({c.tipo})</MenuItem>
         ))}
-      </select>
-      <select value={metodoVal} onChange={e => setMetodoVal(e.target.value)}>
-        <option value="">Todos los métodos</option>
+      </TextField>
+      <TextField select label="Método" value={metodoVal} onChange={e => setMetodoVal(e.target.value)}
+        className="min-w-[200px]">
+        <MenuItem value="">Todos los métodos</MenuItem>
         {metodos.map(m => {
           const val = m.tarjeta_id ? `Tarjeta:${m.tarjeta_id}` : m.metodo;
-          return <option key={val} value={val}>{m.etiqueta}</option>;
+          return <MenuItem key={val} value={val}>{m.etiqueta}</MenuItem>;
         })}
-      </select>
-      <button className="mini-btn ancho" onClick={aplicar}>Filtrar</button>
-    </div>
+      </TextField>
+      <Button variant="contained" onClick={aplicar}>Filtrar</Button>
+    </Stack>
   );
 }

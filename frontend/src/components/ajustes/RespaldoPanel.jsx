@@ -1,4 +1,10 @@
 import { useRef, useState } from 'react';
+import Card from '@mui/material/Card';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { api } from '../../api.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
@@ -26,19 +32,20 @@ export default function RespaldoPanel() {
   };
 
   return (
-    <div className="panel">
-      <h3>Respaldo (CSV)</h3>
-      <p className="texto-suave">Exportá todo a un ZIP con un CSV por tabla, o importá un CSV con el mismo formato.</p>
-      <a href="/api/export" className="guardar enlace-btn" download>Exportar todo (ZIP)</a>
-      <div className="importar">
-        <select value={tabla} onChange={e => setTabla(e.target.value)}>
-          {TABLAS.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <input type="file" accept=".csv" ref={archivoRef} />
-        <button className="mini-btn" onClick={importar}>Importar CSV</button>
-      </div>
+    <Card className="p-4 flex flex-col gap-4">
+      <Typography variant="h6">Respaldo (CSV)</Typography>
+      <Typography variant="body2" className="text-[var(--suave)]">Exportá todo a un ZIP con un CSV por tabla, o importá un CSV con el mismo formato.</Typography>
+      <Button variant="contained" component="a" href="/api/export" download className="self-start">Exportar todo (ZIP)</Button>
+      <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
+        <TextField select label="Tabla" value={tabla} onChange={e => setTabla(e.target.value)}>
+          {TABLAS.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+        </TextField>
+        <Button variant="outlined" size="small" onClick={() => archivoRef.current?.click()}>Elegir archivo CSV</Button>
+        <input type="file" accept=".csv" ref={archivoRef} className="hidden" />
+        <Button variant="outlined" size="small" onClick={importar}>Importar CSV</Button>
+      </Stack>
       {resultado && (
-        <div className="texto-suave">
+        <Typography variant="body2" className="text-[var(--suave)]">
           <b>{resultado.importados}</b> filas importadas.
           {resultado.rechazados.length > 0 && (
             <>
@@ -49,8 +56,8 @@ export default function RespaldoPanel() {
               </ul>
             </>
           )}
-        </div>
+        </Typography>
       )}
-    </div>
+    </Card>
   );
 }

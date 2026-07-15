@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
+import Card from '@mui/material/Card';
+import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import { api } from '../../api.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useConfirm } from '../shared/ConfirmDialog.jsx';
@@ -80,32 +85,32 @@ export default function AvisoSalario() {
   };
 
   return (
-    <div id="aviso-salario" className="aviso-salario">
+    <Card id="aviso-salario" className="p-4 flex flex-col gap-3 mb-4">
       {pendIng.map((p, i) => (
-        <span key={`ing-${i}`} style={{ display: 'contents' }}>
-          <span>💵 Confirmar ingreso <b>{p.etiqueta}</b> de <b>{p.mes_nombre}</b>:</span>
-          <input type="number" step="0.01" min="0.01"
-                 value={montos[`ing-${i}`] ?? ''}
-                 onChange={e => setMontos(m => ({ ...m, [`ing-${i}`]: e.target.value }))} />
-          <button onClick={() => confirmarIngreso(i)}>Confirmar</button>
-          <button className="mini-btn" onClick={() => omitirIngreso(i)}
-                  title="No lo recibiste este mes: descarta el aviso sin crear el ingreso">Omitir</button>
-          <br />
-        </span>
+        <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" key={`ing-${i}`}>
+          <Typography variant="body2">💵 Confirmar ingreso <b>{p.etiqueta}</b> de <b>{p.mes_nombre}</b>:</Typography>
+          <TextField size="small" type="number" inputProps={{ step: 0.01, min: 0.01 }} className="w-28"
+            value={montos[`ing-${i}`] ?? ''}
+            onChange={e => setMontos(m => ({ ...m, [`ing-${i}`]: e.target.value }))} />
+          <Button size="small" variant="contained" color="success" onClick={() => confirmarIngreso(i)}>Confirmar</Button>
+          <Button size="small" variant="outlined"
+            title="No lo recibiste este mes: descarta el aviso sin crear el ingreso"
+            onClick={() => omitirIngreso(i)}>Omitir</Button>
+        </Stack>
       ))}
       {pendGas.map((p, i) => (
-        <span key={`gas-${i}`} style={{ display: 'contents' }}>
-          <span>💸 Confirmar pago <b>{p.etiqueta}</b> de <b>{p.mes_nombre}</b>{' '}
-            <small>({p.metodo === 'Tarjeta' ? p.tarjeta : p.metodo})</small>:</span>
-          <input type="number" step="0.01" min="0.01"
-                 value={montos[`gas-${i}`] ?? ''}
-                 onChange={e => setMontos(m => ({ ...m, [`gas-${i}`]: e.target.value }))} />
-          <button onClick={() => confirmarGasto(i)}>Confirmar</button>
-          <button className="mini-btn" onClick={() => omitirGasto(i)}
-                  title="No lo pagaste este mes: descarta el aviso sin crear el gasto">Omitir</button>
-          <br />
-        </span>
+        <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" key={`gas-${i}`}>
+          <Typography variant="body2">💸 Confirmar pago <b>{p.etiqueta}</b> de <b>{p.mes_nombre}</b>{' '}
+            <small>({p.metodo === 'Tarjeta' ? p.tarjeta : p.metodo})</small>:</Typography>
+          <TextField size="small" type="number" inputProps={{ step: 0.01, min: 0.01 }} className="w-28"
+            value={montos[`gas-${i}`] ?? ''}
+            onChange={e => setMontos(m => ({ ...m, [`gas-${i}`]: e.target.value }))} />
+          <Button size="small" variant="contained" color="error" onClick={() => confirmarGasto(i)}>Confirmar</Button>
+          <Button size="small" variant="outlined"
+            title="No lo pagaste este mes: descarta el aviso sin crear el gasto"
+            onClick={() => omitirGasto(i)}>Omitir</Button>
+        </Stack>
       ))}
-    </div>
+    </Card>
   );
 }

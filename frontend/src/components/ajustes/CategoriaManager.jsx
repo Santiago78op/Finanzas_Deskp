@@ -1,4 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
+import Card from '@mui/material/Card';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { api } from '../../api.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
@@ -45,25 +51,25 @@ export default function CategoriaManager() {
   };
 
   return (
-    <div className="panel">
-      <h3>Categorías</h3>
-      <form className="form-inline" autoComplete="off" onSubmit={agregar}>
-        <input type="text" placeholder="Nueva categoría" required value={nombre} onChange={e => setNombre(e.target.value)} />
-        <select value={tipo} onChange={e => setTipo(e.target.value)}>
-          <option value="gasto">Gasto</option>
-          <option value="ingreso">Ingreso</option>
-        </select>
-        <button type="submit" className="mini-btn">Agregar</button>
-      </form>
+    <Card className="p-4 flex flex-col gap-4">
+      <Typography variant="h6">Categorías</Typography>
+      <Stack component="form" direction="row" gap={1} autoComplete="off" onSubmit={agregar}>
+        <TextField label="Nueva categoría" required value={nombre} onChange={e => setNombre(e.target.value)} />
+        <TextField select label="Tipo" value={tipo} onChange={e => setTipo(e.target.value)}>
+          <MenuItem value="gasto">Gasto</MenuItem>
+          <MenuItem value="ingreso">Ingreso</MenuItem>
+        </TextField>
+        <Button type="submit" variant="outlined" size="small">Agregar</Button>
+      </Stack>
       {cats.map(c => (
-        <div className="item-lista" key={c.id}>
-          <span className={c.activa ? '' : 'inactivo'}>{c.nombre} <small>({c.tipo})</small></span>
-          <span>
-            <button className="mini-btn" onClick={() => renombrar(c)}>Renombrar</button>
-            <button className="mini-btn" onClick={() => toggle(c)}>{c.activa ? 'Desactivar' : 'Activar'}</button>
-          </span>
-        </div>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" key={c.id} className="border-t border-[var(--borde)] pt-2">
+          <span className={c.activa ? '' : 'opacity-50'}>{c.nombre} <small>({c.tipo})</small></span>
+          <Stack direction="row" gap={1}>
+            <Button size="small" variant="outlined" onClick={() => renombrar(c)}>Renombrar</Button>
+            <Button size="small" variant="outlined" onClick={() => toggle(c)}>{c.activa ? 'Desactivar' : 'Activar'}</Button>
+          </Stack>
+        </Stack>
       ))}
-    </div>
+    </Card>
   );
 }

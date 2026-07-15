@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
 import Modal from '../shared/Modal.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { useToast } from '../shared/Toast.jsx';
@@ -47,48 +49,39 @@ export default function ModalEditarMovimiento({ mov, onCerrar, onGuardado }) {
 
   return (
     <Modal titulo={`Editar ${mov.tipo}`} onCerrar={onCerrar} onGuardar={guardar}>
-      <label>Fecha</label>
-      <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} />
-      <label>Monto (Q)</label>
-      <input type="number" step="0.01" min="0.01" value={monto} onChange={e => setMonto(e.target.value)} />
+      <TextField label="Fecha" type="date" value={fecha} onChange={e => setFecha(e.target.value)}
+        InputLabelProps={{ shrink: true }} />
+      <TextField label="Monto (Q)" type="number" inputProps={{ step: 0.01, min: 0.01 }}
+        value={monto} onChange={e => setMonto(e.target.value)} />
 
       {mov.tipo !== 'pago' && (
         <>
-          <label>Descripción</label>
-          <input type="text" value={descripcion} onChange={e => setDescripcion(e.target.value)} />
-          <label>Categoría</label>
-          <select value={categoriaId} onChange={e => setCategoriaId(e.target.value)}>
-            {cats.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
+          <TextField label="Descripción" value={descripcion} onChange={e => setDescripcion(e.target.value)} />
+          <TextField select label="Categoría" value={categoriaId} onChange={e => setCategoriaId(e.target.value)}>
+            {cats.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
+          </TextField>
         </>
       )}
 
       {mov.tipo === 'gasto' && (
-        <>
-          <label>Método</label>
-          <select value={metodoVal} onChange={e => setMetodoVal(e.target.value)}>
-            {metodos.map(x => {
-              const val = x.tarjeta_id ? `Tarjeta:${x.tarjeta_id}` : x.metodo;
-              return <option key={val} value={val}>{x.etiqueta}</option>;
-            })}
-          </select>
-        </>
+        <TextField select label="Método" value={metodoVal} onChange={e => setMetodoVal(e.target.value)}>
+          {metodos.map(x => {
+            const val = x.tarjeta_id ? `Tarjeta:${x.tarjeta_id}` : x.metodo;
+            return <MenuItem key={val} value={val}>{x.etiqueta}</MenuItem>;
+          })}
+        </TextField>
       )}
 
       {mov.tipo === 'pago' && (
-        <>
-          <label>Tarjeta</label>
-          <select value={tarjetaId} onChange={e => setTarjetaId(e.target.value)}>
-            {tarjetas.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
-          </select>
-        </>
+        <TextField select label="Tarjeta" value={tarjetaId} onChange={e => setTarjetaId(e.target.value)}>
+          {tarjetas.map(t => <MenuItem key={t.id} value={t.id}>{t.nombre}</MenuItem>)}
+        </TextField>
       )}
 
-      <label>Cuenta</label>
-      <select value={cuentaId ?? ''} onChange={e => setCuentaId(e.target.value)}>
-        <option value="">Sin cuenta</option>
-        {cuentas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-      </select>
+      <TextField select label="Cuenta" value={cuentaId ?? ''} onChange={e => setCuentaId(e.target.value)}>
+        <MenuItem value="">Sin cuenta</MenuItem>
+        {cuentas.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
+      </TextField>
     </Modal>
   );
 }

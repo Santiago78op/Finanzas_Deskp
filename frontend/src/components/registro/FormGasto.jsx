@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import Card from '@mui/material/Card';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import Chips from '../shared/Chips.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
@@ -44,26 +48,27 @@ export default function FormGasto({ inputRef }) {
   };
 
   return (
-    <form className="form-registro" autoComplete="off" onSubmit={submit}>
-      <label>Monto (Q)</label>
-      <input ref={inputRef} type="number" step="0.01" min="0.01" name="monto" inputMode="decimal"
-             placeholder="0.00" required autoFocus value={monto} onChange={e => setMonto(e.target.value)} />
-      <label>Descripción <span className="opcional">(opcional)</span></label>
-      <input type="text" name="descripcion" placeholder="ej. almuerzo"
-             value={descripcion} onChange={e => setDescripcion(e.target.value)} />
-      <label>Categoría</label>
-      <Chips items={catGasto} getLabel={c => c.nombre} value={categoria} onChange={setCategoria} />
-      <label>Método de pago</label>
-      <Chips items={metodos} getLabel={m => m.etiqueta} value={metodo} onChange={setMetodo} />
-      {metodoRequiereCuenta && cuentas.length > 0 && (
-        <div>
-          <label>¿De qué cuenta salió? <span className="opcional">(opcional)</span></label>
-          <Chips items={cuentasConNinguna} getLabel={c => c.nombre} value={cuenta} onChange={setCuenta} permitirNinguno />
-        </div>
-      )}
-      <label>Fecha</label>
-      <input type="date" name="fecha" required value={fecha} onChange={e => setFecha(e.target.value)} />
-      <button type="submit" className="guardar gasto">Guardar gasto</button>
-    </form>
+    <Card className="p-4">
+      <form className="flex flex-col gap-3" autoComplete="off" onSubmit={submit}>
+        <TextField label="Monto (Q)" type="number" inputProps={{ step: 0.01, min: 0.01, inputMode: 'decimal' }}
+          inputRef={inputRef} required autoFocus placeholder="0.00"
+          value={monto} onChange={e => setMonto(e.target.value)} />
+        <TextField label="Descripción (opcional)" placeholder="ej. almuerzo"
+          value={descripcion} onChange={e => setDescripcion(e.target.value)} />
+        <Typography variant="body2" color="text.secondary">Categoría</Typography>
+        <Chips items={catGasto} getLabel={c => c.nombre} value={categoria} onChange={setCategoria} />
+        <Typography variant="body2" color="text.secondary">Método de pago</Typography>
+        <Chips items={metodos} getLabel={m => m.etiqueta} value={metodo} onChange={setMetodo} />
+        {metodoRequiereCuenta && cuentas.length > 0 && (
+          <>
+            <Typography variant="body2" color="text.secondary">¿De qué cuenta salió? (opcional)</Typography>
+            <Chips items={cuentasConNinguna} getLabel={c => c.nombre} value={cuenta} onChange={setCuenta} permitirNinguno />
+          </>
+        )}
+        <TextField label="Fecha" type="date" required InputLabelProps={{ shrink: true }}
+          value={fecha} onChange={e => setFecha(e.target.value)} />
+        <Button type="submit" variant="contained" color="error" size="large">Guardar gasto</Button>
+      </form>
+    </Card>
   );
 }

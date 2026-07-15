@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import Card from '@mui/material/Card';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import Chips from '../shared/Chips.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
@@ -34,17 +38,19 @@ export default function FormPago({ inputRef }) {
   };
 
   return (
-    <form className="form-registro" autoComplete="off" onSubmit={submit}>
-      <label>Monto (Q)</label>
-      <input ref={inputRef} type="number" step="0.01" min="0.01" name="monto" inputMode="decimal"
-             placeholder="0.00" required value={monto} onChange={e => setMonto(e.target.value)} />
-      <label>Tarjeta</label>
-      <Chips items={tarjetas} getLabel={t => t.nombre} value={tarjeta} onChange={setTarjeta} />
-      <label>¿Desde qué cuenta? <span className="opcional">(opcional)</span></label>
-      <Chips items={cuentasConNinguna} getLabel={c => c.nombre} value={cuenta} onChange={setCuenta} permitirNinguno />
-      <label>Fecha</label>
-      <input type="date" name="fecha" required value={fecha} onChange={e => setFecha(e.target.value)} />
-      <button type="submit" className="guardar pago">Guardar pago</button>
-    </form>
+    <Card className="p-4">
+      <form className="flex flex-col gap-3" autoComplete="off" onSubmit={submit}>
+        <TextField label="Monto (Q)" type="number" inputProps={{ step: 0.01, min: 0.01, inputMode: 'decimal' }}
+          inputRef={inputRef} required placeholder="0.00"
+          value={monto} onChange={e => setMonto(e.target.value)} />
+        <Typography variant="body2" color="text.secondary">Tarjeta</Typography>
+        <Chips items={tarjetas} getLabel={t => t.nombre} value={tarjeta} onChange={setTarjeta} />
+        <Typography variant="body2" color="text.secondary">¿Desde qué cuenta? (opcional)</Typography>
+        <Chips items={cuentasConNinguna} getLabel={c => c.nombre} value={cuenta} onChange={setCuenta} permitirNinguno />
+        <TextField label="Fecha" type="date" required InputLabelProps={{ shrink: true }}
+          value={fecha} onChange={e => setFecha(e.target.value)} />
+        <Button type="submit" variant="contained" color="warning" size="large">Guardar pago</Button>
+      </form>
+    </Card>
   );
 }

@@ -1,7 +1,8 @@
-/* index.css — Fundación Tailwind v4 + MUI (ver theme/muiTheme.js) + resto
-   del CSS a mano de rondas anteriores, que se va migrando a componentes
-   MUI/Tailwind de a poco (ver plan de migración) — lo que todavía no se
-   migró queda más abajo intacto para no romper vistas a mitad de camino. */
+/* index.css — Fundación Tailwind v4 + MUI (ver theme/muiTheme.js). El layout,
+   componentes de formulario, tabla, modal, toast, tarjetas, etc. ya viven en
+   MUI/Tailwind (ver components/**); acá solo queda lo que sigue siendo CSS a
+   mano a propósito: tokens de color/tema, tipografía, y piezas bespoke sin
+   equivalente directo en MUI (ticker con marquee, iconos sprite). */
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 /* SIN tailwindcss/preflight.css a propósito: <CssBaseline/> de MUI (ver
@@ -41,15 +42,6 @@
   --font-display: 'Anton', 'Poppins', system-ui, sans-serif;
   --font-sans: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
-
-/* ---------- Lo que sigue es CSS de rondas anteriores, migrándose a
-   MUI/Tailwind de a poco (ver plan) ---------- */
-
-/* Inspirado en la demo GSAP/Webflow: fondo crema cálido, tinta
-   casi negra, tipografía display bien condensada (Anton) para títulos y
-   cifras grandes, y bloques de color plano bien saturado (no pastel, no
-   gradiente) para las cards de cuentas/tarjetas. CSS puro, modo oscuro incluido.
-   Portado 1:1 desde static/style.css al migrar a React. */
 
 /* ---------- Tipografía: Poppins (UI) + Anton (display/hero), autohospedadas.
    Solo latin + latin-ext (cubre tildes/ñ) para no bajar los otros scripts. ---------- */
@@ -203,65 +195,26 @@
   --ff-display: 'Anton', 'Poppins', system-ui, sans-serif;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
 html { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
 
 body {
   font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: var(--fondo);
-  color: var(--texto);
-  padding-bottom: 48px;
   transition: background .25s ease, color .25s ease;
 }
-
-/* ---------- Layout: barra superior minimalista (nav de texto, sin sidebar) ---------- */
-#app { display: block; min-height: 100vh; }
-
-#topnav {
-  display: flex; align-items: center; gap: var(--sp-6);
-  padding: var(--sp-4) var(--sp-6);
-  background: var(--panel); border-bottom: 1px solid var(--borde);
-  position: sticky; top: 0; z-index: 20;
-}
-.logo {
-  display: flex; align-items: center; gap: 10px;
-  font-weight: 800; font-size: 18px; letter-spacing: -.02em;
-}
-.logo-ico {
-  width: 36px; height: 36px; border-radius: var(--radio-sm); display: grid; place-items: center;
-  background: var(--primario); color: var(--primario-texto); flex: none;
-}
-.logo-ico .ico { width: 19px; height: 19px; }
-.logo-txt b { color: var(--suave); font-weight: 400; }
 
 /* Ícono base: hereda el color del texto (currentColor), como los íconos Lucide */
 .ico { width: 20px; height: 20px; flex: none; display: inline-block; }
 
-#nav { display: flex; align-items: center; gap: var(--sp-2); overflow-x: auto; }
-.nav-btn {
-  border: 1.5px solid transparent; background: transparent; color: var(--suave);
-  padding: 8px 16px; border-radius: 999px; font-size: var(--fs-sm); font-weight: 700;
-  white-space: nowrap; text-transform: uppercase; letter-spacing: var(--tracking-wide);
-  cursor: pointer; transition: color .15s, border-color .15s;
-}
-.nav-btn:hover { color: var(--texto); }
-.nav-btn.active { color: var(--texto); border-color: var(--texto); }
-
-.tema-btn {
-  margin-left: auto; border: 1px solid var(--borde); background: var(--panel-2);
-  color: var(--texto); border-radius: var(--radio-sm); width: 38px; height: 38px; flex: none;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: transform .15s, border-color .15s;
-}
-.tema-btn:hover { border-color: var(--texto); }
-/* Muestra el ícono del modo AL QUE SE CAMBIA al hacer click (sol en oscuro, luna en claro) */
+/* Botón de tema (TopNav): el IconButton de MUI ya da la forma/hover — acá
+   solo queda mostrar el ícono del modo AL QUE SE CAMBIA al hacer click
+   (sol en oscuro, luna en claro), como antes. */
 .tema-btn .icon-sol, .tema-btn .icon-luna { display: none; }
 :root[data-theme="dark"] .tema-btn .icon-sol { display: inline-block; }
 :root[data-theme="light"] .tema-btn .icon-luna { display: inline-block; }
 
-/* Ticker global: franja angosta con cifras clave, loop infinito por CSS */
+/* Ticker global: franja angosta con cifras clave, loop infinito por CSS —
+   sin equivalente directo en MUI, se queda bespoke. */
 #ticker-global {
   overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--borde);
   background: var(--panel-2);
@@ -283,26 +236,13 @@ body {
 
 #contenido { flex: 1; min-width: 0; }
 
-/* Encabezado editorial: saludo chico + título enorme en mayúsculas */
-#topbar {
-  padding: var(--sp-7) var(--sp-6) 0; max-width: 940px; margin: 0 auto;
-}
+/* Encabezado editorial: saludo chico + título enorme en mayúsculas (el ancho
+   y padding del contenedor ahora los maneja el Container de MUI en App.jsx) */
 .saludo { font-size: 13px; color: var(--suave); font-weight: 600; margin-bottom: 6px; }
 #titulo-vista {
   font-family: var(--ff-display);
   font-size: var(--fs-hero); font-weight: 400; letter-spacing: var(--tracking-tight);
   line-height: var(--lh-tight); text-transform: uppercase;
-}
-
-main { max-width: 940px; margin: 0 auto; padding: var(--sp-6) var(--sp-6) 24px; }
-
-/* Responsive: topnav angosto */
-@media (max-width: 780px) {
-  #topnav { padding: var(--sp-3) var(--sp-4); gap: var(--sp-4); }
-  .logo-txt { display: none; }
-  #nav { gap: var(--sp-4); }
-  #topbar { padding: var(--sp-5) 16px 0; }
-  main { padding: 14px 16px 24px; }
 }
 
 /* Vistas: cada vista solo se monta en React mientras está activa (ver
@@ -311,180 +251,14 @@ main { max-width: 940px; margin: 0 auto; padding: var(--sp-6) var(--sp-6) 24px; 
 .vista { display: block; }
 .oculto { display: none !important; }
 
-/* ---------- Panel base: borde fino, sombra casi nula (look editorial plano) ---------- */
-.panel {
-  background: var(--panel); border: 1px solid var(--borde);
-  border-radius: var(--radio); padding: var(--sp-6); margin-bottom: var(--sp-4);
-  box-shadow: var(--sombra);
-}
-.panel h3 {
-  font-size: 17px; margin-bottom: 14px; font-weight: 700; letter-spacing: -.02em;
-}
-
-/* ---------- Registro rápido ---------- */
-.aviso-salario {
-  background: var(--panel-2);
-  border: 1px solid var(--borde-fuerte);
-  border-radius: var(--radio); padding: 16px; margin-bottom: 16px; font-size: 14px;
-  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-}
-.aviso-salario input {
-  width: 120px; padding: 9px 12px; border: 1px solid var(--borde-fuerte);
-  border-radius: var(--radio-sm); font-size: 14px;
-  background: var(--panel); color: var(--texto);
-}
-.aviso-salario button {
-  background: var(--ingreso); color: #fff; border: none; border-radius: var(--radio-sm);
-  padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
-  transition: filter .15s, transform .1s;
-}
-.aviso-salario button:hover { filter: brightness(1.08); transform: translateY(-1px); }
-.aviso-salario button.mini-btn { background: var(--panel); color: var(--suave); border: 1px solid var(--borde-fuerte); }
-
-.selector-tipo { display: flex; gap: 10px; margin-bottom: 16px; }
-.tipo-btn {
-  border: 1px solid var(--borde); border-radius: var(--radio); cursor: pointer;
-  font-weight: 700; transition: transform .12s ease, border-color .15s;
-  background: var(--panel); letter-spacing: -.01em;
-}
-.tipo-btn:active { transform: scale(.98); }
-.tipo-btn.gasto {
-  flex: 2; color: #fff; font-size: 22px; padding: 20px 10px; border: none;
-  background: var(--gasto);
-}
-.tipo-btn.gasto:hover { filter: brightness(1.08); transform: translateY(-1px); }
-.tipo-btn.secundario { flex: 1; color: var(--texto); font-size: 13.5px; padding: 12px; }
-.tipo-btn.secundario:hover { border-color: var(--texto); background: var(--panel-2); }
-.tipo-btn.activo { outline: 2px solid var(--anillo); outline-offset: 2px; }
-
-.form-registro {
-  background: var(--panel); border: 1px solid var(--borde);
-  border-radius: var(--radio); padding: var(--sp-6); box-shadow: var(--sombra);
-  display: flex; flex-direction: column; gap: 8px;
-}
-.form-registro label {
-  font-size: 11.5px; color: var(--suave); margin-top: 10px;
-  text-transform: uppercase; letter-spacing: .07em; font-weight: 700;
-}
-.opcional { font-weight: 400; text-transform: none; letter-spacing: 0; }
-.form-registro input {
-  padding: 13px 14px; font-size: 16px; border: 1px solid var(--borde-fuerte);
-  border-radius: var(--radio-sm); width: 100%;
-  background: var(--panel-2); color: var(--texto);
-  transition: border-color .15s, box-shadow .15s, background .15s;
-}
-.form-registro input:focus,
-.form-grid input:focus, .form-grid select:focus,
-.filtros input:focus, .filtros select:focus,
-#modal-cuerpo input:focus, #modal-cuerpo select:focus,
-.form-inline input:focus, .form-inline select:focus,
-.aviso-salario input:focus {
-  outline: none; border-color: var(--texto); background: var(--panel);
-  box-shadow: 0 0 0 4px var(--anillo);
-}
-.form-registro input[name="monto"] {
-  font-size: 30px; font-weight: 800; letter-spacing: -.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Chips: selección única, plano */
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip {
-  border: 1px solid var(--borde-fuerte); background: var(--panel); color: var(--texto);
-  border-radius: var(--radio-sm); padding: 9px 16px; font-size: 13.5px; font-weight: 600;
-  cursor: pointer; transition: all .15s ease;
-}
-.chip:hover { border-color: var(--texto); transform: translateY(-1px); }
-.chip.sel {
-  background: var(--primario); border-color: var(--primario); color: var(--primario-texto);
-}
-
-/* Botón primario: plano, sin shimmer ni gradiente */
-.guardar {
-  margin-top: 16px; border: none; border-radius: var(--radio-sm);
-  color: var(--primario-texto); background: var(--primario);
-  font-size: 16px; font-weight: 700; padding: 14px; cursor: pointer;
-  text-align: center; text-decoration: none; display: inline-block;
-  letter-spacing: -.01em;
-  transition: transform .12s ease, filter .15s;
-}
-.guardar:hover { filter: brightness(1.15); transform: translateY(-1px); }
-:root[data-theme="dark"] .guardar:hover { filter: brightness(.85); }
-.guardar:active { transform: scale(.985); }
-.guardar.gasto { background: var(--gasto); }
-.guardar.ingreso { background: var(--ingreso); }
-.guardar.pago { background: var(--pago); }
-
-/* ---------- Dashboard ---------- */
-.fila-selector {
-  display: flex; align-items: center; justify-content: center; gap: 16px;
-  margin: 4px 0 18px; font-size: 24px; font-weight: 800; letter-spacing: -.03em;
-}
-.mini-btn {
-  border: 1px solid var(--borde-fuerte); background: var(--panel);
-  color: var(--texto); border-radius: var(--radio-sm);
-  padding: 7px 15px; font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: background .15s, border-color .15s, color .15s, transform .1s;
-}
-.mini-btn:hover { border-color: var(--texto); background: var(--panel-2); }
-.mini-btn:active { transform: scale(.96); }
-.mini-btn.ancho { padding: 9px 22px; }
-.mini-btn.peligro:hover {
-  border-color: var(--rojo); color: var(--rojo);
-  background: color-mix(in srgb, var(--rojo) 10%, transparent);
-}
-
-/* Stat cards: ícono a la izquierda, número grande arriba y etiqueta abajo */
-.metricas {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
-  gap: 12px; margin-bottom: 14px;
-}
-.metrica {
-  background: var(--panel); border: 1px solid var(--borde); border-radius: var(--radio);
-  padding: 16px; box-shadow: var(--sombra);
-  display: flex; align-items: center; gap: 14px;
-  transition: transform .18s ease, border-color .18s;
-}
-.metrica:hover { transform: translateY(-3px); border-color: var(--texto); }
-.icono-metrica {
-  width: 46px; height: 46px; border-radius: var(--radio-sm); flex: none;
-  display: grid; place-items: center; font-size: 20px;
-  background: var(--panel-2);
-}
-.metrica-info { min-width: 0; }
-.metrica .titulo {
-  font-size: 11px; color: var(--suave); text-transform: uppercase;
-  letter-spacing: .06em; font-weight: 700; margin-top: 2px;
-}
-.metrica .valor {
-  font-size: 21px; font-weight: 800; letter-spacing: -.03em;
-  font-variant-numeric: tabular-nums; white-space: nowrap;
-}
-.valor.positivo { color: var(--ingreso); }
-.valor.negativo { color: var(--gasto); }
-
-/* Tarjeta del salario: plana, sin borde animado */
-.tarjeta-salario {
-  border-radius: var(--radio); padding: 20px; margin-bottom: 16px;
-  background: var(--panel); border: 1px solid var(--borde-fuerte);
-  display: flex; flex-wrap: wrap; gap: 26px; align-items: center;
-  box-shadow: var(--sombra);
-}
-.tarjeta-salario .grande {
-  font-size: 28px; font-weight: 800; letter-spacing: -.03em;
-  font-variant-numeric: tabular-nums;
-}
-.tarjeta-salario .chico {
-  font-size: 11px; color: var(--suave); text-transform: uppercase;
-  letter-spacing: .07em; font-weight: 700; margin-bottom: 3px;
-}
-
+/* Paneles de gráficas del Dashboard: sigue siendo un grid a mano (2 columnas
+   con paso a 1 en mobile) — los Card de MUI van adentro de cada celda. */
 .paneles-graficas {
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 0;
 }
 @media (max-width: 700px) { .paneles-graficas { grid-template-columns: 1fr; } }
 
-/* Banner de alerta */
+/* Banner de alerta (deuda supera ingresos) */
 .banner-alerta {
   background: var(--panel-2);
   border: 1px solid var(--rojo);
@@ -493,208 +267,9 @@ main { max-width: 940px; margin: 0 auto; padding: var(--sp-6) var(--sp-6) 24px; 
   font-size: 14px; font-weight: 650;
 }
 
-/* Análisis del mes */
-.analisis-fila {
-  display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  padding: 10px 0; border-top: 1px solid var(--borde); font-size: 14px; flex-wrap: wrap;
-}
-.analisis-fila:first-child { border-top: none; }
-.analisis-fila small { color: var(--suave); }
-.delta-sube { color: var(--gasto); font-weight: 700; font-variant-numeric: tabular-nums; }
-.delta-baja { color: var(--ingreso); font-weight: 700; font-variant-numeric: tabular-nums; }
-.delta-nuevo { color: var(--suave); }
-.analisis-sub {
-  font-size: 11px; color: var(--suave); text-transform: uppercase;
-  letter-spacing: .07em; font-weight: 700; margin: 16px 0 4px;
-}
-
-.barra-uso {
-  height: 6px; background: var(--panel-2); border-radius: 3px; margin-top: 10px;
-  overflow: hidden;
-}
-.barra-uso > div {
-  height: 100%; border-radius: 3px;
-  transition: width .8s cubic-bezier(.2, .8, .2, 1);
-}
-.uso-verde { background: var(--verde); }
-.uso-amarillo { background: var(--amarillo); }
-.uso-rojo { background: var(--rojo); }
-
-/* ---------- Cards de cuentas y tarjetas: bloques de color plano y saturado,
-   como los product-cards de la demo (número/ícono arriba, cifra grande abajo).
-   Rotan por id entre --acc-0..--acc-5 para que cada cuenta/tarjeta se
-   distinga a simple vista. ---------- */
-.tarjetas-grid, .cuentas-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--sp-4); margin-bottom: var(--sp-4);
-}
-.credit-card, .account-card {
-  border-radius: 20px; padding: var(--sp-5); color: var(--ink-on-acc);
-  display: flex; flex-direction: column; gap: 10px; min-height: 168px;
-  box-shadow: var(--sombra); transition: transform .18s ease, box-shadow .18s ease;
-}
-.credit-card:hover, .account-card:hover { transform: translateY(-3px); }
-.credit-card.compacta, .account-card.compacta { min-height: 128px; padding: var(--sp-4); gap: 6px; }
-.credit-card.inactiva, .account-card.inactiva { opacity: .5; filter: grayscale(.4); }
-.acc-0 { background: var(--acc-0); }
-.acc-1 { background: var(--acc-1); }
-.acc-2 { background: var(--acc-2); }
-.acc-3 { background: var(--acc-3); }
-.acc-4 { background: var(--acc-4); }
-.acc-5 { background: var(--acc-5); }
-
-.cc-top, .ac-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-.cc-banco, .ac-banco {
-  font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; opacity: .75;
-}
-.cc-chip { width: 32px; height: 22px; border-radius: 5px; background: rgba(0, 0, 0, .16); flex: none; }
-.ac-tipo {
-  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
-  background: rgba(0, 0, 0, .12); padding: 3px 9px; border-radius: 999px;
-}
-.cc-nombre, .ac-nombre {
-  font-family: var(--ff-display); font-weight: 400; font-size: 24px; text-transform: uppercase;
-  line-height: 1; letter-spacing: -.01em;
-}
-.credit-card.compacta .cc-nombre, .account-card.compacta .ac-nombre { font-size: 19px; }
-.cc-saldo, .ac-saldo {
-  font-family: var(--ff-display); font-weight: 400; font-size: 30px; margin-top: auto;
-  font-variant-numeric: tabular-nums; line-height: 1;
-}
-.credit-card.compacta .cc-saldo, .account-card.compacta .ac-saldo { font-size: 22px; }
-.cc-datos, .ac-datos {
-  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 10px;
-  font-size: 11.5px; font-weight: 700; opacity: .8;
-}
-.credit-card .barra-uso, .account-card .barra-uso { background: rgba(0, 0, 0, .15); }
-.cc-editar, .ac-editar {
-  align-self: flex-start; margin-top: 4px;
-  background: rgba(0, 0, 0, .12); border: none; color: var(--ink-on-acc);
-}
-.cc-editar:hover, .ac-editar:hover { background: rgba(0, 0, 0, .22); border-color: transparent; }
-
-/* ---------- Movimientos ---------- */
-.filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-.filtros input, .filtros select {
-  padding: 10px 14px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-sm);
-  font-size: 13px; background: var(--panel); color: var(--texto); font-weight: 500;
-}
-table {
-  width: 100%; border-collapse: collapse; background: var(--panel);
-}
-.tabla-scroll {
-  overflow-x: auto; border: 1px solid var(--borde); border-radius: var(--radio);
-  background: var(--panel);
-}
-th, td { padding: 12px 11px; text-align: left; font-size: 13.5px;
-         border-bottom: 1px solid var(--borde); }
-tr:last-child td { border-bottom: none; }
-th {
-  background: var(--panel-2); color: var(--suave); font-size: 11px;
-  text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
-}
-table tr { transition: background .12s; }
-table tr:hover td { background: var(--panel-2); }
-td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
-.mov-ingreso td.num { color: var(--ingreso); }
-.mov-gasto td.num { color: var(--gasto); }
-.mov-pago td.num { color: var(--pago); }
-.etq {
-  font-size: 10.5px; padding: 4px 10px; border-radius: var(--radio-sm); font-weight: 700;
-  letter-spacing: .02em;
-}
-.etq.ingreso { color: var(--ingreso); background: color-mix(in srgb, var(--ingreso) 13%, transparent); }
-.etq.gasto { color: var(--gasto); background: color-mix(in srgb, var(--gasto) 12%, transparent); }
-.etq.pago { color: var(--pago); background: color-mix(in srgb, var(--pago) 14%, transparent); }
-.accion {
-  border: none; background: transparent; cursor: pointer; font-size: 14px;
-  padding: 4px 7px; border-radius: var(--radio-sm); transition: background .12s, transform .1s;
-}
-.accion:hover { background: var(--panel-2); transform: scale(1.15); }
-
-/* ---------- Formularios de administración ---------- */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
-.form-grid label {
-  font-size: 12px; color: var(--suave); display: flex; flex-direction: column; gap: 6px;
-  font-weight: 600;
-}
-.form-grid input, .form-grid select {
-  padding: 11px 13px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-sm);
-  font-size: 14px; background: var(--panel-2); color: var(--texto);
-  transition: border-color .15s, box-shadow .15s, background .15s;
-}
-.form-grid .check { flex-direction: row; align-items: center; gap: 8px; }
-.form-grid .check input { accent-color: var(--primario); width: 17px; height: 17px; }
-.form-grid .guardar { grid-column: 1 / -1; margin-top: 6px; }
-
-.form-inline { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-.form-inline input, .form-inline select {
-  padding: 10px 14px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-sm);
-  font-size: 13px; background: var(--panel-2); color: var(--texto);
-}
-
-.item-lista {
-  display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  padding: 11px 0; border-top: 1px solid var(--borde); font-size: 13.5px; flex-wrap: wrap;
-}
-.item-lista:first-child { border-top: none; }
-.item-lista .inactivo { color: var(--suave); text-decoration: line-through; }
-.item-lista small { color: var(--suave); }
+/* Texto secundario chico, usado por las gráficas (estados de carga/vacío)
+   y por celdas/párrafos sueltos que no ameritan un componente MUI propio. */
 .texto-suave { color: var(--suave); font-size: 13px; margin-bottom: 10px; line-height: 1.55; }
-
-.importar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
-.importar select, .importar input {
-  padding: 9px 12px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-sm);
-  font-size: 12.5px; background: var(--panel-2); color: var(--texto);
-}
-.enlace-btn { margin-top: 0; padding: 11px 22px; font-size: 14px; }
-
-/* ---------- Modal y toast ---------- */
-.modal {
-  position: fixed; inset: 0; background: rgba(17, 17, 17, .45);
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px;
-}
-:root[data-theme="dark"] .modal { background: rgba(0, 0, 0, .6); }
-.modal-caja {
-  background: var(--panel); border: 1px solid var(--borde);
-  border-radius: var(--radio); padding: var(--sp-6);
-  width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto;
-  box-shadow: 0 20px 60px -24px rgba(17, 17, 17, .25);
-  animation: modalEntra .2s cubic-bezier(.2, .9, .3, 1.2) both;
-}
-@keyframes modalEntra {
-  from { opacity: 0; transform: scale(.94) translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
-.modal-caja h3 { margin-bottom: 14px; font-size: 16px; font-weight: 700; }
-#modal-cuerpo { display: flex; flex-direction: column; gap: 8px; }
-#modal-cuerpo label {
-  font-size: 11px; color: var(--suave); text-transform: uppercase;
-  letter-spacing: .06em; font-weight: 700;
-}
-#modal-cuerpo input, #modal-cuerpo select {
-  padding: 11px 13px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio-sm);
-  font-size: 14px; width: 100%; background: var(--panel-2); color: var(--texto);
-}
-.modal-acciones { display: flex; gap: 8px; margin-top: 16px; }
-.modal-acciones .guardar { flex: 1; margin-top: 0; padding: 11px; font-size: 14px; }
-.modal-acciones .mini-btn { padding: 11px 18px; }
-
-.toast {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  background: var(--texto); color: var(--fondo);
-  padding: 13px 24px; border-radius: var(--radio-sm);
-  font-size: 14px; font-weight: 700; z-index: 60;
-  box-shadow: 0 16px 44px -10px rgba(17, 17, 17, .3);
-  animation: toastEntra .25s cubic-bezier(.2, .9, .3, 1.2) both;
-}
-@keyframes toastEntra {
-  from { opacity: 0; transform: translateX(-50%) translateY(16px) scale(.95); }
-  to { opacity: 1; transform: translateX(-50%); }
-}
-.toast.error { background: var(--rojo); color: #fff; }
 
 /* ---------- Accesibilidad ---------- */
 @media (prefers-reduced-motion: reduce) {

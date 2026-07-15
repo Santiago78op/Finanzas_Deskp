@@ -1,4 +1,11 @@
 import { useEffect, useState } from 'react';
+import Card from '@mui/material/Card';
+import TextField from '@mui/material/TextField';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { api } from '../../api.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
@@ -35,39 +42,31 @@ export default function FormTarjeta({ editando, onGuardado, onCancelar }) {
   };
 
   return (
-    <div className="panel">
-      <h3>{editando ? `Editar: ${editando.nombre}` : 'Nueva tarjeta'}</h3>
-      <form className="form-grid" autoComplete="off" onSubmit={submit}>
-        <label>Banco
-          <input type="text" placeholder="ej. BI" required
-                 value={form.banco} onChange={e => setForm(f => ({ ...f, banco: e.target.value }))} />
-        </label>
-        <label>Nombre único
-          <input type="text" placeholder="ej. Visa BI" required
-                 value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
-        </label>
-        <label>Límite (Q)
-          <input type="number" step="0.01" min="0.01" required
-                 value={form.limite} onChange={e => setForm(f => ({ ...f, limite: e.target.value }))} />
-        </label>
-        <label>Día de corte
-          <input type="number" min="1" max="31" required
-                 value={form.dia_corte} onChange={e => setForm(f => ({ ...f, dia_corte: e.target.value }))} />
-        </label>
-        <label>Día de pago
-          <input type="number" min="1" max="31" required
-                 value={form.dia_pago} onChange={e => setForm(f => ({ ...f, dia_pago: e.target.value }))} />
-        </label>
-        <label>Saldo pendiente hoy (Q) <span className="opcional">— opcional, deuda que ya traés (puede ser 0)</span>
-          <input type="number" step="0.01" min="0"
-                 value={form.saldo_inicial} onChange={e => setForm(f => ({ ...f, saldo_inicial: e.target.value }))} />
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={form.activa} onChange={e => setForm(f => ({ ...f, activa: e.target.checked }))} /> Activa
-        </label>
-        <button type="submit" className="guardar">Guardar tarjeta</button>
-        {editando && <button type="button" className="mini-btn" onClick={onCancelar}>Cancelar edición</button>}
+    <Card className="p-4 flex flex-col gap-4">
+      <Typography variant="h6">{editando ? `Editar: ${editando.nombre}` : 'Nueva tarjeta'}</Typography>
+      <form className="grid gap-3 sm:grid-cols-2" autoComplete="off" onSubmit={submit}>
+        <TextField label="Banco" placeholder="ej. BI" required
+          value={form.banco} onChange={e => setForm(f => ({ ...f, banco: e.target.value }))} />
+        <TextField label="Nombre único" placeholder="ej. Visa BI" required
+          value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+        <TextField label="Límite (Q)" type="number" inputProps={{ step: 0.01, min: 0.01 }} required
+          value={form.limite} onChange={e => setForm(f => ({ ...f, limite: e.target.value }))} />
+        <TextField label="Día de corte" type="number" inputProps={{ min: 1, max: 31 }} required
+          value={form.dia_corte} onChange={e => setForm(f => ({ ...f, dia_corte: e.target.value }))} />
+        <TextField label="Día de pago" type="number" inputProps={{ min: 1, max: 31 }} required
+          value={form.dia_pago} onChange={e => setForm(f => ({ ...f, dia_pago: e.target.value }))} />
+        <TextField label="Saldo pendiente hoy (Q)" type="number" inputProps={{ step: 0.01, min: 0 }}
+          helperText="Opcional, deuda que ya traés (puede ser 0)"
+          value={form.saldo_inicial} onChange={e => setForm(f => ({ ...f, saldo_inicial: e.target.value }))} />
+        <FormControlLabel
+          control={<Checkbox checked={form.activa} onChange={e => setForm(f => ({ ...f, activa: e.target.checked }))} />}
+          label="Activa"
+        />
+        <Stack direction="row" gap={1} className="sm:col-span-2">
+          <Button type="submit" variant="contained">Guardar tarjeta</Button>
+          {editando && <Button type="button" variant="outlined" size="small" onClick={onCancelar}>Cancelar edición</Button>}
+        </Stack>
       </form>
-    </div>
+    </Card>
   );
 }

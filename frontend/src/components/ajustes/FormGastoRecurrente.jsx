@@ -1,4 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
+import Card from '@mui/material/Card';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { api } from '../../api.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useConfirm } from '../shared/ConfirmDialog.jsx';
@@ -78,79 +86,73 @@ export default function FormGastoRecurrente({ onCambio }) {
   };
 
   return (
-    <div className="panel">
-      <h3>{editando ? `Editar pago frecuente: ${editando.descripcion}` : 'Pagos frecuentes (renta, internet, colegio...)'}</h3>
-      <p className="texto-suave">La app te pedirá confirmar cada pago en su fecha y creará el gasto con el método configurado.</p>
-      <form className="form-grid" autoComplete="off" onSubmit={submit}>
-        <label>Descripción
-          <input type="text" placeholder="ej. Renta" required
-                 value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} />
-        </label>
-        <label>Categoría
-          <select value={form.categoria_id} onChange={e => setForm(f => ({ ...f, categoria_id: e.target.value }))}>
-            {catGasto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
-        </label>
-        <label>Frecuencia
-          <select value={form.frecuencia} onChange={e => setForm(f => ({ ...f, frecuencia: e.target.value }))}>
-            <option value="Mensual">Mensual (una vez al mes)</option>
-            <option value="Quincenal">Quincenal (dos veces al mes)</option>
-          </select>
-        </label>
-        <label>{esQuincenal ? 'Monto por quincena (Q)' : 'Monto (Q)'}
-          <input type="number" step="0.01" min="0.01" required
-                 value={form.monto} onChange={e => setForm(f => ({ ...f, monto: e.target.value }))} />
-        </label>
-        <label>Día de pago
-          <input type="number" min="1" max="31" required
-                 value={form.dia_mes} onChange={e => setForm(f => ({ ...f, dia_mes: e.target.value }))} />
-        </label>
+    <Card className="p-4 flex flex-col gap-4">
+      <Typography variant="h6">{editando ? `Editar pago frecuente: ${editando.descripcion}` : 'Pagos frecuentes (renta, internet, colegio...)'}</Typography>
+      <Typography variant="body2" className="text-[var(--suave)]">La app te pedirá confirmar cada pago en su fecha y creará el gasto con el método configurado.</Typography>
+      <form className="grid gap-3 sm:grid-cols-2" autoComplete="off" onSubmit={submit}>
+        <TextField label="Descripción" placeholder="ej. Renta" required
+          value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} />
+        <TextField select label="Categoría" value={form.categoria_id}
+          onChange={e => setForm(f => ({ ...f, categoria_id: e.target.value }))}>
+          {catGasto.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
+        </TextField>
+        <TextField select label="Frecuencia" value={form.frecuencia}
+          onChange={e => setForm(f => ({ ...f, frecuencia: e.target.value }))}>
+          <MenuItem value="Mensual">Mensual (una vez al mes)</MenuItem>
+          <MenuItem value="Quincenal">Quincenal (dos veces al mes)</MenuItem>
+        </TextField>
+        <TextField label={esQuincenal ? 'Monto por quincena (Q)' : 'Monto (Q)'} type="number"
+          inputProps={{ step: 0.01, min: 0.01 }} required
+          value={form.monto} onChange={e => setForm(f => ({ ...f, monto: e.target.value }))} />
+        <TextField label="Día de pago" type="number" inputProps={{ min: 1, max: 31 }} required
+          value={form.dia_mes} onChange={e => setForm(f => ({ ...f, dia_mes: e.target.value }))} />
         {esQuincenal && (
-          <label title="El primer día de pago ya lo pusiste arriba — acá va la segunda fecha del mes (ej. si pagás los 15 y los 30, acá va 30).">
-            Segundo día de pago
-            <input type="number" min="1" max="31" required={esQuincenal}
-                   value={form.dia_mes_2} onChange={e => setForm(f => ({ ...f, dia_mes_2: e.target.value }))} />
-          </label>
+          <TextField
+            label="Segundo día de pago" type="number" inputProps={{ min: 1, max: 31 }} required={esQuincenal}
+            title="El primer día de pago ya lo pusiste arriba — acá va la segunda fecha del mes (ej. si pagás los 15 y los 30, acá va 30)."
+            value={form.dia_mes_2} onChange={e => setForm(f => ({ ...f, dia_mes_2: e.target.value }))}
+          />
         )}
-        <label>Método de pago
-          <select value={form.metodo} onChange={e => setForm(f => ({ ...f, metodo: e.target.value }))}>
-            {metodos.map(m => {
-              const val = m.tarjeta_id ? `Tarjeta:${m.tarjeta_id}` : m.metodo;
-              return <option key={val} value={val}>{m.etiqueta}</option>;
-            })}
-          </select>
-        </label>
+        <TextField select label="Método de pago" value={form.metodo}
+          onChange={e => setForm(f => ({ ...f, metodo: e.target.value }))}>
+          {metodos.map(m => {
+            const val = m.tarjeta_id ? `Tarjeta:${m.tarjeta_id}` : m.metodo;
+            return <MenuItem key={val} value={val}>{m.etiqueta}</MenuItem>;
+          })}
+        </TextField>
         {usaCuenta && (
-          <label>Cuenta de la que sale
-            <select value={form.cuenta_id} onChange={e => setForm(f => ({ ...f, cuenta_id: e.target.value }))}>
-              <option value="">Sin cuenta</option>
-              {cuentas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
-          </label>
+          <TextField select label="Cuenta de la que sale" value={form.cuenta_id}
+            onChange={e => setForm(f => ({ ...f, cuenta_id: e.target.value }))}>
+            <MenuItem value="">Sin cuenta</MenuItem>
+            {cuentas.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
+          </TextField>
         )}
-        <label className="check">
-          <input type="checkbox" checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} /> Activo
-        </label>
-        <button type="submit" className="guardar">Guardar pago frecuente</button>
-        {editando && <button type="button" className="mini-btn" onClick={() => setEditando(null)}>Cancelar edición</button>}
+        <FormControlLabel
+          control={<Checkbox checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} />}
+          label="Activo"
+        />
+        <Stack direction="row" gap={1} className="sm:col-span-2">
+          <Button type="submit" variant="contained">Guardar pago frecuente</Button>
+          {editando && <Button type="button" variant="outlined" onClick={() => setEditando(null)}>Cancelar edición</Button>}
+        </Stack>
       </form>
 
-      {!recs.length && <p className="texto-suave">Sin pagos frecuentes configurados todavía.</p>}
+      {!recs.length && <Typography variant="body2" className="text-[var(--suave)]">Sin pagos frecuentes configurados todavía.</Typography>}
       {recs.map(r => (
-        <div className="item-lista" key={r.id}>
-          <span className={r.activo ? '' : 'inactivo'}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" key={r.id} className="border-t border-[var(--borde)] pt-2">
+          <span className={r.activo ? '' : 'opacity-50'}>
             <b>{r.descripcion}</b> ({r.categoria}) —{' '}
             {r.frecuencia === 'Quincenal'
               ? `${fmtQ(r.monto)} por quincena, los días ${r.dia_mes} y ${r.dia_mes_2}`
               : `${fmtQ(r.monto)} el día ${r.dia_mes}`}
             {' · '}{r.metodo === 'Tarjeta' ? r.tarjeta : r.metodo}{r.cuenta ? ` (${r.cuenta})` : ''}
           </span>
-          <span>
-            <button className="mini-btn" onClick={() => setEditando(r)}>Editar</button>
-            <button className="mini-btn peligro" onClick={() => borrar(r)}>Eliminar</button>
-          </span>
-        </div>
+          <Stack direction="row" gap={1}>
+            <Button size="small" variant="outlined" onClick={() => setEditando(r)}>Editar</Button>
+            <Button size="small" variant="outlined" color="error" onClick={() => borrar(r)}>Eliminar</Button>
+          </Stack>
+        </Stack>
       ))}
-    </div>
+    </Card>
   );
 }
