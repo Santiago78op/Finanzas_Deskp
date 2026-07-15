@@ -1,6 +1,6 @@
 import { StrictMode, useMemo } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ThemeProvider } from '@mui/material/styles'
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -9,33 +9,43 @@ import './index.css'
 import './chartSetup.js'
 import App from './App.jsx'
 import { getTheme } from './theme/muiTheme.js'
-import { useTheme } from './hooks/useTheme.js'
+import { TemaProvider, useTheme } from './hooks/useTheme.jsx'
 import { CatalogProvider } from './context/CatalogContext.jsx'
 import { DataVersionProvider } from './context/DataVersionContext.jsx'
 import { ToastProvider } from './components/shared/Toast.jsx'
 import { ConfirmProvider } from './components/shared/ConfirmDialog.jsx'
 
-// Envoltorio propio (en vez de armar el theme MUI dentro de App.jsx) porque
-// useTheme() ya se llama de forma independiente en TopNav/DashboardView —
-// cada instancia solo lee/sincroniza el mismo data-theme, así que agregar
-// una más acá no rompe nada y evita tocar App.jsx para esto.
-function Root() {
+// Puente hacia el ThemeProvider de MUI: lee el tema del ÚNICO TemaProvider
+// (montado abajo, una sola instancia de estado) para que TopNav (que
+// dispara el toggle) y este puente (que arma el theme de MUI) queden
+// sincronizados de verdad.
+function MuiBridge({ children }) {
   const { tema } = useTheme();
   const theme = useMemo(() => getTheme(tema), [tema]);
 
   return (
-    <ThemeProvider theme={theme}>
+    <MuiThemeProvider theme={theme}>
       <CssBaseline />
-      <ToastProvider>
-        <ConfirmProvider>
-          <DataVersionProvider>
-            <CatalogProvider>
-              <App />
-            </CatalogProvider>
-          </DataVersionProvider>
-        </ConfirmProvider>
-      </ToastProvider>
-    </ThemeProvider>
+      {children}
+    </MuiThemeProvider>
+  );
+}
+
+function Root() {
+  return (
+    <TemaProvider>
+      <MuiBridge>
+        <ToastProvider>
+          <ConfirmProvider>
+            <DataVersionProvider>
+              <CatalogProvider>
+                <App />
+              </CatalogProvider>
+            </DataVersionProvider>
+          </ConfirmProvider>
+        </ToastProvider>
+      </MuiBridge>
+    </TemaProvider>
   );
 }
 

@@ -28,14 +28,14 @@ export default function FiltrosMovimientos({ onFiltrar }) {
     <Stack direction="row" flexWrap="wrap" gap={2} className="items-center mb-3">
       <TextField type="month" value={mes} onChange={e => setMes(e.target.value)} />
       <TextField select label="Categoría" value={categoriaId} onChange={e => setCategoriaId(e.target.value)}
-        className="min-w-[220px]">
+        className="!min-w-[220px]">
         <MenuItem value="">Todas las categorías</MenuItem>
         {[...catGasto, ...catIngreso].map(c => (
           <MenuItem key={`${c.tipo}-${c.id}`} value={c.id}>{c.nombre} ({c.tipo})</MenuItem>
         ))}
       </TextField>
       <TextField select label="Método" value={metodoVal} onChange={e => setMetodoVal(e.target.value)}
-        className="min-w-[200px]">
+        className="!min-w-[200px]">
         <MenuItem value="">Todos los métodos</MenuItem>
         {metodos.map(m => {
           const val = m.tarjeta_id ? `Tarjeta:${m.tarjeta_id}` : m.metodo;

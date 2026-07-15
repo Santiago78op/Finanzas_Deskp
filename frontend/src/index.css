@@ -234,6 +234,25 @@ body {
 }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
+/* Carrusel Swiper (GridOCarrusel: cuentas/tarjetas del Dashboard) — paleta
+   de marca en vez del azul default, y padding lateral para que las flechas
+   vivan en su propio espacio en lugar de montarse sobre las cards. */
+.swiper {
+  --swiper-theme-color: var(--primario);
+  --swiper-navigation-size: 16px;
+  padding: 0 34px !important;
+}
+.swiper-button-next, .swiper-button-prev {
+  width: 30px; height: 30px; margin-top: -15px;
+  background: var(--panel); border: 1px solid var(--borde);
+  border-radius: 999px; box-shadow: var(--sombra);
+}
+.swiper-button-prev { left: 0; }
+.swiper-button-next { right: 0; }
+.swiper-button-disabled { opacity: 0; pointer-events: none; }
+.swiper-pagination-bullet { background: var(--suave); opacity: .4; }
+.swiper-pagination-bullet-active { background: var(--primario); opacity: 1; }
+
 #contenido { flex: 1; min-width: 0; }
 
 /* Encabezado editorial: saludo chico + título enorme en mayúsculas (el ancho

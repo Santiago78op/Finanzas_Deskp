@@ -13,7 +13,7 @@ export default function Metricas({ d }) {
   ];
 
   return (
-    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 mb-4">
+    <div className="grid gap-3 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
       {tiles.map(m => (
         <StatTile key={m.t} icono={m.icono} tinte={m.tinte} titulo={m.t} valor={m.v} cls={m.cls} />
       ))}

@@ -3,7 +3,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import { useTheme } from '../../hooks/useTheme.js';
+import { useTheme } from '../../hooks/useTheme.jsx';
 
 const VISTAS = [
   { key: 'registro', titulo: 'Registro rápido', label: 'Registro' },

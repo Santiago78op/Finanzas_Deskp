@@ -16,7 +16,7 @@ import CreditCard from '../shared/CreditCard.jsx';
 import GridOCarrusel from '../shared/GridOCarrusel.jsx';
 import { api } from '../../api.js';
 import { fmtQ } from '../../utils.js';
-import { useTheme } from '../../hooks/useTheme.js';
+import { useTheme } from '../../hooks/useTheme.jsx';
 import { useDashboardReveal } from '../../hooks/useDashboardReveal.js';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { motionOK } from '../../motion.js';
