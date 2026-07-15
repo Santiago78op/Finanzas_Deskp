@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // FastAPI (app.py) sirve estáticos únicamente bajo /static y el index.html
 // en /. base:'/static/' hace que Vite emita <script src="/static/assets/...">
 // en el build de producción (con base:'/' por default 404earía, porque el
 // archivo físico queda en static/assets/... pero la URL sería /assets/...).
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   base: '/static/',
   build: {
     outDir: '../static',

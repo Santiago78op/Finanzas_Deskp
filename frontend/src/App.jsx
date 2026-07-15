@@ -1,5 +1,8 @@
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
 import TopNav from './components/shared/TopNav.jsx';
 import TickerGlobal from './components/shared/TickerGlobal.jsx';
+import Footer from './components/shared/Footer.jsx';
 import RegistroView from './components/registro/RegistroView.jsx';
 import DashboardView from './components/dashboard/DashboardView.jsx';
 import MovimientosView from './components/movimientos/MovimientosView.jsx';
@@ -37,21 +40,21 @@ export default function App() {
     { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <div id="app">
+    <Box id="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
       <TopNav vista={activa} onNavigate={navegar} />
       <TickerGlobal />
 
-      <div id="contenido">
-        <header id="topbar">
+      <Box id="contenido" sx={{ flex: 1, minWidth: 0 }}>
+        <Container maxWidth="md" component="header" id="topbar" className="pt-7 pb-0">
           <div>
             <div id="saludo" className="saludo">
               👋 Hola — {fechaLarga.charAt(0).toUpperCase() + fechaLarga.slice(1)}
             </div>
             <h1 id="titulo-vista">{TITULOS[activa]}</h1>
           </div>
-        </header>
+        </Container>
 
-        <main>
+        <Container maxWidth="md" component="main" className="py-6">
           {/* La vista saliente solo existe mientras se anima su salida — al
               terminar, useViewTransition la desmonta (no queda un nodo
               persistente con estilos inline residuales). key={saliendo} es
@@ -64,8 +67,10 @@ export default function App() {
             <div className="vista-transicion" ref={refSaliendo} key={saliendo}>{renderVista(saliendo)}</div>
           )}
           <div className="vista-transicion" ref={refActiva} key={activa}>{renderVista(activa)}</div>
-        </main>
-      </div>
-    </div>
+        </Container>
+      </Box>
+
+      <Footer />
+    </Box>
   );
 }

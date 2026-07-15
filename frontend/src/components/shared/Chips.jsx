@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 
 // Chips de selección única. `value` es el ítem seleccionado (o null);
 // como el pintarChips() original, selecciona el primer ítem por default
@@ -10,17 +12,17 @@ export default function Chips({ items, getLabel, value, onChange, permitirNingun
   }, [items, value, onChange, permitirNinguno]);
 
   return (
-    <div className="chips">
+    <Stack direction="row" flexWrap="wrap" gap={1}>
       {items.map((item, i) => (
-        <button
+        <Chip
           key={i}
-          type="button"
-          className={'chip' + (value === item ? ' sel' : '')}
+          label={getLabel(item)}
+          clickable
+          color={value === item ? 'primary' : 'default'}
+          variant={value === item ? 'filled' : 'outlined'}
           onClick={() => onChange(item)}
-        >
-          {getLabel(item)}
-        </button>
+        />
       ))}
-    </div>
+    </Stack>
   );
 }

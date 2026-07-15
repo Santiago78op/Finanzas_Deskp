@@ -1,4 +1,51 @@
-/* index.css — Inspirado en la demo GSAP/Webflow: fondo crema cálido, tinta
+/* index.css — Fundación Tailwind v4 + MUI (ver theme/muiTheme.js) + resto
+   del CSS a mano de rondas anteriores, que se va migrando a componentes
+   MUI/Tailwind de a poco (ver plan de migración) — lo que todavía no se
+   migró queda más abajo intacto para no romper vistas a mitad de camino. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+/* SIN tailwindcss/preflight.css a propósito: <CssBaseline/> de MUI (ver
+   main.jsx + theme/muiTheme.js) es el único reset de box-model activo —
+   dos resets de box-model compitiendo generan bugs de spacing sutiles. */
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  /* Reexpone las variables de marca (--fondo/--texto/etc., definidas abajo
+     y ya intercambiadas en tiempo real por :root[data-theme]) bajo el
+     prefijo --color-* que Tailwind v4 necesita para generar utilidades
+     (bg-fondo, text-texto...) — así Tailwind sigue el mismo cambio de tema
+     sin duplicar la lógica de light/dark en dos lugares. Mantener en sync
+     con theme/colores.js (fuente compartida con MUI). */
+  --color-fondo: var(--fondo);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-texto: var(--texto);
+  --color-suave: var(--suave);
+  --color-borde: var(--borde);
+  --color-borde-fuerte: var(--borde-fuerte);
+  --color-primario: var(--primario);
+  --color-primario-texto: var(--primario-texto);
+  --color-primario-suave: var(--primario-suave);
+  --color-gasto: var(--gasto);
+  --color-ingreso: var(--ingreso);
+  --color-pago: var(--pago);
+  --color-acc-0: var(--acc-0);
+  --color-acc-1: var(--acc-1);
+  --color-acc-2: var(--acc-2);
+  --color-acc-3: var(--acc-3);
+  --color-acc-4: var(--acc-4);
+  --color-acc-5: var(--acc-5);
+  --color-ink-on-acc: var(--ink-on-acc);
+
+  --font-display: 'Anton', 'Poppins', system-ui, sans-serif;
+  --font-sans: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* ---------- Lo que sigue es CSS de rondas anteriores, migrándose a
+   MUI/Tailwind de a poco (ver plan) ---------- */
+
+/* Inspirado en la demo GSAP/Webflow: fondo crema cálido, tinta
    casi negra, tipografía display bien condensada (Anton) para títulos y
    cifras grandes, y bloques de color plano bien saturado (no pastel, no
    gradiente) para las cards de cuentas/tarjetas. CSS puro, modo oscuro incluido.

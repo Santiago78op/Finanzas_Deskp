@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import Card from '@mui/material/Card';
+import Typography from '@mui/material/Typography';
 import FormCuenta from './FormCuenta.jsx';
 import FormTarjeta from './FormTarjeta.jsx';
 import AccountCard from '../shared/AccountCard.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
+import GridOCarrusel from '../shared/GridOCarrusel.jsx';
 import { api } from '../../api.js';
 
 export default function TarjetasView() {
@@ -21,36 +24,34 @@ export default function TarjetasView() {
   useEffect(() => { cargarCuentas(); cargarTarjetas(); }, [cargarCuentas, cargarTarjetas]);
 
   return (
-    <div id="vista-tarjetas" className="vista">
+    <div id="vista-tarjetas" className="vista flex flex-col gap-4">
       <FormCuenta
         editando={editandoCuenta}
         onGuardado={() => { setEditandoCuenta(null); cargarCuentas(); }}
         onCancelar={() => setEditandoCuenta(null)}
       />
-      <div className="panel">
-        <h3>Mis cuentas</h3>
-        <div className="cuentas-grid">
-          {!cuentas.length && <p className="texto-suave">Registrá tus cuentas Monetaria y de Ahorro para saber cuánto dinero tenés.</p>}
-          {cuentas.map(c => (
-            <AccountCard key={c.id} cuenta={c} onEditar={() => setEditandoCuenta(c)} />
-          ))}
-        </div>
-      </div>
+      <Card className="p-4">
+        <Typography variant="h6" className="mb-3">Mis cuentas</Typography>
+        <GridOCarrusel
+          items={cuentas}
+          vacio="Registrá tus cuentas Monetaria y de Ahorro para saber cuánto dinero tenés."
+          render={c => <AccountCard cuenta={c} onEditar={() => setEditandoCuenta(c)} />}
+        />
+      </Card>
 
       <FormTarjeta
         editando={editandoTarjeta}
         onGuardado={() => { setEditandoTarjeta(null); cargarTarjetas(); }}
         onCancelar={() => setEditandoTarjeta(null)}
       />
-      <div className="panel">
-        <h3>Mis tarjetas</h3>
-        <div className="tarjetas-grid">
-          {!tarjetas.length && <p className="texto-suave">Todavía no tenés tarjetas registradas.</p>}
-          {tarjetas.map(t => (
-            <CreditCard key={t.id} tarjeta={t} onEditar={() => setEditandoTarjeta(t)} />
-          ))}
-        </div>
-      </div>
+      <Card className="p-4">
+        <Typography variant="h6" className="mb-3">Mis tarjetas</Typography>
+        <GridOCarrusel
+          items={tarjetas}
+          vacio="Todavía no tenés tarjetas registradas."
+          render={t => <CreditCard tarjeta={t} onEditar={() => setEditandoTarjeta(t)} />}
+        />
+      </Card>
     </div>
   );
 }
