@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api.js';
 import { useToast } from '../shared/Toast.jsx';
+import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 
 // Aviso de ingresos recurrentes y pagos frecuentes pendientes de confirmar
 // este mes (salario, alquiler, etc.) — port 1:1 de revisarSalarioPendiente().
 export default function AvisoSalario() {
   const toast = useToast();
+  const confirmar = useConfirm();
   const { bump } = useDataVersion();
   const [pendIng, setPendIng] = useState([]);
   const [pendGas, setPendGas] = useState([]);
@@ -47,7 +49,7 @@ export default function AvisoSalario() {
 
   const omitirIngreso = async (i) => {
     const p = pendIng[i];
-    if (!confirm(`¿Omitir "${p.etiqueta}" este mes? No se creará el ingreso y el aviso desaparecerá.`)) return;
+    if (!(await confirmar(`¿Omitir "${p.etiqueta}" este mes? No se creará el ingreso y el aviso desaparecerá.`))) return;
     try {
       await api(`/api/recurrentes/${p.id}/omitir?quincena=${p.quincena}`, { method: 'POST' });
       toast(`${p.etiqueta} omitido este mes`);
@@ -69,7 +71,7 @@ export default function AvisoSalario() {
 
   const omitirGasto = async (i) => {
     const p = pendGas[i];
-    if (!confirm(`¿Omitir el pago "${p.etiqueta}" este mes? No se creará el gasto.`)) return;
+    if (!(await confirmar(`¿Omitir el pago "${p.etiqueta}" este mes? No se creará el gasto.`))) return;
     try {
       await api(`/api/gastos_recurrentes/${p.id}/omitir?quincena=${p.quincena}`, { method: 'POST' });
       toast(`Pago ${p.etiqueta} omitido este mes`);

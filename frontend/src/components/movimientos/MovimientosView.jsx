@@ -4,6 +4,7 @@ import TablaMovimientos from './TablaMovimientos.jsx';
 import ModalEditarMovimiento from './ModalEditarMovimiento.jsx';
 import { api } from '../../api.js';
 import { useToast } from '../shared/Toast.jsx';
+import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { fmtQ } from '../../utils.js';
 
@@ -11,6 +12,7 @@ const RUTAS_TIPO = { ingreso: 'ingresos', gasto: 'gastos', pago: 'pagos_tarjetas
 
 export default function MovimientosView() {
   const toast = useToast();
+  const confirmar = useConfirm();
   const { bump } = useDataVersion();
   const [filtros, setFiltros] = useState({});
   const [movs, setMovs] = useState([]);
@@ -26,7 +28,7 @@ export default function MovimientosView() {
 
   const eliminar = async (idx) => {
     const m = movs[idx];
-    if (!confirm(`¿Eliminar este ${m.tipo} de ${fmtQ(m.monto)}?`)) return;
+    if (!(await confirmar(`¿Eliminar este ${m.tipo} de ${fmtQ(m.monto)}?`, { peligro: true }))) return;
     try {
       await api(`/api/${RUTAS_TIPO[m.tipo]}/${m.id}`, { method: 'DELETE' });
       toast('Registro eliminado ✓');

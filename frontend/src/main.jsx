@@ -6,15 +6,18 @@ import App from './App.jsx'
 import { CatalogProvider } from './context/CatalogContext.jsx'
 import { DataVersionProvider } from './context/DataVersionContext.jsx'
 import { ToastProvider } from './components/shared/Toast.jsx'
+import { ConfirmProvider } from './components/shared/ConfirmDialog.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ToastProvider>
-      <DataVersionProvider>
-        <CatalogProvider>
-          <App />
-        </CatalogProvider>
-      </DataVersionProvider>
+      <ConfirmProvider>
+        <DataVersionProvider>
+          <CatalogProvider>
+            <App />
+          </CatalogProvider>
+        </DataVersionProvider>
+      </ConfirmProvider>
     </ToastProvider>
   </StrictMode>,
 )

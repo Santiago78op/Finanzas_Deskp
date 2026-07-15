@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api.js';
 import { useToast } from '../shared/Toast.jsx';
+import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { fmtQ } from '../../utils.js';
 
@@ -12,6 +13,7 @@ const VACIO = {
 export default function FormGastoRecurrente({ onCambio }) {
   const { catGasto, metodos, cuentas } = useCatalog();
   const toast = useToast();
+  const confirmar = useConfirm();
   const [recs, setRecs] = useState([]);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState(VACIO);
@@ -62,7 +64,11 @@ export default function FormGastoRecurrente({ onCambio }) {
   };
 
   const borrar = async (r) => {
-    if (!confirm(`¿Eliminar el pago frecuente "${r.descripcion}" definitivamente?\nLos gastos ya registrados en Movimientos NO se borran.`)) return;
+    const ok = await confirmar(
+      `¿Eliminar el pago frecuente "${r.descripcion}" definitivamente?\nLos gastos ya registrados en Movimientos NO se borran.`,
+      { peligro: true },
+    );
+    if (!ok) return;
     try {
       await api(`/api/gastos_recurrentes/${r.id}`, { method: 'DELETE' });
       toast('Pago frecuente eliminado ✓');
@@ -100,7 +106,8 @@ export default function FormGastoRecurrente({ onCambio }) {
                  value={form.dia_mes} onChange={e => setForm(f => ({ ...f, dia_mes: e.target.value }))} />
         </label>
         {esQuincenal && (
-          <label>Segundo día de pago
+          <label title="El primer día de pago ya lo pusiste arriba — acá va la segunda fecha del mes (ej. si pagás los 15 y los 30, acá va 30).">
+            Segundo día de pago
             <input type="number" min="1" max="31" required={esQuincenal}
                    value={form.dia_mes_2} onChange={e => setForm(f => ({ ...f, dia_mes_2: e.target.value }))} />
           </label>
