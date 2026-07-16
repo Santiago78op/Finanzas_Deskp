@@ -26,9 +26,14 @@ export default function CreditCard({ tarjeta, onEditar }) {
         className="relative p-4 text-white bg-gradient-to-br from-neutral-800 to-neutral-950"
         style={{ borderTop: `3px solid ${acento}`, minHeight: 150 }}
       >
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-2">
           <span className="text-sm font-semibold tracking-wide uppercase opacity-90">{tarjeta.banco}</span>
-          <span className="w-8 h-6 rounded-sm bg-gradient-to-br from-yellow-200 to-yellow-500" />
+          <div className="flex items-center gap-2">
+            {!tarjeta.activa && (
+              <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white/15">Inactiva</span>
+            )}
+            <span className="w-8 h-6 rounded-sm bg-gradient-to-br from-yellow-200 to-yellow-500" />
+          </div>
         </div>
         <div className="mt-6 font-mono text-lg tracking-[0.2em]">•••• •••• •••• {numero}</div>
         <div className="mt-4 flex items-end justify-between gap-2 text-xs opacity-90">

@@ -4,6 +4,10 @@ import { PALETA } from '../../paleta.js';
 export default function GraficaUsoTarjetas({ d, tema }) {
   const pal = PALETA[tema];
   if (!d.tarjetas.length) return <p className="texto-suave">Sin tarjetas registradas.</p>;
+  // Con 1 sola tarjeta no hay nada que comparar: la barra 0-100% queda casi
+  // vacía y el % de uso ya se ve en su propia CreditCard más abajo — mismo
+  // criterio que GridOCarrusel usa para no envolver un ítem solo.
+  if (d.tarjetas.length < 2) return null;
 
   return (
     <Bar
