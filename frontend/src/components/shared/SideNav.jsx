@@ -57,7 +57,7 @@ export default function SideNav({ vista, onNavigate }) {
             sx={{
               justifyContent: 'flex-start', gap: 1, px: 1.6, py: 1.1, borderRadius: '999px',
               fontWeight: 600, fontSize: 14.5, textAlign: 'left', textTransform: 'none',
-              color: vista === v.key ? 'var(--tinta)' : 'var(--suave)',
+              color: vista === v.key ? 'var(--texto)' : 'var(--suave)',
               backgroundColor: vista === v.key ? 'var(--panel2)' : 'transparent',
               '&:hover': { backgroundColor: 'var(--panel2)' },
             }}
@@ -74,7 +74,7 @@ export default function SideNav({ vista, onNavigate }) {
           sx={{
             justifyContent: 'flex-start', gap: 1.4, px: 1.6, py: 1.1, borderRadius: '999px',
             border: '1px solid var(--borde)', fontWeight: 600, fontSize: 13.5, textTransform: 'none',
-            color: 'var(--suave)', '&:hover': { color: 'var(--tinta)', backgroundColor: 'var(--panel2)' },
+            color: 'var(--suave)', '&:hover': { color: 'var(--texto)', backgroundColor: 'var(--panel2)' },
           }}
         >
           <svg className="ico icon-sol" style={{ width: 17, height: 17 }}><use href="#ico-sol" /></svg>
@@ -86,10 +86,10 @@ export default function SideNav({ vista, onNavigate }) {
           <span style={{
             width: 32, height: 32, borderRadius: 999, flex: 'none', background: 'var(--panel2)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
-            fontSize: 13, color: 'var(--tinta)',
+            fontSize: 13, color: 'var(--texto)',
           }}>Q</span>
           <div style={{ lineHeight: 1.3, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tinta)' }}>Cuenta personal</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--texto)' }}>Cuenta personal</div>
             <div style={{ fontSize: 11.5, color: 'var(--suave)' }}>Solo vos ves esto</div>
           </div>
         </Box>

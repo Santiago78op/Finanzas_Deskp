@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
-import AddIcon from '@mui/icons-material/Add';
 import FormTarjeta from './FormTarjeta.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
 import { api } from '../../api.js';
@@ -50,13 +49,6 @@ export default function TarjetasView() {
         {tarjetas.map(t => (
           <CreditCard key={t.id} tarjeta={t} onEditar={() => { setEditando(t); formRef.current?.scrollIntoView({ behavior: 'smooth' }); }} />
         ))}
-        <button
-          type="button"
-          onClick={() => formRef.current?.scrollIntoView({ behavior: 'smooth' })}
-          className="tile-agregar"
-        >
-          <AddIcon fontSize="small" /> Agregar tarjeta
-        </button>
       </div>
     </div>
   );

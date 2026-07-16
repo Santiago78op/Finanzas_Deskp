@@ -10,7 +10,7 @@ export const campoLabel = {
 export const campoBase = {
   width: '100%', padding: '13px 14px', borderRadius: 12,
   border: '1px solid var(--borde)', background: 'var(--panel2)',
-  color: 'var(--tinta)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
+  color: 'var(--texto)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
   outline: 'none', boxSizing: 'border-box',
 };
 

@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import MesSelector from './MesSelector.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
 import { api } from '../../api.js';
@@ -49,6 +52,13 @@ export default function DashboardView({ onNavigate }) {
   const tarjetasPorPago = [...d.tarjetas].sort((a, b) => a.dias_pago - b.dias_pago).slice(0, 3);
   const maxCategoria = d.analisis.top_categorias[0]?.total || 1;
 
+  const colorMovimiento = (m) => {
+    if (m.tipo === 'ingreso') return 'var(--ingreso)';
+    if (m.tipo === 'pago') return 'var(--pago)';
+    const hash = [...(m.categoria || '')].reduce((h, ch) => h + ch.charCodeAt(0), 0);
+    return ACC[hash % 6];
+  };
+
   return (
     <div id="vista-dashboard" className="vista" ref={rootRef}>
       <MesSelector anio={anio} mes={mes} onCambiar={cambiarMes} />
@@ -62,7 +72,7 @@ export default function DashboardView({ onNavigate }) {
       <div className="dash-grid">
         <Card component="section" aria-label="Balance del mes" className="reveal-block p-5 dash-span-12 flex items-center justify-between gap-6 flex-wrap">
           <div style={{ minWidth: 280, flex: 1 }}>
-            <Typography variant="body2" fontWeight={500} className="text-[var(--suave)]">Balance del mes</Typography>
+            <Typography variant="body2" fontWeight={500} className="text-[var(--suave)]">Buenas 👋</Typography>
             <Typography variant="h6" fontWeight={600} lineHeight={1.35} className="mt-1" style={{ textWrap: 'pretty' }}>
               Vas <b className={aFavor ? 'text-[var(--ingreso)]' : 'text-[var(--gasto)]'}>{fmtQ(Math.abs(d.balance))}</b> {aFavor ? 'a favor' : 'en contra'} este mes.{' '}
               {aFavor ? 'Tus gastos van por debajo de lo que entra — seguí así.' : 'Tus gastos superaron lo que entró — con cuidado los próximos días.'}
@@ -108,7 +118,7 @@ export default function DashboardView({ onNavigate }) {
           <div className="flex flex-col gap-3">
             <div>
               <div className="flex items-center justify-between text-sm font-semibold">
-                <span>Ingresos</span>
+                <span className="flex items-center gap-2 text-[var(--ingreso)]"><TrendingUpIcon sx={{ fontSize: 16 }} /><span className="text-[var(--texto)]">Ingresos</span></span>
                 <span className="text-[var(--ingreso)]" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(d.ingresos)}</span>
               </div>
               <div className="mt-1.5 h-2 rounded-full" style={{ background: 'var(--panel2)' }}>
@@ -117,7 +127,7 @@ export default function DashboardView({ onNavigate }) {
             </div>
             <div>
               <div className="flex items-center justify-between text-sm font-semibold">
-                <span>Gastos</span>
+                <span className="flex items-center gap-2 text-[var(--gasto)]"><TrendingDownIcon sx={{ fontSize: 16 }} /><span className="text-[var(--texto)]">Gastos</span></span>
                 <span className="text-[var(--gasto)]" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(d.gastos)}</span>
               </div>
               <div className="mt-1.5 h-2 rounded-full" style={{ background: 'var(--panel2)' }}>
@@ -179,8 +189,8 @@ export default function DashboardView({ onNavigate }) {
               <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
                 <span style={{
                   width: 36, height: 36, borderRadius: 999, flex: 'none', background: 'var(--panel2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pago)', fontWeight: 700, fontSize: 13,
-                }}>{t.dias_pago}d</span>
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pago)',
+                }}><ScheduleIcon sx={{ fontSize: 18 }} /></span>
                 <div style={{ minWidth: 0 }}>
                   <div className="text-sm font-semibold truncate">{t.nombre}</div>
                   <div className="text-xs font-semibold text-[var(--pago)]">Vence en {t.dias_pago} día{t.dias_pago === 1 ? '' : 's'}</div>
@@ -206,8 +216,14 @@ export default function DashboardView({ onNavigate }) {
                 <div key={`${m.tipo}-${m.id}`} className="grid-movs items-center" style={{ padding: '11px 0', borderBottom: '1px solid var(--borde)' }}>
                   <div className="text-sm text-[var(--suave)]" style={{ fontVariantNumeric: 'tabular-nums' }}>{m.fecha}</div>
                   <div className="text-sm font-semibold truncate">{m.descripcion || '—'}</div>
-                  <div className="text-sm text-[var(--suave)] truncate">{m.categoria || '—'}</div>
-                  <div className={`text-sm font-bold text-right ${m.tipo === 'ingreso' ? 'text-[var(--ingreso)]' : m.tipo === 'pago' ? 'text-[var(--pago)]' : 'text-[var(--gasto)]'}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  <div>
+                    <span className="inline-flex items-center gap-2 text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'var(--panel2)' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: 999, flex: 'none', background: colorMovimiento(m) }} />
+                      {m.categoria || (m.tipo === 'ingreso' ? 'Ingreso' : m.tipo === 'pago' ? 'Pago' : '—')}
+                    </span>
+                  </div>
+                  <div className={`flex items-center justify-end gap-1 text-sm font-bold text-right ${m.tipo === 'ingreso' ? 'text-[var(--ingreso)]' : m.tipo === 'pago' ? 'text-[var(--pago)]' : 'text-[var(--gasto)]'}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {m.tipo === 'ingreso' ? <TrendingUpIcon sx={{ fontSize: 15 }} /> : <TrendingDownIcon sx={{ fontSize: 15 }} />}
                     {m.tipo === 'ingreso' ? '+' : '−'}{fmtQ(m.monto)}
                   </div>
                 </div>
