@@ -45,7 +45,7 @@ export default function App() {
       <TickerGlobal />
 
       <Box id="contenido" sx={{ flex: 1, minWidth: 0 }}>
-        <Container maxWidth="md" component="main">
+        <Container maxWidth="lg" component="main">
           {/* header propio de <main>: el saludo + título de la vista activa
               (no el header de sitio — ese es el AppBar/nav de arriba). Un
               <main> puede anidar su propio <header> sin problema. */}

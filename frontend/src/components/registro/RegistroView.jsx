@@ -16,7 +16,7 @@ export default function RegistroView() {
   };
 
   return (
-    <div id="vista-registro" className="vista">
+    <div id="vista-registro" className="vista max-w-2xl mx-auto">
       <AvisoSalario />
 
       <Stack direction="row" gap={1.5} className="mb-4">

@@ -10,7 +10,7 @@ export default function PanelSalario({ d }) {
   const ritmo = dias ? fmtQ(Math.max(0, d.disponible_salario) / dias) + '/día' : '—';
 
   return (
-    <Card component="section" aria-label="Resumen del salario" className="p-5 mb-4">
+    <Card component="section" aria-label="Resumen del salario" className="reveal-block p-5 mb-4">
       <Stack direction="row" flexWrap="wrap" gap={4} alignItems="center">
         <div>
           <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Disponible del salario este mes</Typography>

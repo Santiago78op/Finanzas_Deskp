@@ -16,9 +16,7 @@ export function useDashboardReveal(rootRef, motionOK, deps) {
     if (!motionOK || !rootRef.current || revealedRef.current) return;
     revealedRef.current = true;
 
-    const bloques = [...rootRef.current.querySelectorAll(
-      ':scope > .panel, :scope > .metricas, :scope > .tarjeta-salario, :scope > .paneles-graficas'
-    )];
+    const bloques = [...rootRef.current.querySelectorAll(':scope > .reveal-block')];
     if (!bloques.length) return;
     gsap.set(bloques, { opacity: 0, y: 16 });
     gsap.to(bloques, { opacity: 1, y: 0, duration: .5, ease: 'power2.out', stagger: .06, clearProps: 'opacity,transform' });
