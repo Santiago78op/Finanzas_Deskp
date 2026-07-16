@@ -7,7 +7,7 @@ import { MESES } from '../../utils.js';
 
 export default function MesSelector({ anio, mes, onCambiar }) {
   return (
-    <Stack direction="row" alignItems="center" justifyContent="center" gap={2} className="mb-4">
+    <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'center', gap: 2 }} className="mb-4">
       <IconButton size="small" onClick={() => onCambiar(-1)} aria-label="Mes anterior">
         <ArrowBackIosNewIcon fontSize="small" />
       </IconButton>

@@ -27,7 +27,7 @@ export default function FiltrosMovimientos({ onFiltrar }) {
 
   return (
     <Stack component="form" aria-label="Filtrar movimientos" onSubmit={aplicar}
-      direction="row" flexWrap="wrap" gap={2} className="items-center mb-3">
+      direction="row" sx={{ flexWrap: 'wrap', gap: 2 }} className="items-center mb-3">
       <TextField type="month" value={mes} onChange={e => setMes(e.target.value)} />
       <TextField select label="Categoría" value={categoriaId} onChange={e => setCategoriaId(e.target.value)}
         className="!min-w-[220px]">

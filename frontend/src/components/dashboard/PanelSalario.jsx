@@ -11,7 +11,7 @@ export default function PanelSalario({ d }) {
 
   return (
     <Card component="section" aria-label="Resumen del salario" className="reveal-block p-5 mb-4">
-      <Stack direction="row" flexWrap="wrap" gap={4} alignItems="center">
+      <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
         <div>
           <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Disponible del salario este mes</Typography>
           <Typography variant="h5" fontWeight={800} letterSpacing="-.03em">{disponibleTexto}</Typography>

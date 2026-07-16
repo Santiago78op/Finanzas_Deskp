@@ -12,7 +12,7 @@ export default function Chips({ items, getLabel, value, onChange, permitirNingun
   }, [items, value, onChange, permitirNinguno]);
 
   return (
-    <Stack direction="row" flexWrap="wrap" gap={1}>
+    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
       {items.map((item, i) => (
         <Chip
           key={i}

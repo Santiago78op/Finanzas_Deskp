@@ -213,6 +213,14 @@ body {
 :root[data-theme="dark"] .tema-btn .icon-sol { display: inline-block; }
 :root[data-theme="light"] .tema-btn .icon-luna { display: inline-block; }
 
+/* Filo de color por tipo en la tabla de Movimientos (mov-gasto/ingreso/pago):
+   ya venía el className desde antes de la migración a MUI Table, pero sin
+   regla que lo respalde quedaba muerto (no hacía nada) — ahora sí distingue
+   el tipo de fila de un vistazo sin depender solo del Chip de la columna. */
+.mov-gasto > td:first-child { box-shadow: inset 3px 0 0 var(--gasto); }
+.mov-ingreso > td:first-child { box-shadow: inset 3px 0 0 var(--ingreso); }
+.mov-pago > td:first-child { box-shadow: inset 3px 0 0 var(--pago); }
+
 /* Ticker global: franja angosta con cifras clave, loop infinito por CSS —
    sin equivalente directo en MUI, se queda bespoke. */
 #ticker-global {

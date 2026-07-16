@@ -36,7 +36,7 @@ export default function RespaldoPanel() {
       <Typography id="sec-respaldo" variant="h6">Respaldo (CSV)</Typography>
       <Typography variant="body2" className="text-[var(--suave)]">Exportá todo a un ZIP con un CSV por tabla, o importá un CSV con el mismo formato.</Typography>
       <Button variant="contained" component="a" href="/api/export" download className="self-start">Exportar todo (ZIP)</Button>
-      <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
+      <Stack direction="row" sx={{ gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
         <TextField select label="Tabla" value={tabla} onChange={e => setTabla(e.target.value)}>
           {TABLAS.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
         </TextField>

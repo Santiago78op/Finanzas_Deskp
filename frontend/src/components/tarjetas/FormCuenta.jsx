@@ -60,7 +60,7 @@ export default function FormCuenta({ editando, onGuardado, onCancelar }) {
           control={<Checkbox checked={form.activa} onChange={e => setForm(f => ({ ...f, activa: e.target.checked }))} />}
           label="Activa"
         />
-        <Stack direction="row" gap={1} className="sm:col-span-2">
+        <Stack direction="row" sx={{ gap: 1 }} className="sm:col-span-2">
           <Button type="submit" variant="contained">Guardar cuenta</Button>
           {editando && <Button type="button" variant="outlined" size="small" onClick={onCancelar}>Cancelar edición</Button>}
         </Stack>

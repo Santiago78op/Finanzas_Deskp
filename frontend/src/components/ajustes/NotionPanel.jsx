@@ -72,7 +72,7 @@ export default function NotionPanel() {
           {check.ok ? '✓ ' : '✗ '}{check.mensaje}
         </Typography>
       )}
-      <Stack direction="row" gap={1} flexWrap="wrap">
+      <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
         <Button
           variant="outlined"
           disabled={probando}

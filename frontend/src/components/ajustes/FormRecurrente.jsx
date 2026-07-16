@@ -101,7 +101,7 @@ export default function FormRecurrente({ onCambio }) {
           control={<Checkbox checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} />}
           label="Activo"
         />
-        <Stack direction="row" gap={1} className="sm:col-span-2">
+        <Stack direction="row" sx={{ gap: 1 }} className="sm:col-span-2">
           <Button type="submit" variant="contained">Guardar</Button>
           {editando && <Button type="button" variant="outlined" onClick={() => setEditando(null)}>Cancelar edición</Button>}
         </Stack>
@@ -109,14 +109,14 @@ export default function FormRecurrente({ onCambio }) {
 
       {!recs.length && <Typography variant="body2" className="text-[var(--suave)]">Configurá tu salario acá para que la app lo registre cada mes.</Typography>}
       {recs.map(r => (
-        <Stack direction="row" justifyContent="space-between" alignItems="center" key={r.id} className="border-t border-[var(--borde)] pt-2">
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }} key={r.id} className="border-t border-[var(--borde)] pt-2">
           <span className={r.activo ? '' : 'opacity-50'}>
             <b>{r.descripcion}</b> ({r.categoria}) —{' '}
             {r.frecuencia === 'Quincenal'
               ? `${fmtQ(r.monto)} por quincena, los días ${r.dia_mes} y ${r.dia_mes_2}`
               : `${fmtQ(r.monto)} el día ${r.dia_mes}`}
           </span>
-          <Stack direction="row" gap={1}>
+          <Stack direction="row" sx={{ gap: 1 }}>
             <Button size="small" variant="outlined" onClick={() => setEditando(r)}>Editar</Button>
             <Button size="small" variant="outlined" color="error" onClick={() => borrar(r)}>Eliminar</Button>
           </Stack>

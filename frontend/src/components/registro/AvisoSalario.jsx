@@ -87,7 +87,7 @@ export default function AvisoSalario() {
   return (
     <Card id="aviso-salario" className="p-4 flex flex-col gap-3 mb-4">
       {pendIng.map((p, i) => (
-        <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" key={`ing-${i}`}>
+        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, alignItems: 'center' }} key={`ing-${i}`}>
           <Typography variant="body2">💵 Confirmar ingreso <b>{p.etiqueta}</b> de <b>{p.mes_nombre}</b>:</Typography>
           <TextField size="small" type="number" inputProps={{ step: 0.01, min: 0.01 }} className="w-28"
             value={montos[`ing-${i}`] ?? ''}
@@ -99,7 +99,7 @@ export default function AvisoSalario() {
         </Stack>
       ))}
       {pendGas.map((p, i) => (
-        <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" key={`gas-${i}`}>
+        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, alignItems: 'center' }} key={`gas-${i}`}>
           <Typography variant="body2">💸 Confirmar pago <b>{p.etiqueta}</b> de <b>{p.mes_nombre}</b>{' '}
             <small>({p.metodo === 'Tarjeta' ? p.tarjeta : p.metodo})</small>:</Typography>
           <TextField size="small" type="number" inputProps={{ step: 0.01, min: 0.01 }} className="w-28"

@@ -53,7 +53,7 @@ export default function CategoriaManager() {
   return (
     <Card component="section" aria-labelledby="sec-categorias" className="p-4 flex flex-col gap-4">
       <Typography id="sec-categorias" variant="h6">Categorías</Typography>
-      <Stack component="form" direction="row" gap={1} autoComplete="off" onSubmit={agregar}>
+      <Stack component="form" direction="row" sx={{ gap: 1 }} autoComplete="off" onSubmit={agregar}>
         <TextField label="Nueva categoría" required value={nombre} onChange={e => setNombre(e.target.value)} />
         <TextField select label="Tipo" value={tipo} onChange={e => setTipo(e.target.value)}>
           <MenuItem value="gasto">Gasto</MenuItem>
@@ -62,9 +62,9 @@ export default function CategoriaManager() {
         <Button type="submit" variant="outlined" size="small">Agregar</Button>
       </Stack>
       {cats.map(c => (
-        <Stack direction="row" justifyContent="space-between" alignItems="center" key={c.id} className="border-t border-[var(--borde)] pt-2">
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }} key={c.id} className="border-t border-[var(--borde)] pt-2">
           <span className={c.activa ? '' : 'opacity-50'}>{c.nombre} <small>({c.tipo})</small></span>
-          <Stack direction="row" gap={1}>
+          <Stack direction="row" sx={{ gap: 1 }}>
             <Button size="small" variant="outlined" onClick={() => renombrar(c)}>Renombrar</Button>
             <Button size="small" variant="outlined" onClick={() => toggle(c)}>{c.activa ? 'Desactivar' : 'Activar'}</Button>
           </Stack>

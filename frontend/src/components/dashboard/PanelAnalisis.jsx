@@ -19,7 +19,7 @@ export default function PanelAnalisis({ d }) {
         else if (c.variacion_pct > 0) delta = <span className="text-[var(--gasto)] font-bold tabular-nums">▲ {c.variacion_pct}%</span>;
         else delta = <span className="text-[var(--ingreso)] font-bold tabular-nums">▼ {Math.abs(c.variacion_pct)}%</span>;
         return (
-          <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}
+          <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}
             key={i} className={`py-2 text-sm ${i === 0 ? '' : 'border-t border-[var(--borde)]'}`}>
             <span><b>{c.nombre}</b> <small className="text-[var(--suave)]">{c.pct}% del mes</small></span>
             <span>{fmtQ(c.total)} {delta}</span>
@@ -28,7 +28,7 @@ export default function PanelAnalisis({ d }) {
       })}
       <Typography variant="overline" className="text-[var(--suave)] font-bold block mt-4 mb-1">Tus 5 gastos más grandes del mes (el "porqué")</Typography>
       {a.top_gastos.map((g, i) => (
-        <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}
           key={i} className={`py-2 text-sm ${i === 0 ? '' : 'border-t border-[var(--borde)]'}`}>
           <span>{fmtFecha(g.fecha)} — {g.descripcion || '(sin descripción)'} <small className="text-[var(--suave)]">({g.categoria})</small></span>
           <b>{fmtQ(g.monto)}</b>
