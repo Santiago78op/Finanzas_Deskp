@@ -10,7 +10,7 @@ import { useToast } from '../shared/Toast.jsx';
 import { api } from '../../api.js';
 import { fmtQ, hoyISO } from '../../utils.js';
 
-export default function FormGasto({ inputRef }) {
+export default function FormGasto({ inputRef, onGuardado }) {
   const { catGasto, metodos, cuentas } = useCatalog();
   const { bump } = useDataVersion();
   const toast = useToast();
@@ -41,6 +41,7 @@ export default function FormGasto({ inputRef }) {
         },
       });
       toast(`Gasto de ${fmtQ(monto)} guardado ✓`);
+      onGuardado?.({ tipo: 'gasto', cat: categoria.nombre, cuenta: metodo.etiqueta, monto: parseFloat(monto) });
       setMonto(''); setDescripcion('');
       inputRef?.current?.focus();
       bump();

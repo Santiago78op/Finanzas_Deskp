@@ -10,7 +10,7 @@ import { useToast } from '../shared/Toast.jsx';
 import { api } from '../../api.js';
 import { fmtQ, hoyISO } from '../../utils.js';
 
-export default function FormPago({ inputRef }) {
+export default function FormPago({ inputRef, onGuardado }) {
   const { tarjetas, cuentas } = useCatalog();
   const { bump } = useDataVersion();
   const toast = useToast();
@@ -31,6 +31,7 @@ export default function FormPago({ inputRef }) {
         body: { fecha, tarjeta_id: tarjeta.id, cuenta_id: cuenta ? cuenta.id : null, monto: parseFloat(monto) },
       });
       toast(`Pago de ${fmtQ(monto)} a ${tarjeta.nombre} guardado ✓`);
+      onGuardado?.({ tipo: 'pago', cat: tarjeta.nombre, cuenta: cuenta ? cuenta.nombre : 'Sin cuenta', monto: parseFloat(monto) });
       setMonto('');
       inputRef?.current?.focus();
       bump();

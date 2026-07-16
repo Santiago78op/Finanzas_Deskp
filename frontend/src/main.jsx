@@ -16,7 +16,7 @@ import { ToastProvider } from './components/shared/Toast.jsx'
 import { ConfirmProvider } from './components/shared/ConfirmDialog.jsx'
 
 // Puente hacia el ThemeProvider de MUI: lee el tema del ÚNICO TemaProvider
-// (montado abajo, una sola instancia de estado) para que TopNav (que
+// (montado abajo, una sola instancia de estado) para que SideNav (que
 // dispara el toggle) y este puente (que arma el theme de MUI) queden
 // sincronizados de verdad.
 function MuiBridge({ children }) {

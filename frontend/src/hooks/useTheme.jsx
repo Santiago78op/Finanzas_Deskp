@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 // Tema claro/oscuro por atributo data-theme en <html> + localStorage('tema').
 // El script inline en index.html ya lo aplica antes del primer paint (evita
 // el destello). El estado vive en un solo Context (ThemeProvider, montado
-// una vez en main.jsx) — TopNav (que dispara toggle()) y DashboardView (que
+// una vez en main.jsx) — SideNav (que dispara toggle()) y DashboardView (que
 // lee tema para las gráficas) comparten la MISMA instancia de estado, así
 // que el ThemeProvider de MUI se entera del cambio y repinta fondo/cards/
 // texto. Antes cada uno llamaba su propio useState() vía este hook y solo

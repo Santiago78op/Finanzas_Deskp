@@ -278,12 +278,33 @@ body {
 .vista { display: block; }
 .oculto { display: none !important; }
 
-/* Paneles de gráficas del Dashboard: sigue siendo un grid a mano (2 columnas
-   con paso a 1 en mobile) — los Card de MUI van adentro de cada celda. */
-.paneles-graficas {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 0;
+/* Grilla de 12 columnas del Dashboard (FinanzasQ.dc.html, Claude Design):
+   cada tarjeta pide un ancho vía .dash-span-N; todo pasa a 1 columna en
+   mobile, sin span (cada tarjeta ocupa el ancho completo). */
+.dash-grid {
+  display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; margin-top: 16px;
 }
-@media (max-width: 700px) { .paneles-graficas { grid-template-columns: 1fr; } }
+.dash-span-4 { grid-column: span 4; }
+.dash-span-5 { grid-column: span 5; }
+.dash-span-7 { grid-column: span 7; }
+.dash-span-12 { grid-column: span 12; }
+@media (max-width: 900px) {
+  .dash-grid { grid-template-columns: 1fr; gap: 14px; }
+  .dash-span-4, .dash-span-5, .dash-span-7, .dash-span-12 { grid-column: span 1; }
+}
+
+/* Grid de 2 columnas de Registro (FinanzasQ.dc.html): form a la izquierda un
+   poco más ancho que "Registrado hoy" a la derecha; 1 columna en mobile. */
+.registro-grid { display: grid; grid-template-columns: 1.12fr .88fr; gap: 20px; align-items: start; }
+@media (max-width: 800px) { .registro-grid { grid-template-columns: 1fr; } }
+
+/* Fila de "Últimos movimientos" (Dashboard) — mismas 4 columnas que la
+   cabecera, colapsa a 3 en mobile (categoría se oculta, poco espacio). */
+.grid-movs { display: grid; grid-template-columns: 90px 1fr 160px 120px; gap: 14px; }
+@media (max-width: 640px) {
+  .grid-movs { grid-template-columns: 70px 1fr 100px; }
+  .grid-movs > :nth-child(3) { display: none; }
+}
 
 /* Banner de alerta (deuda supera ingresos) */
 .banner-alerta {

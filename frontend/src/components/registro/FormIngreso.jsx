@@ -10,7 +10,7 @@ import { useToast } from '../shared/Toast.jsx';
 import { api } from '../../api.js';
 import { fmtQ, hoyISO } from '../../utils.js';
 
-export default function FormIngreso({ inputRef }) {
+export default function FormIngreso({ inputRef, onGuardado }) {
   const { catIngreso, cuentas } = useCatalog();
   const { bump } = useDataVersion();
   const toast = useToast();
@@ -32,6 +32,7 @@ export default function FormIngreso({ inputRef }) {
         body: { fecha, descripcion, categoria_id: categoria.id, cuenta_id: cuenta ? cuenta.id : null, monto: parseFloat(monto) },
       });
       toast(`Ingreso de ${fmtQ(monto)} guardado ✓`);
+      onGuardado?.({ tipo: 'ingreso', cat: categoria.nombre, cuenta: cuenta ? cuenta.nombre : 'Sin cuenta', monto: parseFloat(monto) });
       setMonto(''); setDescripcion('');
       inputRef?.current?.focus();
       bump();

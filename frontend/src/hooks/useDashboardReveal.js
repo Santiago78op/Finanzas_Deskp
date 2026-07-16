@@ -16,7 +16,10 @@ export function useDashboardReveal(rootRef, motionOK, deps) {
     if (!motionOK || !rootRef.current || revealedRef.current) return;
     revealedRef.current = true;
 
-    const bloques = [...rootRef.current.querySelectorAll(':scope > .reveal-block')];
+    // Descendiente, no ":scope > " directo: desde el rediseño a grilla de 12
+    // columnas los .reveal-block viven anidados dentro de .dash-grid, ya no
+    // como hijos directos de la raíz del Dashboard.
+    const bloques = [...rootRef.current.querySelectorAll('.reveal-block')];
     if (!bloques.length) return;
     gsap.set(bloques, { opacity: 0, y: 16 });
     gsap.to(bloques, { opacity: 1, y: 0, duration: .5, ease: 'power2.out', stagger: .06, clearProps: 'opacity,transform' });
