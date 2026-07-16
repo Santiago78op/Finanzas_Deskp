@@ -272,9 +272,9 @@ body {
   line-height: var(--lh-tight); text-transform: uppercase;
 }
 
-/* Vistas: cada vista solo se monta en React mientras está activa (ver
-   useViewTransition) — no hace falta display:none/block por CSS, pero se
-   deja .vista como hook de targeting para GSAP. */
+/* Vistas: cada vista solo se monta en React mientras su ruta está activa
+   (ver react-router en App.jsx/Layout.jsx) — no hace falta display:none/
+   block por CSS, pero se deja .vista como hook de targeting para GSAP. */
 .vista { display: block; }
 .oculto { display: none !important; }
 

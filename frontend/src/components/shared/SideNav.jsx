@@ -1,3 +1,4 @@
+import { NavLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -10,13 +11,13 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { useTheme } from '../../hooks/useTheme.jsx';
 
 const VISTAS = [
-  { key: 'dashboard', titulo: 'Dashboard', label: 'Dashboard', Icon: DashboardIcon },
-  { key: 'registro', titulo: 'Registro rápido', label: 'Registro rápido', Icon: AddCircleOutlineIcon },
-  { key: 'cuentas', titulo: 'Mis cuentas', label: 'Mis cuentas', Icon: AccountBalanceIcon },
-  { key: 'tarjetas', titulo: 'Tarjetas', label: 'Tarjetas', Icon: CreditCardIcon },
-  { key: 'analisis', titulo: 'Análisis', label: 'Análisis', Icon: InsightsIcon },
-  { key: 'movimientos', titulo: 'Movimientos', label: 'Movimientos', Icon: ReceiptLongIcon },
-  { key: 'ajustes', titulo: 'Ajustes y datos', label: 'Ajustes', Icon: SettingsIcon },
+  { key: 'dashboard', label: 'Dashboard', Icon: DashboardIcon },
+  { key: 'registro', label: 'Registro rápido', Icon: AddCircleOutlineIcon },
+  { key: 'cuentas', label: 'Mis cuentas', Icon: AccountBalanceIcon },
+  { key: 'tarjetas', label: 'Tarjetas', Icon: CreditCardIcon },
+  { key: 'analisis', label: 'Análisis', Icon: InsightsIcon },
+  { key: 'movimientos', label: 'Movimientos', Icon: ReceiptLongIcon },
+  { key: 'ajustes', label: 'Ajustes', Icon: SettingsIcon },
 ];
 
 export { VISTAS };
@@ -25,7 +26,9 @@ export { VISTAS };
 // mismo useTheme(), pero navegación vertical siguiendo el layout aprobado en
 // FinanzasQ.dc.html (Claude Design). Movimientos y Ajustes se sumaron acá
 // aunque el mockup no los dibuje: son funcionalidad real que ya se usa.
-export default function SideNav({ vista, onNavigate }) {
+// Los items son <NavLink> reales (rutas de react-router, no un onClick que
+// solo cambiaba un estado interno) — la URL cambia de verdad al navegar.
+export default function SideNav() {
   const { toggle } = useTheme();
 
   return (
@@ -52,14 +55,16 @@ export default function SideNav({ vista, onNavigate }) {
         {VISTAS.map(v => (
           <Button
             key={v.key}
-            onClick={() => onNavigate(v.key, v.titulo)}
+            component={NavLink}
+            to={`/${v.key}`}
+            className={({ isActive }) => (isActive ? 'active' : undefined)}
             startIcon={<v.Icon fontSize="small" />}
             sx={{
               justifyContent: 'flex-start', gap: 1, px: 1.6, py: 1.1, borderRadius: '999px',
               fontWeight: 600, fontSize: 14.5, textAlign: 'left', textTransform: 'none',
-              color: vista === v.key ? 'var(--texto)' : 'var(--suave)',
-              backgroundColor: vista === v.key ? 'var(--panel2)' : 'transparent',
+              color: 'var(--suave)', backgroundColor: 'transparent',
               '&:hover': { backgroundColor: 'var(--panel2)' },
+              '&.active': { color: 'var(--texto)', backgroundColor: 'var(--panel2)' },
             }}
           >
             {v.label}

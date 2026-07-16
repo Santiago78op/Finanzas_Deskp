@@ -1502,8 +1502,14 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
-@app.get("/")
-def raiz():
+@app.get("/{full_path:path}")
+def spa(full_path: str):
+    # Fallback de SPA: cualquier ruta que no sea /api/* ni /static/* (esas ya
+    # matchearon arriba) devuelve el mismo index.html, para que react-router
+    # resuelva el path en el cliente (/dashboard, /registro, etc. — incluso
+    # al recargar la página parado en una de esas rutas).
+    if full_path.startswith("api/") or full_path.startswith("static/"):
+        raise HTTPException(status_code=404)
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 

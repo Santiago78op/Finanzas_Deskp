@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -20,7 +21,8 @@ import { motionOK } from '../../motion.js';
 // Patrimonio y "Disponible del salario" no tienen lugar en esta composición
 // (el mockup no los incluye); si hacen falta de vuelta, es una vista propia,
 // no un widget más acá.
-export default function DashboardView({ onNavigate }) {
+export default function DashboardView() {
+  const navigate = useNavigate();
   const hoy = new Date();
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
@@ -110,7 +112,7 @@ export default function DashboardView({ onNavigate }) {
               </div>
             ))}
           </div>
-          <Button size="small" onClick={() => onNavigate('cuentas')} sx={{ alignSelf: 'flex-start', mt: 'auto', textTransform: 'none', color: 'var(--suave)' }}>Ver mis cuentas →</Button>
+          <Button size="small" onClick={() => navigate('/cuentas')} sx={{ alignSelf: 'flex-start', mt: 'auto', textTransform: 'none', color: 'var(--suave)' }}>Ver mis cuentas →</Button>
         </Card>
 
         <Card component="section" aria-labelledby="sec-como-va" className="reveal-block p-5 dash-span-4 flex flex-col gap-4">
@@ -153,7 +155,7 @@ export default function DashboardView({ onNavigate }) {
             </div>
             <Typography variant="body2" className="text-[var(--suave)]" style={{ textAlign: 'right' }}>{d.tarjetas.length} tarjeta{d.tarjetas.length === 1 ? '' : 's'}</Typography>
           </div>
-          <Button size="small" onClick={() => onNavigate('tarjetas')} sx={{ alignSelf: 'flex-start', mt: 'auto', textTransform: 'none', color: 'var(--suave)' }}>Ver tarjetas →</Button>
+          <Button size="small" onClick={() => navigate('/tarjetas')} sx={{ alignSelf: 'flex-start', mt: 'auto', textTransform: 'none', color: 'var(--suave)' }}>Ver tarjetas →</Button>
         </Card>
 
         <Card component="section" aria-labelledby="sec-en-que-gasto" className="reveal-block p-5 dash-span-7 flex flex-col gap-2">
@@ -204,7 +206,7 @@ export default function DashboardView({ onNavigate }) {
         <Card component="section" aria-labelledby="sec-ultimos-movs" className="reveal-block p-5 dash-span-12 flex flex-col gap-2">
           <div className="flex items-baseline justify-between gap-2 mb-1">
             <Typography id="sec-ultimos-movs" variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Últimos movimientos</Typography>
-            <Button size="small" onClick={() => onNavigate('movimientos')} sx={{ textTransform: 'none', color: 'var(--suave)' }}>Ver todos →</Button>
+            <Button size="small" onClick={() => navigate('/movimientos')} sx={{ textTransform: 'none', color: 'var(--suave)' }}>Ver todos →</Button>
           </div>
           {!movs.length && <Typography variant="body2" className="text-[var(--suave)]">Sin movimientos todavía.</Typography>}
           {movs.length > 0 && (
