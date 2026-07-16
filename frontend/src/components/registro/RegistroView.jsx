@@ -1,22 +1,29 @@
 import { useRef, useState } from 'react';
-import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import AvisoSalario from './AvisoSalario.jsx';
 import FormGasto from './FormGasto.jsx';
 import FormPago from './FormPago.jsx';
 import FormIngreso from './FormIngreso.jsx';
 import { fmtQ } from '../../utils.js';
+import { tipoBtnEstilo } from './campoStyles.js';
 
 const COLOR_TIPO = { gasto: 'var(--gasto)', ingreso: 'var(--ingreso)', pago: 'var(--pago)' };
 const LABEL_TIPO = { gasto: 'Gasto', ingreso: 'Ingreso', pago: 'Pago' };
+const TIPOS = [
+  { key: 'gasto', label: 'Gasto', Icon: TrendingDownIcon },
+  { key: 'ingreso', label: 'Ingreso', Icon: TrendingUpIcon },
+  { key: 'pago', label: 'Pago', Icon: ScheduleIcon },
+];
 
-// Grid de 2 columnas (FinanzasQ.dc.html, Claude Design): el form a la
-// izquierda no cambia de lógica, "Registrado hoy" a la derecha es nuevo —
-// lista local de lo guardado en esta sesión (cada Form* llama onGuardado
-// además de su toast() de siempre; no se vuelve a pegarle a la API solo
-// para mostrar esto).
+// "Nuevo movimiento": una sola Card con el selector de tipo adentro (antes
+// eran 3 botones grandes afuera) + los campos del form activo — layout que
+// pide FinanzasQ.dc.html (Claude Design). "Registrado hoy" a la derecha es
+// una lista local de lo guardado en la sesión (cada Form* llama onGuardado
+// además de su toast() de siempre).
 export default function RegistroView() {
   const [tipo, setTipo] = useState('gasto');
   const [registros, setRegistros] = useState([]);
@@ -33,34 +40,25 @@ export default function RegistroView() {
     <div id="vista-registro" className="vista max-w-[1020px] flex flex-col gap-4">
       <AvisoSalario />
 
-      <Stack direction="row" sx={{ gap: 1.5 }} className="mb-1">
-        <Button
-          variant={tipo === 'gasto' ? 'contained' : 'outlined'}
-          color="error"
-          size="large"
-          className="flex-[2] text-lg"
-          onClick={() => elegirTipo('gasto')}
-        >+ Gasto</Button>
-        <Button
-          variant={tipo === 'pago' ? 'contained' : 'outlined'}
-          color="warning"
-          className="flex-1"
-          onClick={() => elegirTipo('pago')}
-        >+ Pago tarjeta</Button>
-        <Button
-          variant={tipo === 'ingreso' ? 'contained' : 'outlined'}
-          color="success"
-          className="flex-1"
-          onClick={() => elegirTipo('ingreso')}
-        >+ Ingreso</Button>
-      </Stack>
-
       <div className="registro-grid">
-        <div>
+        <Card component="section" aria-labelledby="sec-nuevo-mov" className="p-6 flex flex-col gap-4">
+          <Typography id="sec-nuevo-mov" variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Nuevo movimiento</Typography>
+
+          <div className="flex gap-2">
+            {TIPOS.map(t => (
+              <button
+                key={t.key} type="button" onClick={() => elegirTipo(t.key)}
+                style={tipoBtnEstilo(tipo === t.key, COLOR_TIPO[t.key])}
+              >
+                <t.Icon style={{ fontSize: 16 }} />{t.label}
+              </button>
+            ))}
+          </div>
+
           {tipo === 'gasto' && <FormGasto inputRef={montoRef} onGuardado={onGuardado} />}
           {tipo === 'pago' && <FormPago inputRef={montoRef} onGuardado={onGuardado} />}
           {tipo === 'ingreso' && <FormIngreso inputRef={montoRef} onGuardado={onGuardado} />}
-        </div>
+        </Card>
 
         <Card component="section" aria-labelledby="sec-registrado-hoy" className="p-4">
           <Typography id="sec-registrado-hoy" variant="h6" className="mb-3">Registrado hoy</Typography>

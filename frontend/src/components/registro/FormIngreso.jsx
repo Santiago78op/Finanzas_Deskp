@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import Card from '@mui/material/Card';
-import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Chips from '../shared/Chips.jsx';
+import CheckIcon from '@mui/icons-material/Check';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { useToast } from '../shared/Toast.jsx';
 import { api } from '../../api.js';
 import { fmtQ, hoyISO } from '../../utils.js';
+import { campoLabel, campoBase } from './campoStyles.js';
 
 export default function FormIngreso({ inputRef, onGuardado }) {
   const { catIngreso, cuentas } = useCatalog();
@@ -18,10 +16,11 @@ export default function FormIngreso({ inputRef, onGuardado }) {
   const [monto, setMonto] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState(hoyISO());
-  const [categoria, setCategoria] = useState();
-  const [cuenta, setCuenta] = useState();
+  const [categoriaId, setCategoriaId] = useState('');
+  const [cuentaId, setCuentaId] = useState('');
 
-  const cuentasConNinguna = [{ id: null, nombre: 'Sin cuenta' }, ...cuentas];
+  const categoria = catIngreso.find(c => String(c.id) === categoriaId);
+  const cuenta = cuentas.find(c => String(c.id) === cuentaId);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -40,21 +39,48 @@ export default function FormIngreso({ inputRef, onGuardado }) {
   };
 
   return (
-    <Card className="p-4">
-      <form aria-label="Registrar ingreso" className="flex flex-col gap-3" autoComplete="off" onSubmit={submit}>
-        <TextField label="Monto (Q)" type="number" inputProps={{ step: 0.01, min: 0.01, inputMode: 'decimal' }}
-          inputRef={inputRef} required placeholder="0.00"
-          value={monto} onChange={e => setMonto(e.target.value)} />
-        <TextField label="Descripción (opcional)" placeholder="ej. venta"
-          value={descripcion} onChange={e => setDescripcion(e.target.value)} />
-        <Typography variant="body2" color="text.secondary">Categoría</Typography>
-        <Chips items={catIngreso} getLabel={c => c.nombre} value={categoria} onChange={setCategoria} />
-        <Typography variant="body2" color="text.secondary">¿A qué cuenta entró? (opcional)</Typography>
-        <Chips items={cuentasConNinguna} getLabel={c => c.nombre} value={cuenta} onChange={setCuenta} permitirNinguno />
-        <TextField label="Fecha" type="date" required InputLabelProps={{ shrink: true }}
-          value={fecha} onChange={e => setFecha(e.target.value)} />
-        <Button type="submit" variant="contained" color="success" size="large">Guardar ingreso</Button>
-      </form>
-    </Card>
+    <form aria-label="Registrar ingreso" className="flex flex-col gap-3" autoComplete="off" onSubmit={submit}>
+      <div className="flex flex-col gap-1.5">
+        <label style={campoLabel}>Monto</label>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <span style={{ position: 'absolute', left: 16, fontWeight: 700, color: 'var(--suave)', fontSize: 18, pointerEvents: 'none' }}>Q</span>
+          <input
+            ref={inputRef} type="text" inputMode="decimal" placeholder="0.00" required autoFocus
+            value={monto} onChange={e => setMonto(e.target.value)}
+            style={{ ...campoBase, padding: '15px 16px 15px 42px', fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <label style={campoLabel}>Categoría</label>
+          <select required value={categoriaId} onChange={e => setCategoriaId(e.target.value)} style={{ ...campoBase, cursor: 'pointer' }}>
+            <option value="" disabled>Elegí una</option>
+            {catIngreso.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label style={campoLabel}>Cuenta (opcional)</label>
+          <select value={cuentaId} onChange={e => setCuentaId(e.target.value)} style={{ ...campoBase, cursor: 'pointer' }}>
+            <option value="">Sin cuenta</option>
+            {cuentas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'auto 1fr', alignItems: 'end' }}>
+        <div className="flex flex-col gap-1.5">
+          <label style={campoLabel}>Fecha</label>
+          <input type="date" required value={fecha} onChange={e => setFecha(e.target.value)} style={{ ...campoBase, width: 'auto' }} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label style={campoLabel}>Nota (opcional)</label>
+          <input type="text" placeholder="Ej. venta" value={descripcion} onChange={e => setDescripcion(e.target.value)} style={campoBase} />
+        </div>
+      </div>
+
+      <Button type="submit" variant="contained" color="success" size="large" fullWidth startIcon={<CheckIcon />}>Guardar ingreso</Button>
+    </form>
   );
 }

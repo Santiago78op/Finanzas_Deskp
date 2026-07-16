@@ -293,6 +293,19 @@ body {
   .dash-span-4, .dash-span-5, .dash-span-7, .dash-span-12 { grid-column: span 1; }
 }
 
+/* Grids de 2 columnas de Cuentas/Tarjetas (FinanzasQ.dc.html) — página de
+   gestión completa, por eso es grid fijo y no carrusel. El tile punteado al
+   final ocupa una celda más y hace scroll al formulario de arriba. */
+.cuentas-grid, .tarjetas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 700px) { .cuentas-grid, .tarjetas-grid { grid-template-columns: 1fr; } }
+.tile-agregar {
+  border: 1.5px dashed var(--borde); background: transparent; border-radius: 14px;
+  padding: 18px; display: flex; align-items: center; justify-content: center; gap: 9px;
+  cursor: pointer; font-family: inherit; font-weight: 600; font-size: 14px;
+  color: var(--suave); min-height: 120px;
+}
+.tile-agregar:hover { color: var(--tinta); border-color: var(--suave); }
+
 /* Grid de 2 columnas de Registro (FinanzasQ.dc.html): form a la izquierda un
    poco más ancho que "Registrado hoy" a la derecha; 1 columna en mobile. */
 .registro-grid { display: grid; grid-template-columns: 1.12fr .88fr; gap: 20px; align-items: start; }
