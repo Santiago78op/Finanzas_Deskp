@@ -3,6 +3,7 @@ import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 import { fmtQ } from '../../utils.js';
 import { ACC } from '../../theme/colores.js';
+import { tabularNums } from './estilos.js';
 
 // Cara de tarjeta oscura y realista (FinanzasQ.dc.html, Claude Design): filo
 // de acento 3px arriba (no fondo saturado — "no lee como tarjeta real"),
@@ -46,8 +47,8 @@ export default function CreditCard({ tarjeta, onEditar }) {
             <div className="h-full rounded-full" style={{ width: `${uso}%`, background: acento }} />
           </div>
           <div className="flex justify-between items-end gap-2 text-xs">
-            <div><div className="opacity-60 uppercase tracking-wide text-[10px]">Saldo usado</div><div className="font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(tarjeta.saldo)}</div></div>
-            <div style={{ textAlign: 'right' }}><div className="opacity-60 uppercase tracking-wide text-[10px]">Límite</div><div className="font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(tarjeta.limite)}</div></div>
+            <div><div className="opacity-60 uppercase tracking-wide text-[10px]">Saldo usado</div><div className="font-semibold" style={tabularNums}>{fmtQ(tarjeta.saldo)}</div></div>
+            <div style={{ textAlign: 'right' }}><div className="opacity-60 uppercase tracking-wide text-[10px]">Límite</div><div className="font-semibold" style={tabularNums}>{fmtQ(tarjeta.limite)}</div></div>
           </div>
         </div>
       </div>

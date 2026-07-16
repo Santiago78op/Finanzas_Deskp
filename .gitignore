@@ -19,3 +19,7 @@ static/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Herramientas locales (Claude Code, Playwright MCP)
+.claude/
+.playwright-mcp/

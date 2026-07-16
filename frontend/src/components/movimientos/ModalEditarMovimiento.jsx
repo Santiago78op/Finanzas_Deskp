@@ -4,9 +4,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Modal from '../shared/Modal.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { useToast } from '../shared/Toast.jsx';
-import { api } from '../../api.js';
-
-const RUTAS_TIPO = { ingreso: 'ingresos', gasto: 'gastos', pago: 'pagos_tarjetas' };
+import { actualizarMovimiento } from '../../api/movimientos.js';
 
 export default function ModalEditarMovimiento({ mov, onCerrar, onGuardado }) {
   const { catGasto, catIngreso, metodos, tarjetas, cuentas } = useCatalog();
@@ -41,7 +39,7 @@ export default function ModalEditarMovimiento({ mov, onCerrar, onGuardado }) {
       } else {
         body = { fecha, tarjeta_id: parseInt(tarjetaId), cuenta_id: cuentaSel, monto: parseFloat(monto) };
       }
-      await api(`/api/${RUTAS_TIPO[mov.tipo]}/${mov.id}`, { method: 'PUT', body });
+      await actualizarMovimiento(mov.tipo, mov.id, body);
       toast('Registro actualizado ✓');
       onGuardado();
     } catch (err) { toast(err.message, true); }

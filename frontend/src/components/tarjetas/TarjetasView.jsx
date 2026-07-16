@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import FormTarjeta from './FormTarjeta.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
-import { api } from '../../api.js';
+import { getTarjetas } from '../../api/tarjetas.js';
 import { fmtQ } from '../../utils.js';
 
 // Solo tarjetas — "Mis cuentas" se fue a su propia vista (ver
@@ -18,7 +18,7 @@ export default function TarjetasView() {
   const formRef = useRef(null);
 
   const cargar = useCallback(async () => {
-    setTarjetas(await api('/api/tarjetas?incluir_inactivas=true'));
+    setTarjetas(await getTarjetas(true));
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);

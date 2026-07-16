@@ -7,11 +7,12 @@ import Checkbox from '@mui/material/Checkbox';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { api } from '../../api.js';
+import { getRecurrentes, crearRecurrente, actualizarRecurrente, eliminarRecurrente } from '../../api/recurrentes.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { fmtQ } from '../../utils.js';
+import { filaAcciones, filaItem } from './ajustes.styles.js';
 
 const VACIO = { descripcion: '', categoria_id: '', frecuencia: 'Mensual', monto: '', dia_mes: '', dia_mes_2: '', activo: true };
 
@@ -23,7 +24,7 @@ export default function FormRecurrente({ onCambio }) {
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState(VACIO);
 
-  const cargar = useCallback(async () => setRecs(await api('/api/recurrentes')), []);
+  const cargar = useCallback(async () => setRecs(await getRecurrentes()), []);
   useEffect(() => { cargar(); }, [cargar]);
 
   useEffect(() => {
@@ -47,8 +48,8 @@ export default function FormRecurrente({ onCambio }) {
       activo: form.activo,
     };
     try {
-      if (editando) await api(`/api/recurrentes/${editando.id}`, { method: 'PUT', body });
-      else await api('/api/recurrentes', { method: 'POST', body });
+      if (editando) await actualizarRecurrente(editando.id, body);
+      else await crearRecurrente(body);
       toast('Ingreso recurrente guardado ✓');
       setEditando(null);
       await cargar();
@@ -63,7 +64,7 @@ export default function FormRecurrente({ onCambio }) {
     );
     if (!ok) return;
     try {
-      await api(`/api/recurrentes/${r.id}`, { method: 'DELETE' });
+      await eliminarRecurrente(r.id);
       toast('Ingreso recurrente eliminado ✓');
       await cargar();
       onCambio?.();
@@ -101,7 +102,7 @@ export default function FormRecurrente({ onCambio }) {
           control={<Checkbox checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} />}
           label="Activo"
         />
-        <Stack direction="row" sx={{ gap: 1 }} className="sm:col-span-2">
+        <Stack direction="row" sx={filaAcciones} className="sm:col-span-2">
           <Button type="submit" variant="contained">Guardar</Button>
           {editando && <Button type="button" variant="outlined" onClick={() => setEditando(null)}>Cancelar edición</Button>}
         </Stack>
@@ -109,14 +110,14 @@ export default function FormRecurrente({ onCambio }) {
 
       {!recs.length && <Typography variant="body2" className="text-[var(--suave)]">Configurá tu salario acá para que la app lo registre cada mes.</Typography>}
       {recs.map(r => (
-        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }} key={r.id} className="border-t border-[var(--borde)] pt-2">
+        <Stack direction="row" sx={filaItem} key={r.id} className="border-t border-[var(--borde)] pt-2">
           <span className={r.activo ? '' : 'opacity-50'}>
             <b>{r.descripcion}</b> ({r.categoria}) —{' '}
             {r.frecuencia === 'Quincenal'
               ? `${fmtQ(r.monto)} por quincena, los días ${r.dia_mes} y ${r.dia_mes_2}`
               : `${fmtQ(r.monto)} el día ${r.dia_mes}`}
           </span>
-          <Stack direction="row" sx={{ gap: 1 }}>
+          <Stack direction="row" sx={filaAcciones}>
             <Button size="small" variant="outlined" onClick={() => setEditando(r)}>Editar</Button>
             <Button size="small" variant="outlined" color="error" onClick={() => borrar(r)}>Eliminar</Button>
           </Stack>

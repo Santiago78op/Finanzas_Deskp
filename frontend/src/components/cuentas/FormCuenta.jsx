@@ -7,7 +7,7 @@ import Checkbox from '@mui/material/Checkbox';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { api } from '../../api.js';
+import { crearCuenta, actualizarCuenta } from '../../api/cuentas.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 
@@ -32,8 +32,8 @@ export default function FormCuenta({ editando, onGuardado, onCancelar }) {
       saldo_inicial: parseFloat(form.saldo_inicial || 0), activa: form.activa,
     };
     try {
-      if (editando) await api(`/api/cuentas/${editando.id}`, { method: 'PUT', body });
-      else await api('/api/cuentas', { method: 'POST', body });
+      if (editando) await actualizarCuenta(editando.id, body);
+      else await crearCuenta(body);
       toast('Cuenta guardada ✓');
       await refetch();
       onGuardado();

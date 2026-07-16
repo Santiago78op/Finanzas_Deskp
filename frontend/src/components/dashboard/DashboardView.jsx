@@ -8,12 +8,15 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import MesSelector from './MesSelector.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
-import { api } from '../../api.js';
+import { getDashboard } from '../../api/dashboard.js';
+import { getMovimientos } from '../../api/movimientos.js';
 import { fmtQ, MESES } from '../../utils.js';
 import { ACC } from '../../theme/colores.js';
 import { useDashboardReveal } from '../../hooks/useDashboardReveal.js';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { motionOK } from '../../motion.js';
+import { tabularNums, puntoAcento, bordeFilaLista } from '../shared/estilos.js';
+import { balanceIzquierda, balanceDerecha, barraFondo, circuloIconoPago } from './dashboard.styles.js';
 
 // Composición nueva (FinanzasQ.dc.html, Claude Design): resumen narrativo en
 // tarjetas "pregunta → respuesta" en vez del dashboard denso anterior de 6
@@ -33,8 +36,8 @@ export default function DashboardView() {
   useDashboardReveal(rootRef, motionOK, [d]);
 
   const cargar = useCallback(async () => {
-    setD(await api(`/api/dashboard?anio=${anio}&mes=${mes}`));
-    setMovs(await api('/api/movimientos'));
+    setD(await getDashboard(anio, mes));
+    setMovs(await getMovimientos());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anio, mes, version]);
 
@@ -73,7 +76,7 @@ export default function DashboardView() {
 
       <div className="dash-grid">
         <Card component="section" aria-label="Balance del mes" className="reveal-block p-5 dash-span-12 flex items-center justify-between gap-6 flex-wrap">
-          <div style={{ minWidth: 280, flex: 1 }}>
+          <div style={balanceIzquierda}>
             <Typography variant="body2" fontWeight={500} className="text-[var(--suave)]">Buenas 👋</Typography>
             <Typography variant="h6" fontWeight={600} lineHeight={1.35} className="mt-1" style={{ textWrap: 'pretty' }}>
               Vas <b className={aFavor ? 'text-[var(--ingreso)]' : 'text-[var(--gasto)]'}>{fmtQ(Math.abs(d.balance))}</b> {aFavor ? 'a favor' : 'en contra'} este mes.{' '}
@@ -83,9 +86,9 @@ export default function DashboardView() {
               Ingresos {fmtQ(d.ingresos)} · Gastos {fmtQ(d.gastos)} · Deuda en tarjetas {fmtQ(d.deuda_total)}
             </Typography>
           </div>
-          <div style={{ textAlign: 'right', flex: 'none' }}>
+          <div style={balanceDerecha}>
             <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Balance del mes</Typography>
-            <Typography variant="h4" fontWeight={700} className={aFavor ? 'text-[var(--ingreso)]' : 'text-[var(--gasto)]'} style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <Typography variant="h4" fontWeight={700} className={aFavor ? 'text-[var(--ingreso)]' : 'text-[var(--gasto)]'} style={tabularNums}>
               {aFavor ? '+' : '−'}{fmtQ(Math.abs(d.balance))}
             </Typography>
           </div>
@@ -94,21 +97,21 @@ export default function DashboardView() {
         <Card component="section" aria-labelledby="sec-cuanto-tengo" className="reveal-block p-5 dash-span-4 flex flex-col gap-3">
           <Typography id="sec-cuanto-tengo" variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">¿Cuánto tengo?</Typography>
           <div>
-            <Typography variant="h5" fontWeight={700} style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(d.dinero_total)}</Typography>
+            <Typography variant="h5" fontWeight={700} style={tabularNums}>{fmtQ(d.dinero_total)}</Typography>
             <Typography variant="body2" className="text-[var(--suave)]">Disponible en {d.cuentas.length} cuenta{d.cuentas.length === 1 ? '' : 's'}</Typography>
           </div>
           <div className="flex flex-col">
             {d.cuentas.length === 0 && <Typography variant="body2" className="text-[var(--suave)]">Sin cuentas registradas.</Typography>}
             {d.cuentas.map((c, i) => (
-              <div key={c.id} className="flex items-center justify-between gap-2 py-1.5" style={{ borderBottom: i < d.cuentas.length - 1 ? '1px solid var(--borde)' : 'none' }}>
+              <div key={c.id} className="flex items-center justify-between gap-2 py-1.5" style={bordeFilaLista(i === d.cuentas.length - 1)}>
                 <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
-                  <span style={{ width: 9, height: 9, borderRadius: 999, flex: 'none', background: ACC[c.id % 6] }} />
+                  <span style={puntoAcento(ACC[c.id % 6])} />
                   <div style={{ minWidth: 0 }}>
                     <div className="text-sm font-semibold truncate">{c.nombre}</div>
                     <div className="text-xs text-[var(--suave)]">{c.banco} · {c.tipo}</div>
                   </div>
                 </div>
-                <div className="text-sm font-semibold whitespace-nowrap" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(c.saldo)}</div>
+                <div className="text-sm font-semibold whitespace-nowrap" style={tabularNums}>{fmtQ(c.saldo)}</div>
               </div>
             ))}
           </div>
@@ -121,25 +124,25 @@ export default function DashboardView() {
             <div>
               <div className="flex items-center justify-between text-sm font-semibold">
                 <span className="flex items-center gap-2 text-[var(--ingreso)]"><TrendingUpIcon sx={{ fontSize: 16 }} /><span className="text-[var(--texto)]">Ingresos</span></span>
-                <span className="text-[var(--ingreso)]" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(d.ingresos)}</span>
+                <span className="text-[var(--ingreso)]" style={tabularNums}>{fmtQ(d.ingresos)}</span>
               </div>
-              <div className="mt-1.5 h-2 rounded-full" style={{ background: 'var(--panel2)' }}>
+              <div className="mt-1.5 h-2 rounded-full" style={barraFondo}>
                 <div className="h-full rounded-full" style={{ width: '100%', background: 'var(--ingreso)' }} />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between text-sm font-semibold">
                 <span className="flex items-center gap-2 text-[var(--gasto)]"><TrendingDownIcon sx={{ fontSize: 16 }} /><span className="text-[var(--texto)]">Gastos</span></span>
-                <span className="text-[var(--gasto)]" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(d.gastos)}</span>
+                <span className="text-[var(--gasto)]" style={tabularNums}>{fmtQ(d.gastos)}</span>
               </div>
-              <div className="mt-1.5 h-2 rounded-full" style={{ background: 'var(--panel2)' }}>
+              <div className="mt-1.5 h-2 rounded-full" style={barraFondo}>
                 <div className="h-full rounded-full" style={{ width: `${gastoBarW}%`, background: 'var(--gasto)' }} />
               </div>
             </div>
           </div>
           <div className="flex items-center justify-between pt-3 mt-auto" style={{ borderTop: '1px solid var(--borde)' }}>
             <span className="text-sm font-semibold text-[var(--suave)]">Balance del mes</span>
-            <span className={`font-bold ${aFavor ? 'text-[var(--ingreso)]' : 'text-[var(--gasto)]'}`} style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(d.balance)}</span>
+            <span className={`font-bold ${aFavor ? 'text-[var(--ingreso)]' : 'text-[var(--gasto)]'}`} style={tabularNums}>{fmtQ(d.balance)}</span>
           </div>
         </Card>
 
@@ -151,7 +154,7 @@ export default function DashboardView() {
           <div className="flex items-end justify-between">
             <div>
               <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Deuda total</Typography>
-              <Typography variant="h5" fontWeight={700} className="text-[var(--pago)]" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(d.deuda_total)}</Typography>
+              <Typography variant="h5" fontWeight={700} className="text-[var(--pago)]" style={tabularNums}>{fmtQ(d.deuda_total)}</Typography>
             </div>
             <Typography variant="body2" className="text-[var(--suave)]" style={{ textAlign: 'right' }}>{d.tarjetas.length} tarjeta{d.tarjetas.length === 1 ? '' : 's'}</Typography>
           </div>
@@ -168,9 +171,9 @@ export default function DashboardView() {
             <div key={c.nombre} className="py-1.5">
               <div className="flex justify-between gap-2 text-sm mb-1.5">
                 <span className="font-semibold">{c.nombre}</span>
-                <span className="font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(c.total)}</span>
+                <span className="font-semibold" style={tabularNums}>{fmtQ(c.total)}</span>
               </div>
-              <div className="h-2.5 rounded-full" style={{ background: 'var(--panel2)' }}>
+              <div className="h-2.5 rounded-full" style={barraFondo}>
                 <div className="h-full rounded-full" style={{ width: `${Math.round(c.total / maxCategoria * 100)}%`, background: ACC[i % 6] }} />
               </div>
             </div>
@@ -178,7 +181,7 @@ export default function DashboardView() {
           {d.analisis.top_categorias.length > 0 && (
             <div className="flex justify-between items-center pt-3 mt-1.5" style={{ borderTop: '1px solid var(--borde)' }}>
               <span className="text-sm font-semibold text-[var(--suave)]">Total gastado en {MESES[mes]}</span>
-              <span className="font-bold" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(d.gastos)}</span>
+              <span className="font-bold" style={tabularNums}>{fmtQ(d.gastos)}</span>
             </div>
           )}
         </Card>
@@ -189,16 +192,13 @@ export default function DashboardView() {
           {tarjetasPorPago.map(t => (
             <div key={t.id} className="flex items-center justify-between gap-2 py-2.5">
               <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-                <span style={{
-                  width: 36, height: 36, borderRadius: 999, flex: 'none', background: 'var(--panel2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pago)',
-                }}><ScheduleIcon sx={{ fontSize: 18 }} /></span>
+                <span style={circuloIconoPago}><ScheduleIcon sx={{ fontSize: 18 }} /></span>
                 <div style={{ minWidth: 0 }}>
                   <div className="text-sm font-semibold truncate">{t.nombre}</div>
                   <div className="text-xs font-semibold text-[var(--pago)]">Vence en {t.dias_pago} día{t.dias_pago === 1 ? '' : 's'}</div>
                 </div>
               </div>
-              <div className="font-bold whitespace-nowrap" style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtQ(t.saldo)}</div>
+              <div className="font-bold whitespace-nowrap" style={tabularNums}>{fmtQ(t.saldo)}</div>
             </div>
           ))}
         </Card>
@@ -216,15 +216,15 @@ export default function DashboardView() {
               </div>
               {movs.slice(0, 6).map(m => (
                 <div key={`${m.tipo}-${m.id}`} className="grid-movs items-center" style={{ padding: '11px 0', borderBottom: '1px solid var(--borde)' }}>
-                  <div className="text-sm text-[var(--suave)]" style={{ fontVariantNumeric: 'tabular-nums' }}>{m.fecha}</div>
+                  <div className="text-sm text-[var(--suave)]" style={tabularNums}>{m.fecha}</div>
                   <div className="text-sm font-semibold truncate">{m.descripcion || '—'}</div>
                   <div>
-                    <span className="inline-flex items-center gap-2 text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'var(--panel2)' }}>
-                      <span style={{ width: 8, height: 8, borderRadius: 999, flex: 'none', background: colorMovimiento(m) }} />
+                    <span className="inline-flex items-center gap-2 text-xs font-semibold px-2.5 py-1 rounded-full" style={barraFondo}>
+                      <span style={puntoAcento(colorMovimiento(m), 8)} />
                       {m.categoria || (m.tipo === 'ingreso' ? 'Ingreso' : m.tipo === 'pago' ? 'Pago' : '—')}
                     </span>
                   </div>
-                  <div className={`flex items-center justify-end gap-1 text-sm font-bold text-right ${m.tipo === 'ingreso' ? 'text-[var(--ingreso)]' : m.tipo === 'pago' ? 'text-[var(--pago)]' : 'text-[var(--gasto)]'}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  <div className={`flex items-center justify-end gap-1 text-sm font-bold text-right ${m.tipo === 'ingreso' ? 'text-[var(--ingreso)]' : m.tipo === 'pago' ? 'text-[var(--pago)]' : 'text-[var(--gasto)]'}`} style={tabularNums}>
                     {m.tipo === 'ingreso' ? <TrendingUpIcon sx={{ fontSize: 15 }} /> : <TrendingDownIcon sx={{ fontSize: 15 }} />}
                     {m.tipo === 'ingreso' ? '+' : '−'}{fmtQ(m.monto)}
                   </div>

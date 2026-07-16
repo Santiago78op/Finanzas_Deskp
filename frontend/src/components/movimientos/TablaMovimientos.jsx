@@ -11,6 +11,7 @@ import Typography from '@mui/material/Typography';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { fmtFecha, fmtQ } from '../../utils.js';
+import { tablaScroll } from './movimientos.styles.js';
 
 const COLOR_TIPO = { gasto: 'error', ingreso: 'success', pago: 'warning' };
 
@@ -18,7 +19,7 @@ export default function TablaMovimientos({ movs, onEditar, onEliminar }) {
   if (!movs.length) return <Typography variant="body2" className="texto-suave">No hay movimientos con esos filtros.</Typography>;
 
   return (
-    <TableContainer sx={{ overflowX: 'auto' }}>
+    <TableContainer sx={tablaScroll}>
       <Table size="small">
         <TableHead>
           <TableRow>

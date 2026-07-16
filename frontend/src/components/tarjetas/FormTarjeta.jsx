@@ -6,7 +6,7 @@ import Checkbox from '@mui/material/Checkbox';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { api } from '../../api.js';
+import { crearTarjeta, actualizarTarjeta } from '../../api/tarjetas.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 
@@ -33,8 +33,8 @@ export default function FormTarjeta({ editando, onGuardado, onCancelar }) {
       saldo_inicial: parseFloat(form.saldo_inicial || 0), activa: form.activa,
     };
     try {
-      if (editando) await api(`/api/tarjetas/${editando.id}`, { method: 'PUT', body });
-      else await api('/api/tarjetas', { method: 'POST', body });
+      if (editando) await actualizarTarjeta(editando.id, body);
+      else await crearTarjeta(body);
       toast('Tarjeta guardada ✓');
       await refetch();
       onGuardado();

@@ -4,7 +4,8 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import { api } from '../../api.js';
+import { getRecurrentesPendientes, confirmarRecurrente, omitirRecurrente } from '../../api/recurrentes.js';
+import { getGastosRecurrentesPendientes, confirmarGastoRecurrente, omitirGastoRecurrente } from '../../api/gastosRecurrentes.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
@@ -22,8 +23,8 @@ export default function AvisoSalario() {
   const revisar = useCallback(async () => {
     try {
       const [ing, gas] = await Promise.all([
-        api('/api/recurrentes/pendientes'),
-        api('/api/gastos_recurrentes/pendientes'),
+        getRecurrentesPendientes(),
+        getGastosRecurrentesPendientes(),
       ]);
       setPendIng(ing);
       setPendGas(gas);
@@ -43,9 +44,7 @@ export default function AvisoSalario() {
   const confirmarIngreso = async (i) => {
     const p = pendIng[i];
     try {
-      await api(`/api/recurrentes/${p.id}/confirmar`, {
-        method: 'POST', body: { monto: parseFloat(montos[`ing-${i}`]), quincena: p.quincena },
-      });
+      await confirmarRecurrente(p.id, { monto: parseFloat(montos[`ing-${i}`]), quincena: p.quincena });
       toast(`${p.etiqueta} confirmado ✓`);
       revisar();
       bump();
@@ -56,7 +55,7 @@ export default function AvisoSalario() {
     const p = pendIng[i];
     if (!(await confirmar(`¿Omitir "${p.etiqueta}" este mes? No se creará el ingreso y el aviso desaparecerá.`))) return;
     try {
-      await api(`/api/recurrentes/${p.id}/omitir?quincena=${p.quincena}`, { method: 'POST' });
+      await omitirRecurrente(p.id, p.quincena);
       toast(`${p.etiqueta} omitido este mes`);
       revisar();
     } catch (err) { toast(err.message, true); }
@@ -65,9 +64,7 @@ export default function AvisoSalario() {
   const confirmarGasto = async (i) => {
     const p = pendGas[i];
     try {
-      await api(`/api/gastos_recurrentes/${p.id}/confirmar`, {
-        method: 'POST', body: { monto: parseFloat(montos[`gas-${i}`]), quincena: p.quincena },
-      });
+      await confirmarGastoRecurrente(p.id, { monto: parseFloat(montos[`gas-${i}`]), quincena: p.quincena });
       toast(`Pago ${p.etiqueta} registrado ✓`);
       revisar();
       bump();
@@ -78,7 +75,7 @@ export default function AvisoSalario() {
     const p = pendGas[i];
     if (!(await confirmar(`¿Omitir el pago "${p.etiqueta}" este mes? No se creará el gasto.`))) return;
     try {
-      await api(`/api/gastos_recurrentes/${p.id}/omitir?quincena=${p.quincena}`, { method: 'POST' });
+      await omitirGastoRecurrente(p.id, p.quincena);
       toast(`Pago ${p.etiqueta} omitido este mes`);
       revisar();
     } catch (err) { toast(err.message, true); }

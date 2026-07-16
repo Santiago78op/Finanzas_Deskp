@@ -10,6 +10,7 @@ import FormPago from './FormPago.jsx';
 import FormIngreso from './FormIngreso.jsx';
 import { fmtQ } from '../../utils.js';
 import { tipoBtnEstilo } from './campoStyles.js';
+import { tabularNums, puntoAcento, bordeFilaLista } from '../shared/estilos.js';
 
 const COLOR_TIPO = { gasto: 'var(--gasto)', ingreso: 'var(--ingreso)', pago: 'var(--pago)' };
 const LABEL_TIPO = { gasto: 'Gasto', ingreso: 'Ingreso', pago: 'Pago' };
@@ -71,16 +72,16 @@ export default function RegistroView() {
             <div
               key={i}
               className="flex items-center justify-between gap-2 py-2.5"
-              style={{ borderBottom: i < registros.length - 1 ? '1px solid var(--borde)' : 'none' }}
+              style={bordeFilaLista(i === registros.length - 1)}
             >
               <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, flex: 'none', background: COLOR_TIPO[r.tipo] }} />
+                <span style={puntoAcento(COLOR_TIPO[r.tipo], 8)} />
                 <div style={{ minWidth: 0 }}>
                   <div className="text-sm font-semibold truncate">{r.cat}</div>
                   <div className="text-xs text-[var(--suave)]">{LABEL_TIPO[r.tipo]} · {r.cuenta}</div>
                 </div>
               </div>
-              <div className="font-bold whitespace-nowrap" style={{ color: COLOR_TIPO[r.tipo], fontVariantNumeric: 'tabular-nums' }}>
+              <div className="font-bold whitespace-nowrap" style={{ color: COLOR_TIPO[r.tipo], ...tabularNums }}>
                 {r.tipo === 'ingreso' ? '+' : '−'}{fmtQ(r.monto)}
               </div>
             </div>

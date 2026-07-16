@@ -3,13 +3,11 @@ import Card from '@mui/material/Card';
 import FiltrosMovimientos from './FiltrosMovimientos.jsx';
 import TablaMovimientos from './TablaMovimientos.jsx';
 import ModalEditarMovimiento from './ModalEditarMovimiento.jsx';
-import { api } from '../../api.js';
+import { getMovimientos, eliminarMovimiento } from '../../api/movimientos.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { fmtQ } from '../../utils.js';
-
-const RUTAS_TIPO = { ingreso: 'ingresos', gasto: 'gastos', pago: 'pagos_tarjetas' };
 
 export default function MovimientosView() {
   const toast = useToast();
@@ -20,9 +18,7 @@ export default function MovimientosView() {
   const [editandoIdx, setEditandoIdx] = useState(null);
 
   const cargar = useCallback(async (params) => {
-    const qs = new URLSearchParams(params).toString();
-    const data = await api('/api/movimientos' + (qs ? `?${qs}` : ''));
-    setMovs(data);
+    setMovs(await getMovimientos(params));
   }, []);
 
   useEffect(() => { cargar(filtros); }, [filtros, cargar]);
@@ -31,7 +27,7 @@ export default function MovimientosView() {
     const m = movs[idx];
     if (!(await confirmar(`¿Eliminar este ${m.tipo} de ${fmtQ(m.monto)}?`, { peligro: true }))) return;
     try {
-      await api(`/api/${RUTAS_TIPO[m.tipo]}/${m.id}`, { method: 'DELETE' });
+      await eliminarMovimiento(m.tipo, m.id);
       toast('Registro eliminado ✓');
       cargar(filtros);
       bump();

@@ -4,9 +4,10 @@ import CheckIcon from '@mui/icons-material/Check';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { useToast } from '../shared/Toast.jsx';
-import { api } from '../../api.js';
+import { crearIngreso } from '../../api/movimientos.js';
 import { fmtQ, hoyISO } from '../../utils.js';
 import { campoLabel, campoBase } from './campoStyles.js';
+import { tabularNums } from '../shared/estilos.js';
 
 export default function FormIngreso({ inputRef, onGuardado }) {
   const { catIngreso, cuentas } = useCatalog();
@@ -26,10 +27,7 @@ export default function FormIngreso({ inputRef, onGuardado }) {
     e.preventDefault();
     if (!categoria) return toast('Elegí una categoría', true);
     try {
-      await api('/api/ingresos', {
-        method: 'POST',
-        body: { fecha, descripcion, categoria_id: categoria.id, cuenta_id: cuenta ? cuenta.id : null, monto: parseFloat(monto) },
-      });
+      await crearIngreso({ fecha, descripcion, categoria_id: categoria.id, cuenta_id: cuenta ? cuenta.id : null, monto: parseFloat(monto) });
       toast(`Ingreso de ${fmtQ(monto)} guardado ✓`);
       onGuardado?.({ tipo: 'ingreso', cat: categoria.nombre, cuenta: cuenta ? cuenta.nombre : 'Sin cuenta', monto: parseFloat(monto) });
       setMonto(''); setDescripcion('');
@@ -47,7 +45,7 @@ export default function FormIngreso({ inputRef, onGuardado }) {
           <input
             ref={inputRef} type="text" inputMode="decimal" placeholder="0.00" required autoFocus
             value={monto} onChange={e => setMonto(e.target.value)}
-            style={{ ...campoBase, padding: '15px 16px 15px 42px', fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+            style={{ ...campoBase, ...tabularNums, padding: '15px 16px 15px 42px', fontSize: 20, fontWeight: 700 }}
           />
         </div>
       </div>

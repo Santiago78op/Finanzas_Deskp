@@ -4,9 +4,10 @@ import CheckIcon from '@mui/icons-material/Check';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { useToast } from '../shared/Toast.jsx';
-import { api } from '../../api.js';
+import { crearPago } from '../../api/movimientos.js';
 import { fmtQ, hoyISO } from '../../utils.js';
 import { campoLabel, campoBase } from './campoStyles.js';
+import { tabularNums } from '../shared/estilos.js';
 
 export default function FormPago({ inputRef, onGuardado }) {
   const { tarjetas, cuentas } = useCatalog();
@@ -25,10 +26,7 @@ export default function FormPago({ inputRef, onGuardado }) {
     e.preventDefault();
     if (!tarjeta) return toast('Elegí la tarjeta', true);
     try {
-      await api('/api/pagos_tarjetas', {
-        method: 'POST',
-        body: { fecha, tarjeta_id: tarjeta.id, cuenta_id: cuenta ? cuenta.id : null, monto: parseFloat(monto) },
-      });
+      await crearPago({ fecha, tarjeta_id: tarjeta.id, cuenta_id: cuenta ? cuenta.id : null, monto: parseFloat(monto) });
       toast(`Pago de ${fmtQ(monto)} a ${tarjeta.nombre} guardado ✓`);
       onGuardado?.({ tipo: 'pago', cat: tarjeta.nombre, cuenta: cuenta ? cuenta.nombre : 'Sin cuenta', monto: parseFloat(monto) });
       setMonto('');
@@ -46,7 +44,7 @@ export default function FormPago({ inputRef, onGuardado }) {
           <input
             ref={inputRef} type="text" inputMode="decimal" placeholder="0.00" required autoFocus
             value={monto} onChange={e => setMonto(e.target.value)}
-            style={{ ...campoBase, padding: '15px 16px 15px 42px', fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+            style={{ ...campoBase, ...tabularNums, padding: '15px 16px 15px 42px', fontSize: 20, fontWeight: 700 }}
           />
         </div>
       </div>

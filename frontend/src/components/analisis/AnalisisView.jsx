@@ -3,7 +3,7 @@ import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import MesSelector from '../dashboard/MesSelector.jsx';
 import PanelAnalisis from '../dashboard/PanelAnalisis.jsx';
-import { api } from '../../api.js';
+import { getDashboard } from '../../api/dashboard.js';
 import { fmtQ, MESES } from '../../utils.js';
 
 // Análisis con vista propia (antes era la última sección del Dashboard) —
@@ -18,7 +18,7 @@ export default function AnalisisView() {
   const [d, setD] = useState(null);
 
   const cargar = useCallback(async () => {
-    setD(await api(`/api/dashboard?anio=${anio}&mes=${mes}`));
+    setD(await getDashboard(anio, mes));
   }, [anio, mes]);
 
   useEffect(() => { cargar(); }, [cargar]);

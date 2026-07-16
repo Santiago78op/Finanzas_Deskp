@@ -4,6 +4,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { useCatalog } from '../../context/CatalogContext.jsx';
+import { filaFiltros } from './movimientos.styles.js';
 
 export default function FiltrosMovimientos({ onFiltrar }) {
   const { catGasto, catIngreso, metodos } = useCatalog();
@@ -27,7 +28,7 @@ export default function FiltrosMovimientos({ onFiltrar }) {
 
   return (
     <Stack component="form" aria-label="Filtrar movimientos" onSubmit={aplicar}
-      direction="row" sx={{ flexWrap: 'wrap', gap: 2 }} className="items-center mb-3">
+      direction="row" sx={filaFiltros} className="items-center mb-3">
       <TextField type="month" value={mes} onChange={e => setMes(e.target.value)} />
       <TextField select label="Categoría" value={categoriaId} onChange={e => setCategoriaId(e.target.value)}
         className="!min-w-[220px]">

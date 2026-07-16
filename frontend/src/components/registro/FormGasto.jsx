@@ -4,9 +4,10 @@ import CheckIcon from '@mui/icons-material/Check';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { useToast } from '../shared/Toast.jsx';
-import { api } from '../../api.js';
+import { crearGasto } from '../../api/movimientos.js';
 import { fmtQ, hoyISO } from '../../utils.js';
 import { campoLabel, campoBase } from './campoStyles.js';
+import { tabularNums } from '../shared/estilos.js';
 
 export default function FormGasto({ inputRef, onGuardado }) {
   const { catGasto, metodos, cuentas } = useCatalog();
@@ -29,14 +30,11 @@ export default function FormGasto({ inputRef, onGuardado }) {
     if (!categoria) return toast('Elegí una categoría', true);
     if (!metodo) return toast('Elegí un método de pago', true);
     try {
-      await api('/api/gastos', {
-        method: 'POST',
-        body: {
-          fecha, descripcion,
-          categoria_id: categoria.id, metodo: metodo.metodo, tarjeta_id: metodo.tarjeta_id,
-          cuenta_id: metodoRequiereCuenta && cuentaId ? parseInt(cuentaId) : null,
-          monto: parseFloat(monto),
-        },
+      await crearGasto({
+        fecha, descripcion,
+        categoria_id: categoria.id, metodo: metodo.metodo, tarjeta_id: metodo.tarjeta_id,
+        cuenta_id: metodoRequiereCuenta && cuentaId ? parseInt(cuentaId) : null,
+        monto: parseFloat(monto),
       });
       toast(`Gasto de ${fmtQ(monto)} guardado ✓`);
       onGuardado?.({ tipo: 'gasto', cat: categoria.nombre, cuenta: metodo.etiqueta, monto: parseFloat(monto) });
@@ -55,7 +53,7 @@ export default function FormGasto({ inputRef, onGuardado }) {
           <input
             ref={inputRef} type="text" inputMode="decimal" placeholder="0.00" required autoFocus
             value={monto} onChange={e => setMonto(e.target.value)}
-            style={{ ...campoBase, padding: '15px 16px 15px 42px', fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+            style={{ ...campoBase, ...tabularNums, padding: '15px 16px 15px 42px', fontSize: 20, fontWeight: 700 }}
           />
         </div>
       </div>

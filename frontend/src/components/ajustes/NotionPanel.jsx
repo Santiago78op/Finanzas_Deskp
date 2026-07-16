@@ -3,8 +3,9 @@ import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
-import { api } from '../../api.js';
+import { getEstadoNotion, checkNotion, syncNotion } from '../../api/notion.js';
 import { useToast } from '../shared/Toast.jsx';
+import { filaControles } from './ajustes.styles.js';
 
 function mensajeBandeja(r) {
   const partes = [];
@@ -27,7 +28,7 @@ export default function NotionPanel() {
 
   const cargarEstado = useCallback(async () => {
     try {
-      const e = await api('/api/notion/estado');
+      const e = await getEstadoNotion();
       let texto;
       if (!e.configurado) texto = 'Notion no está configurado. Copiá .env.example como .env y seguí el README.';
       else {
@@ -44,7 +45,7 @@ export default function NotionPanel() {
     setProbando(true);
     setCheck(null);
     try {
-      const r = await api('/api/notion/check', { method: 'POST' });
+      const r = await checkNotion();
       setCheck({ ok: true, mensaje: r.mensaje });
     } catch (err) {
       setCheck({ ok: false, mensaje: err.message });
@@ -55,7 +56,7 @@ export default function NotionPanel() {
   const sincronizar = async () => {
     setSincronizando(true);
     try {
-      const r = await api('/api/notion/sync', { method: 'POST' });
+      const r = await syncNotion();
       toast('Sincronizado con Notion ✓');
       mensajeBandeja(r).forEach((m, i) => setTimeout(() => toast(m), 900 + i * 2600));
     } catch (err) { toast(err.message, true); }
@@ -72,7 +73,7 @@ export default function NotionPanel() {
           {check.ok ? '✓ ' : '✗ '}{check.mensaje}
         </Typography>
       )}
-      <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
+      <Stack direction="row" sx={filaControles}>
         <Button
           variant="outlined"
           disabled={probando}

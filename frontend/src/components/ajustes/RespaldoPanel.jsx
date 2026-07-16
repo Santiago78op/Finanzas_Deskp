@@ -5,9 +5,10 @@ import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { api } from '../../api.js';
+import { URL_EXPORT, importarCSV } from '../../api/respaldo.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
+import { filaControlesCentrada } from './ajustes.styles.js';
 
 const TABLAS = ['gastos', 'ingresos', 'pagos_tarjetas', 'tarjetas', 'cuentas', 'categorias', 'ingresos_recurrentes', 'gastos_recurrentes'];
 
@@ -24,7 +25,7 @@ export default function RespaldoPanel() {
     const fd = new FormData();
     fd.append('archivo', archivo);
     try {
-      const r = await api(`/api/import/${tabla}`, { method: 'POST', body: fd });
+      const r = await importarCSV(tabla, fd);
       setResultado(r);
       toast(`Importación: ${r.importados} filas ✓`);
       await refetch();
@@ -35,8 +36,8 @@ export default function RespaldoPanel() {
     <Card component="section" aria-labelledby="sec-respaldo" className="p-4 flex flex-col gap-4">
       <Typography id="sec-respaldo" variant="h6">Respaldo (CSV)</Typography>
       <Typography variant="body2" className="text-[var(--suave)]">Exportá todo a un ZIP con un CSV por tabla, o importá un CSV con el mismo formato.</Typography>
-      <Button variant="contained" component="a" href="/api/export" download className="self-start">Exportar todo (ZIP)</Button>
-      <Stack direction="row" sx={{ gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Button variant="contained" component="a" href={URL_EXPORT} download className="self-start">Exportar todo (ZIP)</Button>
+      <Stack direction="row" sx={filaControlesCentrada}>
         <TextField select label="Tabla" value={tabla} onChange={e => setTabla(e.target.value)}>
           {TABLAS.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
         </TextField>

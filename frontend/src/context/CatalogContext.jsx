@@ -1,5 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { api } from '../api.js';
+import { getCategorias } from '../api/categorias.js';
+import { getMetodosPago } from '../api/metodosPago.js';
+import { getTarjetas } from '../api/tarjetas.js';
+import { getCuentas } from '../api/cuentas.js';
 
 const CatalogContext = createContext(null);
 
@@ -13,11 +16,11 @@ export function CatalogProvider({ children }) {
     setState(s => ({ ...s, loading: true, error: null }));
     try {
       const [catGasto, catIngreso, metodos, tarjetas, cuentas] = await Promise.all([
-        api('/api/categorias?tipo=gasto'),
-        api('/api/categorias?tipo=ingreso'),
-        api('/api/metodos_pago'),
-        api('/api/tarjetas'),
-        api('/api/cuentas'),
+        getCategorias({ tipo: 'gasto' }),
+        getCategorias({ tipo: 'ingreso' }),
+        getMetodosPago(),
+        getTarjetas(),
+        getCuentas(),
       ]);
       setState({ catGasto, catIngreso, metodos, tarjetas, cuentas, loading: false, error: null });
     } catch (err) {

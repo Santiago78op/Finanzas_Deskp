@@ -7,11 +7,12 @@ import Checkbox from '@mui/material/Checkbox';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { api } from '../../api.js';
+import { getGastosRecurrentes, crearGastoRecurrente, actualizarGastoRecurrente, eliminarGastoRecurrente } from '../../api/gastosRecurrentes.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { fmtQ } from '../../utils.js';
+import { filaAcciones, filaItem } from './ajustes.styles.js';
 
 const VACIO = {
   descripcion: '', categoria_id: '', frecuencia: 'Mensual', monto: '', dia_mes: '', dia_mes_2: '',
@@ -26,7 +27,7 @@ export default function FormGastoRecurrente({ onCambio }) {
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState(VACIO);
 
-  const cargar = useCallback(async () => setRecs(await api('/api/gastos_recurrentes')), []);
+  const cargar = useCallback(async () => setRecs(await getGastosRecurrentes()), []);
   useEffect(() => { cargar(); }, [cargar]);
 
   useEffect(() => {
@@ -62,8 +63,8 @@ export default function FormGastoRecurrente({ onCambio }) {
       activo: form.activo,
     };
     try {
-      if (editando) await api(`/api/gastos_recurrentes/${editando.id}`, { method: 'PUT', body });
-      else await api('/api/gastos_recurrentes', { method: 'POST', body });
+      if (editando) await actualizarGastoRecurrente(editando.id, body);
+      else await crearGastoRecurrente(body);
       toast('Pago frecuente guardado ✓');
       setEditando(null);
       await cargar();
@@ -78,7 +79,7 @@ export default function FormGastoRecurrente({ onCambio }) {
     );
     if (!ok) return;
     try {
-      await api(`/api/gastos_recurrentes/${r.id}`, { method: 'DELETE' });
+      await eliminarGastoRecurrente(r.id);
       toast('Pago frecuente eliminado ✓');
       await cargar();
       onCambio?.();
@@ -131,7 +132,7 @@ export default function FormGastoRecurrente({ onCambio }) {
           control={<Checkbox checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} />}
           label="Activo"
         />
-        <Stack direction="row" sx={{ gap: 1 }} className="sm:col-span-2">
+        <Stack direction="row" sx={filaAcciones} className="sm:col-span-2">
           <Button type="submit" variant="contained">Guardar pago frecuente</Button>
           {editando && <Button type="button" variant="outlined" onClick={() => setEditando(null)}>Cancelar edición</Button>}
         </Stack>
@@ -139,7 +140,7 @@ export default function FormGastoRecurrente({ onCambio }) {
 
       {!recs.length && <Typography variant="body2" className="text-[var(--suave)]">Sin pagos frecuentes configurados todavía.</Typography>}
       {recs.map(r => (
-        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }} key={r.id} className="border-t border-[var(--borde)] pt-2">
+        <Stack direction="row" sx={filaItem} key={r.id} className="border-t border-[var(--borde)] pt-2">
           <span className={r.activo ? '' : 'opacity-50'}>
             <b>{r.descripcion}</b> ({r.categoria}) —{' '}
             {r.frecuencia === 'Quincenal'
@@ -147,7 +148,7 @@ export default function FormGastoRecurrente({ onCambio }) {
               : `${fmtQ(r.monto)} el día ${r.dia_mes}`}
             {' · '}{r.metodo === 'Tarjeta' ? r.tarjeta : r.metodo}{r.cuenta ? ` (${r.cuenta})` : ''}
           </span>
-          <Stack direction="row" sx={{ gap: 1 }}>
+          <Stack direction="row" sx={filaAcciones}>
             <Button size="small" variant="outlined" onClick={() => setEditando(r)}>Editar</Button>
             <Button size="small" variant="outlined" color="error" onClick={() => borrar(r)}>Eliminar</Button>
           </Stack>

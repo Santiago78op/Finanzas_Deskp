@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../../api.js';
+import { getDashboard } from '../../api/dashboard.js';
 import { fmtQ } from '../../utils.js';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 
@@ -14,7 +14,7 @@ export default function TickerGlobal() {
 
   useEffect(() => {
     let vivo = true;
-    api('/api/dashboard').then(data => { if (vivo) setD(data); }).catch(() => {});
+    getDashboard().then(data => { if (vivo) setD(data); }).catch(() => {});
     return () => { vivo = false; };
   }, [version]);
 

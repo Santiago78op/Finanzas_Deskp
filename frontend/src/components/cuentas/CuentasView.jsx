@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import FormCuenta from './FormCuenta.jsx';
 import AccountCard from '../shared/AccountCard.jsx';
-import { api } from '../../api.js';
+import { getCuentas } from '../../api/cuentas.js';
 import { fmtQ } from '../../utils.js';
 
 // "Mis cuentas" con vista propia (antes vivía combinada con Tarjetas en
@@ -19,7 +19,7 @@ export default function CuentasView() {
   const formRef = useRef(null);
 
   const cargar = useCallback(async () => {
-    setCuentas(await api('/api/cuentas?incluir_inactivas=true'));
+    setCuentas(await getCuentas(true));
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);

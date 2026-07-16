@@ -5,9 +5,10 @@ import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { api } from '../../api.js';
+import { getCategorias, crearCategoria, renombrarCategoria, toggleCategoria } from '../../api/categorias.js';
 import { useToast } from '../shared/Toast.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
+import { filaAcciones, filaItem } from './ajustes.styles.js';
 
 export default function CategoriaManager() {
   const { refetch } = useCatalog();
@@ -16,13 +17,13 @@ export default function CategoriaManager() {
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState('gasto');
 
-  const cargar = useCallback(async () => setCats(await api('/api/categorias?incluir_inactivas=true')), []);
+  const cargar = useCallback(async () => setCats(await getCategorias({ incluirInactivas: true })), []);
   useEffect(() => { cargar(); }, [cargar]);
 
   const agregar = async (e) => {
     e.preventDefault();
     try {
-      await api('/api/categorias', { method: 'POST', body: { nombre, tipo } });
+      await crearCategoria({ nombre, tipo });
       toast('Categoría agregada ✓');
       setNombre('');
       await refetch();
@@ -34,7 +35,7 @@ export default function CategoriaManager() {
     const nuevo = prompt('Nuevo nombre de la categoría:', c.nombre);
     if (!nuevo || nuevo === c.nombre) return;
     try {
-      await api(`/api/categorias/${c.id}`, { method: 'PUT', body: { nombre: nuevo } });
+      await renombrarCategoria(c.id, nuevo);
       toast('Categoría renombrada ✓');
       await refetch();
       await cargar();
@@ -43,7 +44,7 @@ export default function CategoriaManager() {
 
   const toggle = async (c) => {
     try {
-      await api(`/api/categorias/${c.id}`, { method: 'PUT', body: { activa: !c.activa } });
+      await toggleCategoria(c.id, !c.activa);
       toast('Categoría actualizada ✓');
       await refetch();
       await cargar();
@@ -53,7 +54,7 @@ export default function CategoriaManager() {
   return (
     <Card component="section" aria-labelledby="sec-categorias" className="p-4 flex flex-col gap-4">
       <Typography id="sec-categorias" variant="h6">Categorías</Typography>
-      <Stack component="form" direction="row" sx={{ gap: 1 }} autoComplete="off" onSubmit={agregar}>
+      <Stack component="form" direction="row" sx={filaAcciones} autoComplete="off" onSubmit={agregar}>
         <TextField label="Nueva categoría" required value={nombre} onChange={e => setNombre(e.target.value)} />
         <TextField select label="Tipo" value={tipo} onChange={e => setTipo(e.target.value)}>
           <MenuItem value="gasto">Gasto</MenuItem>
@@ -62,9 +63,9 @@ export default function CategoriaManager() {
         <Button type="submit" variant="outlined" size="small">Agregar</Button>
       </Stack>
       {cats.map(c => (
-        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }} key={c.id} className="border-t border-[var(--borde)] pt-2">
+        <Stack direction="row" sx={filaItem} key={c.id} className="border-t border-[var(--borde)] pt-2">
           <span className={c.activa ? '' : 'opacity-50'}>{c.nombre} <small>({c.tipo})</small></span>
-          <Stack direction="row" sx={{ gap: 1 }}>
+          <Stack direction="row" sx={filaAcciones}>
             <Button size="small" variant="outlined" onClick={() => renombrar(c)}>Renombrar</Button>
             <Button size="small" variant="outlined" onClick={() => toggle(c)}>{c.activa ? 'Desactivar' : 'Activar'}</Button>
           </Stack>
