@@ -62,7 +62,7 @@ export default function FormCuenta({ editando, onGuardado, onCancelar }) {
         />
         <Stack direction="row" sx={{ gap: 1 }} className="sm:col-span-2">
           <Button type="submit" variant="contained">Guardar cuenta</Button>
-          {editando && <Button type="button" variant="outlined" size="small" onClick={onCancelar}>Cancelar edición</Button>}
+          {onCancelar && <Button type="button" variant="outlined" size="small" onClick={onCancelar}>{editando ? 'Cancelar edición' : 'Cancelar'}</Button>}
         </Stack>
       </form>
     </Card>

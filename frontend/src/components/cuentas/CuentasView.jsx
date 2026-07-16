@@ -9,12 +9,13 @@ import { fmtQ } from '../../utils.js';
 
 // "Mis cuentas" con vista propia (antes vivía combinada con Tarjetas en
 // TarjetasView.jsx) — split que pide FinanzasQ.dc.html (Claude Design).
-// Grid fijo de 2 columnas (no carrusel: esta es la página de gestión
-// completa, conviene ver todas las cuentas de una vez) + el mismo formulario
-// de siempre para poder seguir agregando/editando.
+// El form de alta/edición está oculto por default (el diseño real no lo
+// muestra siempre, solo el grid + el tile "Agregar cuenta") y aparece al
+// tocar ese tile o "Editar" en una cuenta.
 export default function CuentasView() {
   const [cuentas, setCuentas] = useState([]);
   const [editando, setEditando] = useState(null);
+  const [formAbierto, setFormAbierto] = useState(false);
   const formRef = useRef(null);
 
   const cargar = useCallback(async () => {
@@ -24,6 +25,13 @@ export default function CuentasView() {
   useEffect(() => { cargar(); }, [cargar]);
 
   const disponibleTotal = cuentas.filter(c => c.activa).reduce((s, c) => s + c.saldo, 0);
+
+  const abrirNueva = () => { setEditando(null); setFormAbierto(true); };
+  const abrirEditar = (c) => {
+    setEditando(c); setFormAbierto(true);
+    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth' }));
+  };
+  const cerrarForm = () => { setEditando(null); setFormAbierto(false); };
 
   return (
     <div id="vista-cuentas" className="vista flex flex-col gap-4">
@@ -37,23 +45,21 @@ export default function CuentasView() {
         </Typography>
       </Card>
 
-      <div ref={formRef}>
-        <FormCuenta
-          editando={editando}
-          onGuardado={() => { setEditando(null); cargar(); }}
-          onCancelar={() => setEditando(null)}
-        />
-      </div>
+      {formAbierto && (
+        <div ref={formRef}>
+          <FormCuenta
+            editando={editando}
+            onGuardado={() => { cerrarForm(); cargar(); }}
+            onCancelar={cerrarForm}
+          />
+        </div>
+      )}
 
       <div className="cuentas-grid">
         {cuentas.map(c => (
-          <AccountCard key={c.id} cuenta={c} onEditar={() => { setEditando(c); formRef.current?.scrollIntoView({ behavior: 'smooth' }); }} />
+          <AccountCard key={c.id} cuenta={c} onEditar={() => abrirEditar(c)} />
         ))}
-        <button
-          type="button"
-          onClick={() => formRef.current?.scrollIntoView({ behavior: 'smooth' })}
-          className="tile-agregar"
-        >
+        <button type="button" onClick={abrirNueva} className="tile-agregar">
           <AddIcon fontSize="small" /> Agregar cuenta
         </button>
       </div>
