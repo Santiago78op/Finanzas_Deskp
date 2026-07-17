@@ -80,7 +80,7 @@ export default function FormVisacuota({ editando, onGuardado, onCerrar }) {
         value={form.num_cuotas} onChange={e => setForm(f => ({ ...f, num_cuotas: e.target.value }))} />
       <TextField label="Cuota mensual (Q)" type="number" inputProps={{ step: 0.01, min: 0.01 }} required
         value={form.cuota_mensual} onChange={e => setForm(f => ({ ...f, cuota_mensual: e.target.value }))} />
-      <TextField label="Fecha de inicio" type="date" InputLabelProps={{ shrink: true }} required
+      <TextField label="Fecha de inicio" type="date" slotProps={{ inputLabel: { shrink: true } }} required
         value={form.fecha_inicio} onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))} />
       <TextField label="Día de pago" type="number" inputProps={{ min: 1, max: 31 }}
         helperText="Opcional"

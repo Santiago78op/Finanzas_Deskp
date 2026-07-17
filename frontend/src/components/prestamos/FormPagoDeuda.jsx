@@ -40,7 +40,7 @@ export default function FormPagoDeuda({ tipo, entidad, onGuardado, onCerrar }) {
   return (
     <Modal titulo={`Registrar pago: ${nombre}`} onCerrar={onCerrar} onGuardar={guardar} labelGuardar="Guardar pago">
       <TextField label="Fecha" type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-        InputLabelProps={{ shrink: true }} />
+        slotProps={{ inputLabel: { shrink: true } }} />
       <TextField label="Monto (Q)" type="number" inputProps={{ step: 0.01, min: 0.01 }} required
         value={monto} onChange={e => setMonto(e.target.value)} />
       <TextField select label="Cuenta (opcional)" value={cuentaId} onChange={e => setCuentaId(e.target.value)}>

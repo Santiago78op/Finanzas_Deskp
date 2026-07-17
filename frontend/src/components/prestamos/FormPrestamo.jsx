@@ -90,7 +90,7 @@ export default function FormPrestamo({ editando, onGuardado, onCerrar }) {
       <TextField label="Día de pago" type="number" inputProps={{ min: 1, max: 31 }}
         helperText="Opcional"
         value={form.dia_pago} onChange={e => setForm(f => ({ ...f, dia_pago: e.target.value }))} />
-      <TextField label="Fecha de inicio" type="date" InputLabelProps={{ shrink: true }}
+      <TextField label="Fecha de inicio" type="date" slotProps={{ inputLabel: { shrink: true } }}
         helperText="Opcional"
         value={form.fecha_inicio} onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))} />
       <FormControlLabel

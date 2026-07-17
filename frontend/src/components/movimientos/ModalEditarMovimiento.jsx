@@ -56,7 +56,7 @@ export default function ModalEditarMovimiento({ mov, onCerrar, onGuardado }) {
   return (
     <Modal titulo={`Editar ${mov.tipo}`} onCerrar={onCerrar} onGuardar={guardar}>
       <TextField label="Fecha" type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-        InputLabelProps={{ shrink: true }} />
+        slotProps={{ inputLabel: { shrink: true } }} />
       <TextField label="Monto (Q)" type="number" inputProps={{ step: 0.01, min: 0.01 }}
         value={monto} onChange={e => setMonto(e.target.value)} />
 
