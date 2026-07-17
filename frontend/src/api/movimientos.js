@@ -4,7 +4,10 @@ import { api } from './cliente.js';
 // — el backend los guarda en 3 tablas distintas, esto centraliza ese mapeo
 // (antes vivía duplicado palabra por palabra en MovimientosView.jsx y
 // ModalEditarMovimiento.jsx).
-export const RUTAS_TIPO = { ingreso: 'ingresos', gasto: 'gastos', pago: 'pagos_tarjetas' };
+export const RUTAS_TIPO = {
+  ingreso: 'ingresos', gasto: 'gastos', pago: 'pagos_tarjetas',
+  pago_prestamo: 'pagos_prestamos', pago_visacuota: 'pagos_visacuotas',
+};
 
 export const getMovimientos = (filtros = {}) => {
   const qs = new URLSearchParams(filtros).toString();

@@ -107,6 +107,20 @@ def validar_cuenta(conn, cuenta_id):
     return fila
 
 
+def validar_prestamo(conn, prestamo_id):
+    fila = conn.execute("SELECT * FROM prestamos WHERE id = ?", (prestamo_id,)).fetchone()
+    if not fila:
+        raise HTTPException(400, "Préstamo inexistente")
+    return fila
+
+
+def validar_visacuota(conn, visacuota_id):
+    fila = conn.execute("SELECT * FROM visacuotas WHERE id = ?", (visacuota_id,)).fetchone()
+    if not fila:
+        raise HTTPException(400, "Visa Cuotas inexistente")
+    return fila
+
+
 def clamp_dia(anio, mes, dia):
     """Ajusta un día al máximo del mes (día 31 en junio → 30)."""
     return date(anio, mes, min(dia, calendar.monthrange(anio, mes)[1]))
@@ -159,6 +173,39 @@ class PagoIn(BaseModel):
     fecha: str
     tarjeta_id: int
     cuenta_id: Optional[int] = None  # desde qué cuenta se pagó (opcional)
+    monto: float
+
+class PrestamoIn(BaseModel):
+    nombre: str
+    institucion: str
+    monto_original: float
+    saldo_inicial: float = 0    # saldo pendiente al registrarlo
+    cuota_mensual: float
+    tasa_interes: Optional[float] = None  # % anual, opcional
+    dia_pago: Optional[int] = None
+    fecha_inicio: Optional[str] = None
+    activo: bool = True
+
+class PagoPrestamoIn(BaseModel):
+    fecha: str
+    prestamo_id: int
+    cuenta_id: Optional[int] = None
+    monto: float
+
+class VisacuotaIn(BaseModel):
+    descripcion: str
+    tarjeta_id: int  # a qué tarjeta se difirió la compra (obligatorio)
+    monto_total: float
+    num_cuotas: int
+    cuota_mensual: float
+    fecha_inicio: str
+    dia_pago: Optional[int] = None
+    activo: bool = True
+
+class PagoVisacuotaIn(BaseModel):
+    fecha: str
+    visacuota_id: int
+    cuenta_id: Optional[int] = None
     monto: float
 
 class RecurrenteIn(BaseModel):
@@ -366,6 +413,277 @@ def _validar_tarjeta_in(body: TarjetaIn):
         raise HTTPException(400, "Los días de corte y pago deben estar entre 1 y 31")
     if body.saldo_inicial < 0:
         raise HTTPException(400, "El saldo inicial no puede ser negativo")
+
+
+# ============================================================
+# PRÉSTAMOS
+# ============================================================
+
+def _prestamo_con_saldo(conn, p):
+    saldo = db.saldo_prestamo(conn, p["id"])
+    return {
+        **dict(p),
+        "saldo": saldo,
+        "pct_pagado": round((p["saldo_inicial"] - saldo) / p["saldo_inicial"] * 100, 1) if p["saldo_inicial"] else 100.0,
+    }
+
+
+@app.get("/api/prestamos")
+def listar_prestamos(incluir_inactivas: bool = False):
+    conn = db.get_conn()
+    try:
+        sql = "SELECT * FROM prestamos" + ("" if incluir_inactivas else " WHERE activo = 1")
+        return [_prestamo_con_saldo(conn, p) for p in conn.execute(sql + " ORDER BY nombre").fetchall()]
+    finally:
+        conn.close()
+
+
+@app.post("/api/prestamos")
+def crear_prestamo(body: PrestamoIn):
+    _validar_prestamo_in(body)
+    conn = db.get_conn()
+    try:
+        cur = conn.execute(
+            "INSERT INTO prestamos (nombre, institucion, monto_original, saldo_inicial, cuota_mensual, "
+            "tasa_interes, dia_pago, fecha_inicio, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (body.nombre.strip(), body.institucion.strip(), validar_monto(body.monto_original),
+             body.saldo_inicial, validar_monto(body.cuota_mensual), body.tasa_interes,
+             body.dia_pago, body.fecha_inicio, int(body.activo)),
+        )
+        conn.commit()
+        return {"id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+@app.put("/api/prestamos/{prestamo_id}")
+def editar_prestamo(prestamo_id: int, body: PrestamoIn):
+    _validar_prestamo_in(body)
+    conn = db.get_conn()
+    try:
+        validar_prestamo(conn, prestamo_id)
+        conn.execute(
+            "UPDATE prestamos SET nombre=?, institucion=?, monto_original=?, saldo_inicial=?, "
+            "cuota_mensual=?, tasa_interes=?, dia_pago=?, fecha_inicio=?, activo=? WHERE id = ?",
+            (body.nombre.strip(), body.institucion.strip(), validar_monto(body.monto_original),
+             body.saldo_inicial, validar_monto(body.cuota_mensual), body.tasa_interes,
+             body.dia_pago, body.fecha_inicio, int(body.activo), prestamo_id),
+        )
+        conn.commit()
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@app.delete("/api/prestamos/{prestamo_id}")
+def borrar_prestamo(prestamo_id: int):
+    """
+    Elimina un préstamo definitivamente. Igual que borrar_tarjeta: si ya
+    tiene pagos registrados se bloquea el borrado (prestamo_id es NOT NULL
+    en pagos_prestamos, un pago sin préstamo no significa nada) y se pide
+    desactivar en su lugar para conservar el historial.
+    """
+    conn = db.get_conn()
+    try:
+        validar_prestamo(conn, prestamo_id)
+        tiene_pagos = conn.execute(
+            "SELECT 1 FROM pagos_prestamos WHERE prestamo_id = ? LIMIT 1", (prestamo_id,)
+        ).fetchone()
+        if tiene_pagos:
+            raise HTTPException(
+                400,
+                "No podés eliminar un préstamo con pagos ya registrados — "
+                "desactivalo en su lugar para conservar ese historial.",
+            )
+        conn.execute("DELETE FROM prestamos WHERE id = ?", (prestamo_id,))
+        conn.commit()
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+def _validar_prestamo_in(body: PrestamoIn):
+    if not body.nombre.strip() or not body.institucion.strip():
+        raise HTTPException(400, "Nombre e institución son obligatorios")
+    if body.saldo_inicial < 0:
+        raise HTTPException(400, "El saldo inicial no puede ser negativo")
+    if body.dia_pago is not None and not (1 <= body.dia_pago <= 31):
+        raise HTTPException(400, "El día de pago debe estar entre 1 y 31")
+
+
+@app.post("/api/pagos_prestamos")
+def crear_pago_prestamo(body: PagoPrestamoIn):
+    conn = db.get_conn()
+    try:
+        validar_prestamo(conn, body.prestamo_id)
+        if body.cuenta_id:
+            validar_cuenta(conn, body.cuenta_id)
+        cur = conn.execute(
+            "INSERT INTO pagos_prestamos (fecha, prestamo_id, cuenta_id, monto) VALUES (?, ?, ?, ?)",
+            (validar_fecha(body.fecha), body.prestamo_id, body.cuenta_id, validar_monto(body.monto)),
+        )
+        conn.commit()
+        return {"id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+@app.put("/api/pagos_prestamos/{reg_id}")
+def editar_pago_prestamo(reg_id: int, body: PagoPrestamoIn):
+    conn = db.get_conn()
+    try:
+        if not conn.execute("SELECT 1 FROM pagos_prestamos WHERE id = ?", (reg_id,)).fetchone():
+            raise HTTPException(404, "Pago no encontrado")
+        validar_prestamo(conn, body.prestamo_id)
+        if body.cuenta_id:
+            validar_cuenta(conn, body.cuenta_id)
+        conn.execute(
+            "UPDATE pagos_prestamos SET fecha=?, prestamo_id=?, cuenta_id=?, monto=? WHERE id=?",
+            (validar_fecha(body.fecha), body.prestamo_id, body.cuenta_id, validar_monto(body.monto), reg_id),
+        )
+        conn.commit()
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@app.delete("/api/pagos_prestamos/{reg_id}")
+def borrar_pago_prestamo(reg_id: int):
+    return _borrar("pagos_prestamos", reg_id)
+
+
+# ============================================================
+# VISA CUOTAS
+# ============================================================
+
+def _visacuota_con_saldo(conn, v):
+    saldo, cuotas_pagadas = db.saldo_visacuota(conn, v["id"])
+    return {
+        **dict(v),
+        "saldo": saldo,
+        "cuotas_pagadas": cuotas_pagadas,
+        "cuotas_restantes": max(v["num_cuotas"] - cuotas_pagadas, 0),
+    }
+
+
+@app.get("/api/visacuotas")
+def listar_visacuotas(incluir_inactivas: bool = False):
+    conn = db.get_conn()
+    try:
+        sql = "SELECT * FROM visacuotas" + ("" if incluir_inactivas else " WHERE activo = 1")
+        return [_visacuota_con_saldo(conn, v) for v in conn.execute(sql + " ORDER BY descripcion").fetchall()]
+    finally:
+        conn.close()
+
+
+@app.post("/api/visacuotas")
+def crear_visacuota(body: VisacuotaIn):
+    _validar_visacuota_in(body)
+    conn = db.get_conn()
+    try:
+        validar_tarjeta(conn, body.tarjeta_id)
+        cur = conn.execute(
+            "INSERT INTO visacuotas (descripcion, tarjeta_id, monto_total, num_cuotas, cuota_mensual, "
+            "fecha_inicio, dia_pago, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (body.descripcion.strip(), body.tarjeta_id, validar_monto(body.monto_total), body.num_cuotas,
+             validar_monto(body.cuota_mensual), validar_fecha(body.fecha_inicio), body.dia_pago, int(body.activo)),
+        )
+        conn.commit()
+        return {"id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+@app.put("/api/visacuotas/{visacuota_id}")
+def editar_visacuota(visacuota_id: int, body: VisacuotaIn):
+    _validar_visacuota_in(body)
+    conn = db.get_conn()
+    try:
+        validar_visacuota(conn, visacuota_id)
+        validar_tarjeta(conn, body.tarjeta_id)
+        conn.execute(
+            "UPDATE visacuotas SET descripcion=?, tarjeta_id=?, monto_total=?, num_cuotas=?, cuota_mensual=?, "
+            "fecha_inicio=?, dia_pago=?, activo=? WHERE id = ?",
+            (body.descripcion.strip(), body.tarjeta_id, validar_monto(body.monto_total), body.num_cuotas,
+             validar_monto(body.cuota_mensual), validar_fecha(body.fecha_inicio), body.dia_pago,
+             int(body.activo), visacuota_id),
+        )
+        conn.commit()
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@app.delete("/api/visacuotas/{visacuota_id}")
+def borrar_visacuota(visacuota_id: int):
+    """Mismo criterio que borrar_prestamo: bloquear si ya tiene pagos, pedir desactivar."""
+    conn = db.get_conn()
+    try:
+        validar_visacuota(conn, visacuota_id)
+        tiene_pagos = conn.execute(
+            "SELECT 1 FROM pagos_visacuotas WHERE visacuota_id = ? LIMIT 1", (visacuota_id,)
+        ).fetchone()
+        if tiene_pagos:
+            raise HTTPException(
+                400,
+                "No podés eliminar una Visa Cuotas con pagos ya registrados — "
+                "desactivala en su lugar para conservar ese historial.",
+            )
+        conn.execute("DELETE FROM visacuotas WHERE id = ?", (visacuota_id,))
+        conn.commit()
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+def _validar_visacuota_in(body: VisacuotaIn):
+    if not body.descripcion.strip():
+        raise HTTPException(400, "La descripción es obligatoria")
+    if body.num_cuotas <= 0:
+        raise HTTPException(400, "El número de cuotas debe ser mayor a 0")
+    if body.dia_pago is not None and not (1 <= body.dia_pago <= 31):
+        raise HTTPException(400, "El día de pago debe estar entre 1 y 31")
+
+
+@app.post("/api/pagos_visacuotas")
+def crear_pago_visacuota(body: PagoVisacuotaIn):
+    conn = db.get_conn()
+    try:
+        validar_visacuota(conn, body.visacuota_id)
+        if body.cuenta_id:
+            validar_cuenta(conn, body.cuenta_id)
+        cur = conn.execute(
+            "INSERT INTO pagos_visacuotas (fecha, visacuota_id, cuenta_id, monto) VALUES (?, ?, ?, ?)",
+            (validar_fecha(body.fecha), body.visacuota_id, body.cuenta_id, validar_monto(body.monto)),
+        )
+        conn.commit()
+        return {"id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+@app.put("/api/pagos_visacuotas/{reg_id}")
+def editar_pago_visacuota(reg_id: int, body: PagoVisacuotaIn):
+    conn = db.get_conn()
+    try:
+        if not conn.execute("SELECT 1 FROM pagos_visacuotas WHERE id = ?", (reg_id,)).fetchone():
+            raise HTTPException(404, "Pago no encontrado")
+        validar_visacuota(conn, body.visacuota_id)
+        if body.cuenta_id:
+            validar_cuenta(conn, body.cuenta_id)
+        conn.execute(
+            "UPDATE pagos_visacuotas SET fecha=?, visacuota_id=?, cuenta_id=?, monto=? WHERE id=?",
+            (validar_fecha(body.fecha), body.visacuota_id, body.cuenta_id, validar_monto(body.monto), reg_id),
+        )
+        conn.commit()
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@app.delete("/api/pagos_visacuotas/{reg_id}")
+def borrar_pago_visacuota(reg_id: int):
+    return _borrar("pagos_visacuotas", reg_id)
 
 
 # ============================================================
@@ -705,6 +1023,36 @@ def movimientos(mes: Optional[str] = None, categoria_id: Optional[int] = None,
                          categoria_id=None, metodo=None, metodo_etiqueta=d["tarjeta"])
                 movs.append(d)
 
+        # Pagos de préstamo y de Visa Cuotas: no tienen categoría ni método
+        # de pago propio, así que solo aplican cuando ninguno de esos
+        # filtros (ni el de tarjeta) está activo.
+        if not categoria_id and not metodo and not tarjeta_id:
+            sql = """SELECT pp.id, pp.fecha, pp.monto, pp.prestamo_id, pr.nombre AS prestamo,
+                            pp.cuenta_id, cu.nombre AS cuenta
+                     FROM pagos_prestamos pp JOIN prestamos pr ON pr.id = pp.prestamo_id
+                     LEFT JOIN cuentas cu ON cu.id = pp.cuenta_id WHERE 1=1"""
+            params = []
+            if mes:
+                sql += " AND strftime('%Y-%m', pp.fecha) = ?"; params.append(mes)
+            for f in conn.execute(sql, params):
+                d = dict(f)
+                d.update(tipo="pago_prestamo", descripcion=f"Pago {d['prestamo']}", categoria=None,
+                         categoria_id=None, metodo=None, metodo_etiqueta=d["prestamo"])
+                movs.append(d)
+
+            sql = """SELECT pv.id, pv.fecha, pv.monto, pv.visacuota_id, v.descripcion AS visacuota_desc,
+                            pv.cuenta_id, cu.nombre AS cuenta
+                     FROM pagos_visacuotas pv JOIN visacuotas v ON v.id = pv.visacuota_id
+                     LEFT JOIN cuentas cu ON cu.id = pv.cuenta_id WHERE 1=1"""
+            params = []
+            if mes:
+                sql += " AND strftime('%Y-%m', pv.fecha) = ?"; params.append(mes)
+            for f in conn.execute(sql, params):
+                d = dict(f)
+                d.update(tipo="pago_visacuota", descripcion=f"Cuota: {d['visacuota_desc']}", categoria=None,
+                         categoria_id=None, metodo=None, metodo_etiqueta=d["visacuota_desc"])
+                movs.append(d)
+
         movs.sort(key=lambda m: (m["fecha"], m["id"]), reverse=True)
         return movs
     finally:
@@ -841,6 +1189,35 @@ def dashboard(anio: Optional[int] = None, mes: Optional[int] = None):
                WHERE strftime('%Y-%m', g.fecha) = ?
                ORDER BY g.monto DESC LIMIT 5""", (ym,))]
 
+        # --- Préstamos y Visa Cuotas: nivel real de endeudamiento y de pagos ---
+        prestamos = [_prestamo_con_saldo(conn, p)
+                     for p in conn.execute("SELECT * FROM prestamos WHERE activo = 1 ORDER BY nombre")]
+        visacuotas = [_visacuota_con_saldo(conn, v)
+                      for v in conn.execute("SELECT * FROM visacuotas WHERE activo = 1 ORDER BY descripcion")]
+
+        deuda_prestamos = round(sum(p["saldo"] for p in prestamos), 2)
+        deuda_visacuotas = round(sum(v["saldo"] for v in visacuotas), 2)
+        pago_mensual_prestamos = round(sum(p["cuota_mensual"] for p in prestamos), 2)
+        # una Visa Cuotas ya terminada (sin cuotas restantes) no sigue pesando en el pago mensual
+        pago_mensual_visacuotas = round(
+            sum(v["cuota_mensual"] for v in visacuotas if v["cuotas_restantes"] > 0), 2)
+
+        # Ingreso mensual de referencia = salario(s) recurrente(s) activos,
+        # normalizado a mensual (Quincenal es el monto POR quincena → x2).
+        ingreso_mensual_ref = 0.0
+        for r in conn.execute("SELECT monto, frecuencia FROM ingresos_recurrentes WHERE activo = 1"):
+            ingreso_mensual_ref += r["monto"] * (2 if r["frecuencia"] == "Quincenal" else 1)
+
+        endeudamiento = {
+            "tarjetas": datos["deuda_total"],
+            "prestamos": deuda_prestamos,
+            "visacuotas": deuda_visacuotas,
+            "pago_mensual_tarjetas": pagos_mes,
+            "pago_mensual_prestamos": pago_mensual_prestamos,
+            "pago_mensual_visacuotas": pago_mensual_visacuotas,
+            "ingreso_mensual_referencia": round(ingreso_mensual_ref, 2) if ingreso_mensual_ref else None,
+        }
+
         return {
             "anio": anio, "mes": mes,
             "ingresos": datos["ingresos"], "gastos": datos["gastos"],
@@ -858,6 +1235,7 @@ def dashboard(anio: Optional[int] = None, mes: Optional[int] = None):
             "barras": barras, "pastel": pastel, "tarjetas": tarjetas,
             "metodo_pago": metodo_pago, "patrimonio_hist": patrimonio_hist,
             "tendencia_categorias": tendencia_categorias,
+            "prestamos": prestamos, "visacuotas": visacuotas, "endeudamiento": endeudamiento,
         }
     finally:
         conn.close()

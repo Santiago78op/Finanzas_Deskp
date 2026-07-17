@@ -12,6 +12,7 @@ const VISTAS = [
   { key: 'registro', label: 'Registro rápido', icono: 'registro' },
   { key: 'cuentas', label: 'Mis cuentas', icono: 'banco' },
   { key: 'tarjetas', label: 'Tarjetas', icono: 'tarjeta' },
+  { key: 'prestamos', label: 'Préstamos', icono: 'prestamo' },
   { key: 'analisis', label: 'Análisis', icono: 'barras' },
   { key: 'movimientos', label: 'Movimientos', icono: 'recibo' },
   { key: 'ajustes', label: 'Ajustes', icono: 'ajustes' },

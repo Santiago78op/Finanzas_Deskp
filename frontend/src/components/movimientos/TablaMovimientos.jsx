@@ -13,7 +13,10 @@ import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import { fmtFecha, fmtQ } from '../../utils.js';
 import { tablaScroll } from './movimientos.styles.js';
 
-const COLOR_TIPO = { gasto: 'error', ingreso: 'success', pago: 'warning' };
+const COLOR_TIPO = {
+  gasto: 'error', ingreso: 'success', pago: 'warning',
+  pago_prestamo: 'info', pago_visacuota: 'secondary',
+};
 
 export default function TablaMovimientos({ movs, onEditar, onEliminar }) {
   if (!movs.length) return <Typography variant="body2" className="texto-suave">No hay movimientos con esos filtros.</Typography>;

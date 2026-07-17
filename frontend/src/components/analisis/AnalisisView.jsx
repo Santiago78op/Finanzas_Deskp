@@ -12,6 +12,8 @@ import GraficaBarras from './GraficaBarras.jsx';
 import GraficaTendencia from './GraficaTendencia.jsx';
 import GraficaPatrimonio from './GraficaPatrimonio.jsx';
 import GraficaUsoTarjetas from './GraficaUsoTarjetas.jsx';
+import GraficaEndeudamiento from './GraficaEndeudamiento.jsx';
+import GraficaPagosMensuales from './GraficaPagosMensuales.jsx';
 import { getDashboard } from '../../api/dashboard.js';
 import { useTopbarExtra } from '../../context/TopbarExtraContext.jsx';
 import { useTheme } from '../../hooks/useTheme.jsx';
@@ -59,7 +61,14 @@ export default function AnalisisView() {
   if (!d) return null;
 
   const hayTarjetas = d.tarjetas.length >= 2;
-  const PESTANAS = ['Resumen', 'Tendencias', ...(hayTarjetas ? ['Tarjetas'] : [])];
+  const hayDeudas = d.tarjetas.length > 0 || d.prestamos.length > 0 || d.visacuotas.length > 0;
+  const PESTANAS = ['Resumen', 'Tendencias', ...(hayTarjetas ? ['Tarjetas'] : []), ...(hayDeudas ? ['Deudas'] : [])];
+
+  const e = d.endeudamiento;
+  const deudaTotalGeneral = e.tarjetas + e.prestamos + e.visacuotas;
+  const pagoMensualTotal = e.pago_mensual_tarjetas + e.pago_mensual_prestamos + e.pago_mensual_visacuotas;
+  const pctEndeudamiento = e.ingreso_mensual_referencia
+    ? Math.round((deudaTotalGeneral / e.ingreso_mensual_referencia) * 100) : null;
 
   return (
     <div id="vista-analisis" className="vista">
@@ -124,6 +133,29 @@ export default function AnalisisView() {
           <Card component="section" aria-labelledby="sec-uso-tarjetas" className="p-5 dash-span-12">
             <Typography id="sec-uso-tarjetas" variant="h6" className="mb-2">Uso de tus tarjetas</Typography>
             <div style={{ height: 200 }}><GraficaUsoTarjetas d={d} tema={tema} /></div>
+          </Card>
+        </div>
+      )}
+
+      {tab === PESTANAS.indexOf('Deudas') && hayDeudas && (
+        <div className="dash-grid" style={{ marginTop: 0 }}>
+          <Card component="section" aria-labelledby="sec-endeudamiento" className="p-5 dash-span-5">
+            <Typography id="sec-endeudamiento" variant="h6" className="mb-2">Nivel de endeudamiento</Typography>
+            <Typography variant="h4" fontWeight={700} letterSpacing="-.02em">{fmtQ(deudaTotalGeneral)}</Typography>
+            <Typography variant="body2" className="text-[var(--suave)] mb-2">
+              {pctEndeudamiento != null
+                ? `= ${pctEndeudamiento}% de tu ingreso mensual`
+                : 'Configurá un ingreso recurrente en Ajustes para ver este porcentaje.'}
+            </Typography>
+            <div style={{ height: 220 }}><GraficaEndeudamiento d={d} tema={tema} /></div>
+          </Card>
+
+          <Card component="section" aria-labelledby="sec-pagos-mensuales" className="p-5 dash-span-7">
+            <Typography id="sec-pagos-mensuales" variant="h6" className="mb-2">Nivel de pagos mensuales</Typography>
+            <Typography variant="body2" className="text-[var(--suave)] mb-2">
+              Comprometido este mes: <strong>{fmtQ(pagoMensualTotal)}</strong>
+            </Typography>
+            <div style={{ height: 280 }}><GraficaPagosMensuales d={d} tema={tema} /></div>
           </Card>
         </div>
       )}

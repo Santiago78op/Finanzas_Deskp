@@ -279,8 +279,8 @@ body {
 /* Grids de 2 columnas de Cuentas/Tarjetas (FinanzasQ.dc.html) — página de
    gestión completa, por eso es grid fijo y no carrusel. El tile punteado al
    final ocupa una celda más y hace scroll al formulario de arriba. */
-.cuentas-grid, .tarjetas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-@media (max-width: 700px) { .cuentas-grid, .tarjetas-grid { grid-template-columns: 1fr; } }
+.cuentas-grid, .tarjetas-grid, .prestamos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 700px) { .cuentas-grid, .tarjetas-grid, .prestamos-grid { grid-template-columns: 1fr; } }
 .tile-agregar {
   border: 1.5px dashed var(--borde); background: transparent; border-radius: 14px;
   padding: 18px; display: flex; align-items: center; justify-content: center; gap: 9px;

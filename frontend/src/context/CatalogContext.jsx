@@ -3,26 +3,31 @@ import { getCategorias } from '../api/categorias.js';
 import { getMetodosPago } from '../api/metodosPago.js';
 import { getTarjetas } from '../api/tarjetas.js';
 import { getCuentas } from '../api/cuentas.js';
+import { getPrestamos } from '../api/prestamos.js';
+import { getVisacuotas } from '../api/visacuotas.js';
 
 const CatalogContext = createContext(null);
 
 export function CatalogProvider({ children }) {
   const [state, setState] = useState({
     catGasto: [], catIngreso: [], metodos: [], tarjetas: [], cuentas: [],
+    prestamos: [], visacuotas: [],
     loading: true, error: null,
   });
 
   const refetch = useCallback(async () => {
     setState(s => ({ ...s, loading: true, error: null }));
     try {
-      const [catGasto, catIngreso, metodos, tarjetas, cuentas] = await Promise.all([
+      const [catGasto, catIngreso, metodos, tarjetas, cuentas, prestamos, visacuotas] = await Promise.all([
         getCategorias({ tipo: 'gasto' }),
         getCategorias({ tipo: 'ingreso' }),
         getMetodosPago(),
         getTarjetas(),
         getCuentas(),
+        getPrestamos(),
+        getVisacuotas(),
       ]);
-      setState({ catGasto, catIngreso, metodos, tarjetas, cuentas, loading: false, error: null });
+      setState({ catGasto, catIngreso, metodos, tarjetas, cuentas, prestamos, visacuotas, loading: false, error: null });
     } catch (err) {
       setState(s => ({ ...s, loading: false, error: err.message }));
     }

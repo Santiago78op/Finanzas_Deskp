@@ -6,8 +6,10 @@ import { useCatalog } from '../../context/CatalogContext.jsx';
 import { useToast } from '../shared/Toast.jsx';
 import { actualizarMovimiento } from '../../api/movimientos.js';
 
+const SIN_CATEGORIA = ['pago', 'pago_prestamo', 'pago_visacuota'];
+
 export default function ModalEditarMovimiento({ mov, onCerrar, onGuardado }) {
-  const { catGasto, catIngreso, metodos, tarjetas, cuentas } = useCatalog();
+  const { catGasto, catIngreso, metodos, tarjetas, cuentas, prestamos, visacuotas } = useCatalog();
   const toast = useToast();
 
   const [fecha, setFecha] = useState(mov.fecha);
@@ -18,6 +20,8 @@ export default function ModalEditarMovimiento({ mov, onCerrar, onGuardado }) {
     mov.tarjeta_id ? `Tarjeta:${mov.tarjeta_id}` : mov.metodo
   );
   const [tarjetaId, setTarjetaId] = useState(mov.tarjeta_id);
+  const [prestamoId, setPrestamoId] = useState(mov.prestamo_id);
+  const [visacuotaId, setVisacuotaId] = useState(mov.visacuota_id);
   const [cuentaId, setCuentaId] = useState(mov.cuenta_id ?? '');
 
   const cats = mov.tipo === 'gasto' ? catGasto : catIngreso;
@@ -36,6 +40,10 @@ export default function ModalEditarMovimiento({ mov, onCerrar, onGuardado }) {
         };
       } else if (mov.tipo === 'ingreso') {
         body = { fecha, descripcion, categoria_id: parseInt(categoriaId), cuenta_id: cuentaSel, monto: parseFloat(monto) };
+      } else if (mov.tipo === 'pago_prestamo') {
+        body = { fecha, prestamo_id: parseInt(prestamoId), cuenta_id: cuentaSel, monto: parseFloat(monto) };
+      } else if (mov.tipo === 'pago_visacuota') {
+        body = { fecha, visacuota_id: parseInt(visacuotaId), cuenta_id: cuentaSel, monto: parseFloat(monto) };
       } else {
         body = { fecha, tarjeta_id: parseInt(tarjetaId), cuenta_id: cuentaSel, monto: parseFloat(monto) };
       }
@@ -52,7 +60,7 @@ export default function ModalEditarMovimiento({ mov, onCerrar, onGuardado }) {
       <TextField label="Monto (Q)" type="number" inputProps={{ step: 0.01, min: 0.01 }}
         value={monto} onChange={e => setMonto(e.target.value)} />
 
-      {mov.tipo !== 'pago' && (
+      {!SIN_CATEGORIA.includes(mov.tipo) && (
         <>
           <TextField label="Descripción" value={descripcion} onChange={e => setDescripcion(e.target.value)} />
           <TextField select label="Categoría" value={categoriaId} onChange={e => setCategoriaId(e.target.value)}>
@@ -73,6 +81,18 @@ export default function ModalEditarMovimiento({ mov, onCerrar, onGuardado }) {
       {mov.tipo === 'pago' && (
         <TextField select label="Tarjeta" value={tarjetaId} onChange={e => setTarjetaId(e.target.value)}>
           {tarjetas.map(t => <MenuItem key={t.id} value={t.id}>{t.nombre}</MenuItem>)}
+        </TextField>
+      )}
+
+      {mov.tipo === 'pago_prestamo' && (
+        <TextField select label="Préstamo" value={prestamoId} onChange={e => setPrestamoId(e.target.value)}>
+          {prestamos.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
+        </TextField>
+      )}
+
+      {mov.tipo === 'pago_visacuota' && (
+        <TextField select label="Visa Cuotas" value={visacuotaId} onChange={e => setVisacuotaId(e.target.value)}>
+          {visacuotas.map(v => <MenuItem key={v.id} value={v.id}>{v.descripcion}</MenuItem>)}
         </TextField>
       )}
 

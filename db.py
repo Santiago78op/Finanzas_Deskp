@@ -34,6 +34,8 @@ def init_db():
     conn = get_conn()
     cur = conn.cursor()
 
+    _migrar_visacuotas_tarjeta_obligatoria(cur)
+
     cur.executescript("""
     -- Categorías de ingreso y gasto (se pueden desactivar, no borrar)
     CREATE TABLE IF NOT EXISTS categorias (
@@ -179,6 +181,53 @@ def init_db():
         gasto_id     INTEGER REFERENCES gastos(id),
         procesado_en TEXT NOT NULL
     );
+
+    -- Préstamos (banco/financiera): saldo = saldo_inicial - pagos_prestamos,
+    -- mismo esquema que tarjetas/pagos_tarjetas (no es un gasto recurrente
+    -- con confirmaciones: el pago se registra a mano cuando el usuario quiere).
+    CREATE TABLE IF NOT EXISTS prestamos (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre         TEXT NOT NULL,
+        institucion    TEXT NOT NULL,
+        monto_original REAL NOT NULL CHECK (monto_original > 0),
+        saldo_inicial  REAL NOT NULL DEFAULT 0,
+        cuota_mensual  REAL NOT NULL CHECK (cuota_mensual > 0),
+        tasa_interes   REAL,
+        dia_pago       INTEGER CHECK (dia_pago BETWEEN 1 AND 31),
+        fecha_inicio   TEXT,
+        activo         INTEGER NOT NULL DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS pagos_prestamos (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        fecha       TEXT NOT NULL,
+        prestamo_id INTEGER NOT NULL REFERENCES prestamos(id),
+        cuenta_id   INTEGER REFERENCES cuentas(id),
+        monto       REAL NOT NULL CHECK (monto > 0)
+    );
+
+    -- Visa Cuotas: una compra de tarjeta diferida a cuotas fijas (no es
+    -- parte del saldo revolvente de la tarjeta). tarjeta_id es obligatoria:
+    -- una Visa Cuotas siempre está atada a la tarjeta donde se difirió.
+    CREATE TABLE IF NOT EXISTS visacuotas (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        descripcion   TEXT NOT NULL,
+        tarjeta_id    INTEGER NOT NULL REFERENCES tarjetas(id),
+        monto_total   REAL NOT NULL CHECK (monto_total > 0),
+        num_cuotas    INTEGER NOT NULL CHECK (num_cuotas > 0),
+        cuota_mensual REAL NOT NULL CHECK (cuota_mensual > 0),
+        fecha_inicio  TEXT NOT NULL,
+        dia_pago      INTEGER CHECK (dia_pago BETWEEN 1 AND 31),
+        activo        INTEGER NOT NULL DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS pagos_visacuotas (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        fecha        TEXT NOT NULL,
+        visacuota_id INTEGER NOT NULL REFERENCES visacuotas(id),
+        cuenta_id    INTEGER REFERENCES cuentas(id),
+        monto        REAL NOT NULL CHECK (monto > 0)
+    );
     """)
 
     # Migraciones: agregar columnas nuevas a bases creadas con versiones anteriores
@@ -215,6 +264,28 @@ def _asegurar_columna(cur, tabla, columna, ddl):
         cur.execute(f"ALTER TABLE {tabla} ADD COLUMN {ddl}")
 
 
+def _migrar_visacuotas_tarjeta_obligatoria(cur):
+    """
+    tarjeta_id pasó de opcional a NOT NULL en visacuotas (una Visa Cuotas
+    siempre está atada a una tarjeta). SQLite no soporta agregar un NOT NULL
+    a una columna existente, así que si la tabla ya existe con el esquema
+    viejo (columna nullable) y no tiene filas huérfanas sin tarjeta, se
+    recrea vacía con el esquema nuevo (el CREATE TABLE IF NOT EXISTS de
+    abajo la vuelve a crear). Si hay huérfanas reales, no se toca nada —
+    ese caso no debería darse todavía (feature nueva).
+    """
+    existe = cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='visacuotas'"
+    ).fetchone()
+    if not existe:
+        return
+    col = next((c for c in cur.execute("PRAGMA table_info(visacuotas)").fetchall() if c[1] == "tarjeta_id"), None)
+    if col and col[3] == 0:  # notnull == 0 → esquema viejo (nullable)
+        huerfanas = cur.execute("SELECT COUNT(*) FROM visacuotas WHERE tarjeta_id IS NULL").fetchone()[0]
+        if huerfanas == 0:
+            cur.execute("DROP TABLE visacuotas")
+
+
 # ---------- Helpers de configuración ----------
 
 def config_get(conn, clave, defecto=None):
@@ -245,6 +316,29 @@ def saldo_tarjeta(conn, tarjeta_id):
         "SELECT COALESCE(SUM(monto), 0) AS t FROM pagos_tarjetas WHERE tarjeta_id = ?", (tarjeta_id,)
     ).fetchone()["t"]
     return round(inicial + gastos - pagos, 2)
+
+
+def saldo_prestamo(conn, prestamo_id):
+    """Saldo pendiente de un préstamo = saldo inicial − pagos ya hechos."""
+    inicial = conn.execute(
+        "SELECT saldo_inicial FROM prestamos WHERE id = ?", (prestamo_id,)
+    ).fetchone()["saldo_inicial"]
+    pagos = conn.execute(
+        "SELECT COALESCE(SUM(monto), 0) AS t FROM pagos_prestamos WHERE prestamo_id = ?", (prestamo_id,)
+    ).fetchone()["t"]
+    return round(inicial - pagos, 2)
+
+
+def saldo_visacuota(conn, visacuota_id):
+    """Saldo pendiente y cuotas pagadas de una Visa Cuotas (monto_total − pagos)."""
+    total = conn.execute(
+        "SELECT monto_total FROM visacuotas WHERE id = ?", (visacuota_id,)
+    ).fetchone()["monto_total"]
+    fila = conn.execute(
+        "SELECT COALESCE(SUM(monto), 0) AS t, COUNT(*) AS n FROM pagos_visacuotas WHERE visacuota_id = ?",
+        (visacuota_id,),
+    ).fetchone()
+    return round(total - fila["t"], 2), fila["n"]
 
 
 def resolver_categoria_gasto(conn, nombre):
