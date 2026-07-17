@@ -33,7 +33,7 @@ export default function RespaldoPanel() {
   };
 
   return (
-    <Card component="section" aria-labelledby="sec-respaldo" className="p-4 flex flex-col gap-4">
+    <Card component="section" aria-labelledby="sec-respaldo" className="p-5 flex flex-col gap-4">
       <Typography id="sec-respaldo" variant="h6">Respaldo (CSV)</Typography>
       <Typography variant="body2" className="text-[var(--suave)]">Exportá todo a un ZIP con un CSV por tabla, o importá un CSV con el mismo formato.</Typography>
       <Button variant="contained" component="a" href={URL_EXPORT} download className="self-start">Exportar todo (ZIP)</Button>

@@ -82,7 +82,7 @@ export default function AvisoSalario() {
   };
 
   return (
-    <Card id="aviso-salario" className="p-4 flex flex-col gap-3 mb-4">
+    <Card id="aviso-salario" className="p-5 flex flex-col gap-3 mb-4">
       {pendIng.map((p, i) => (
         <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, alignItems: 'center' }} key={`ing-${i}`}>
           <Typography variant="body2">💵 Confirmar ingreso <b>{p.etiqueta}</b> de <b>{p.mes_nombre}</b>:</Typography>

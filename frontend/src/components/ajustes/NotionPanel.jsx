@@ -65,7 +65,7 @@ export default function NotionPanel() {
   };
 
   return (
-    <Card component="section" aria-labelledby="sec-notion" className="p-4 flex flex-col gap-3">
+    <Card component="section" aria-labelledby="sec-notion" className="p-5 flex flex-col gap-3">
       <Typography id="sec-notion" variant="h6">Notion</Typography>
       <Typography variant="body2" className="text-[var(--suave)]">{estadoTexto}</Typography>
       {check && (

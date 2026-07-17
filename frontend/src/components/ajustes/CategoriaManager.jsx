@@ -52,7 +52,7 @@ export default function CategoriaManager() {
   };
 
   return (
-    <Card component="section" aria-labelledby="sec-categorias" className="p-4 flex flex-col gap-4">
+    <Card component="section" aria-labelledby="sec-categorias" className="p-5 flex flex-col gap-4">
       <Typography id="sec-categorias" variant="h6">Categorías</Typography>
       <Stack component="form" direction="row" sx={filaAcciones} autoComplete="off" onSubmit={agregar}>
         <TextField label="Nueva categoría" required value={nombre} onChange={e => setNombre(e.target.value)} />

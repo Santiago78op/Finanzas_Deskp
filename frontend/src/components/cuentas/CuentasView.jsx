@@ -31,7 +31,7 @@ export default function CuentasView() {
 
   return (
     <div id="vista-cuentas" className="vista flex flex-col">
-      <Card component="section" aria-label="Disponible total" className="p-4 flex items-center justify-between gap-5 flex-wrap">
+      <Card component="section" aria-label="Disponible total" className="p-5 flex items-center justify-between gap-5 flex-wrap">
         <div>
           <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Disponible total</Typography>
           <Typography variant="h4" fontWeight={700} letterSpacing="-.02em">{fmtQ(disponibleTotal)}</Typography>

@@ -54,7 +54,7 @@ export default function AnalisisView() {
 
   return (
     <div id="vista-analisis" className="vista flex flex-col gap-4">
-      <Card component="section" aria-label="Total gastado" className="p-4">
+      <Card component="section" aria-label="Total gastado" className="p-5">
         <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">
           Total gastado en {MESES[mes]}
         </Typography>
@@ -66,39 +66,39 @@ export default function AnalisisView() {
         )}
       </Card>
 
-      <Card component="section" aria-labelledby="sec-analisis" className="p-4">
+      <Card component="section" aria-labelledby="sec-analisis" className="p-5">
         <Typography id="sec-analisis" variant="h6" className="mb-2">¿En qué gasto más?</Typography>
         <PanelAnalisis d={d} />
       </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card component="section" aria-labelledby="sec-pastel" className="p-4">
+        <Card component="section" aria-labelledby="sec-pastel" className="p-5">
           <Typography id="sec-pastel" variant="h6" className="mb-2">Gasto por categoría</Typography>
           <div style={{ height: 280 }}><GraficaPastel d={d} tema={tema} /></div>
         </Card>
-        <Card component="section" aria-labelledby="sec-metodo" className="p-4">
+        <Card component="section" aria-labelledby="sec-metodo" className="p-5">
           <Typography id="sec-metodo" variant="h6" className="mb-2">Gasto por método de pago</Typography>
           <div style={{ height: 280 }}><GraficaMetodo d={d} tema={tema} /></div>
         </Card>
       </div>
 
-      <Card component="section" aria-labelledby="sec-barras" className="p-4">
+      <Card component="section" aria-labelledby="sec-barras" className="p-5">
         <Typography id="sec-barras" variant="h6" className="mb-2">Ingresos vs. gastos por mes ({anio})</Typography>
         <div style={{ height: 300 }}><GraficaBarras d={d} tema={tema} /></div>
       </Card>
 
-      <Card component="section" aria-labelledby="sec-tendencia" className="p-4">
+      <Card component="section" aria-labelledby="sec-tendencia" className="p-5">
         <Typography id="sec-tendencia" variant="h6" className="mb-2">Tendencia de tus categorías principales (6 meses)</Typography>
         <div style={{ height: 300 }}><GraficaTendencia d={d} tema={tema} /></div>
       </Card>
 
-      <Card component="section" aria-labelledby="sec-patrimonio" className="p-4">
+      <Card component="section" aria-labelledby="sec-patrimonio" className="p-5">
         <Typography id="sec-patrimonio" variant="h6" className="mb-2">Evolución del patrimonio (12 meses)</Typography>
         <div style={{ height: 300 }}><GraficaPatrimonio d={d} tema={tema} /></div>
       </Card>
 
       {d.tarjetas.length >= 2 && (
-        <Card component="section" aria-labelledby="sec-uso-tarjetas" className="p-4">
+        <Card component="section" aria-labelledby="sec-uso-tarjetas" className="p-5">
           <Typography id="sec-uso-tarjetas" variant="h6" className="mb-2">Uso de tus tarjetas</Typography>
           <div style={{ height: 200 }}><GraficaUsoTarjetas d={d} tema={tema} /></div>
         </Card>

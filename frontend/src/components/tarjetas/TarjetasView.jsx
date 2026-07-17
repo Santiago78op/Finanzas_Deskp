@@ -32,7 +32,7 @@ export default function TarjetasView() {
 
   return (
     <div id="vista-tarjetas" className="vista flex flex-col">
-      <Card component="section" aria-label="Deuda total en tarjetas" className="p-4 flex items-center justify-between gap-5 flex-wrap">
+      <Card component="section" aria-label="Deuda total en tarjetas" className="p-5 flex items-center justify-between gap-5 flex-wrap">
         <div>
           <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Deuda total en tarjetas</Typography>
           <Typography variant="h4" fontWeight={700} letterSpacing="-.02em" className="text-[var(--pago)]">{fmtQ(deudaTotal)}</Typography>

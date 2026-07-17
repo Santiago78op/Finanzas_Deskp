@@ -61,7 +61,7 @@ export default function RegistroView() {
           {tipo === 'ingreso' && <FormIngreso inputRef={montoRef} onGuardado={onGuardado} />}
         </Card>
 
-        <Card component="section" aria-labelledby="sec-registrado-hoy" className="p-4">
+        <Card component="section" aria-labelledby="sec-registrado-hoy" className="p-5">
           <Typography id="sec-registrado-hoy" variant="h6" className="mb-3">Registrado hoy</Typography>
           {!registros.length && (
             <Typography variant="body2" className="text-[var(--suave)]" style={{ textWrap: 'pretty' }}>

@@ -87,7 +87,7 @@ export default function FormGastoRecurrente({ onCambio }) {
   };
 
   return (
-    <Card component="section" aria-labelledby="sec-pagos-frecuentes" className="p-4 flex flex-col gap-4">
+    <Card component="section" aria-labelledby="sec-pagos-frecuentes" className="p-5 flex flex-col gap-4">
       <Typography id="sec-pagos-frecuentes" variant="h6">{editando ? `Editar pago frecuente: ${editando.descripcion}` : 'Pagos frecuentes (renta, internet, colegio...)'}</Typography>
       <Typography variant="body2" className="text-[var(--suave)]">La app te pedirá confirmar cada pago en su fecha y creará el gasto con el método configurado.</Typography>
       <form className="grid gap-3 sm:grid-cols-2" autoComplete="off" onSubmit={submit}>
