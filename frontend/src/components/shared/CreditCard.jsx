@@ -32,7 +32,7 @@ export default function CreditCard({ tarjeta, onEditar }) {
   const uso = Math.min(100, Math.max(0, Math.round(tarjeta.pct_uso)));
 
   return (
-    <div style={{ width: compacta ? 260 : '100%', maxWidth: 320 }}>
+    <div style={{ width: compacta ? 'min(260px, 100%)' : '100%', maxWidth: 320 }}>
       <Card component="article" className={`overflow-hidden${tarjeta.activa ? '' : ' opacity-50'}`}>
         <div
           className="relative p-4 text-white bg-gradient-to-br from-neutral-800 to-neutral-950 flex flex-col gap-5"

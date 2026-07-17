@@ -19,25 +19,16 @@ const VISTAS = [
 
 export { VISTAS };
 
-// Sidebar fijo (reemplaza el AppBar horizontal de antes) — mismo wordmark,
-// mismo useTheme(), pero navegación vertical siguiendo el layout aprobado en
-// FinanzasQ.dc.html (Claude Design). Movimientos y Ajustes se sumaron acá
-// aunque el mockup no los dibuje: son funcionalidad real que ya se usa.
-// Los items son <NavLink> reales (rutas de react-router, no un onClick que
-// solo cambiaba un estado interno) — la URL cambia de verdad al navegar.
-export default function SideNav() {
+// Contenido del sidebar sin el wrapper de posicionamiento — lo consumen
+// tanto el <aside> fijo de escritorio como el <Drawer> de mobile (mismo
+// nav, mismo toggle de tema, mismo bloque de cuenta, un solo lugar de
+// verdad). `onNavigate` es opcional: el Drawer lo usa para cerrarse solo
+// al tocar un link; el sidebar de escritorio no lo necesita.
+export function SideNavContenido({ onNavigate }) {
   const { toggle } = useTheme();
 
   return (
-    <Box
-      component="aside"
-      sx={{
-        width: 252, flex: 'none', display: 'flex', flexDirection: 'column',
-        background: 'var(--panel)', borderRight: '1px solid var(--borde)',
-        padding: '22px 16px', position: 'sticky', top: 0, minHeight: '100vh',
-        alignSelf: 'stretch', overflowY: 'auto',
-      }}
-    >
+    <>
       <Box className="flex items-center gap-2" sx={{ padding: '4px 8px 24px' }}>
         <span className="inline-flex text-[var(--texto)]">
           <svg className="ico" style={{ width: 26, height: 26 }}><use href="#ico-billetera" /></svg>
@@ -54,6 +45,7 @@ export default function SideNav() {
             key={v.key}
             component={NavLink}
             to={`/${v.key}`}
+            onClick={onNavigate}
             className={({ isActive }) => (isActive ? 'active' : undefined)}
             startIcon={<svg className="ico" style={{ width: 18, height: 18 }}><use href={`#ico-${v.icono}`} /></svg>}
             sx={{
@@ -96,6 +88,26 @@ export default function SideNav() {
           </div>
         </Box>
       </Box>
+    </>
+  );
+}
+
+// Sidebar fijo de escritorio (reemplaza el AppBar horizontal de antes) —
+// oculto por CSS bajo el breakpoint `md` (ver Layout.jsx: ahí vive el
+// Drawer que lo reemplaza en mobile, mismo contenido vía SideNavContenido).
+export default function SideNav() {
+  return (
+    <Box
+      component="aside"
+      sx={{
+        width: 252, flex: 'none', flexDirection: 'column',
+        background: 'var(--panel)', borderRight: '1px solid var(--borde)',
+        padding: '22px 16px', position: 'sticky', top: 0, minHeight: '100vh',
+        alignSelf: 'stretch', overflowY: 'auto',
+        display: { xs: 'none', md: 'flex' },
+      }}
+    >
+      <SideNavContenido />
     </Box>
   );
 }

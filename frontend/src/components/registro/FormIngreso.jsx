@@ -51,7 +51,7 @@ export default function FormIngreso({ inputRef, onGuardado }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <label style={campoLabel}>Categoría</label>
           <select required value={categoriaId} onChange={e => setCategoriaId(e.target.value)} style={{ ...campoBase, cursor: 'pointer' }}>
@@ -68,7 +68,7 @@ export default function FormIngreso({ inputRef, onGuardado }) {
         </div>
       </div>
 
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'auto 1fr', alignItems: 'end' }}>
+      <div className="grid gap-3 items-end sm:grid-cols-[auto_1fr]">
         <div className="flex flex-col gap-1.5">
           <label style={campoLabel}>Fecha</label>
           <CampoFecha value={fecha} onChange={setFecha} style={{ width: 'auto' }} />

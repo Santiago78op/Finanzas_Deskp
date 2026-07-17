@@ -50,7 +50,7 @@ export default function FormPago({ inputRef, onGuardado }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <label style={campoLabel}>Tarjeta</label>
           <select required value={tarjetaId} onChange={e => setTarjetaId(e.target.value)} style={{ ...campoBase, cursor: 'pointer' }}>

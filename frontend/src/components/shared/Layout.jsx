@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Drawer from '@mui/material/Drawer';
 import AddIcon from '@mui/icons-material/AddOutlined';
-import SideNav from './SideNav.jsx';
+import SideNav, { SideNavContenido } from './SideNav.jsx';
 import Footer from './Footer.jsx';
 import { TopbarExtraProvider, useTopbarExtra } from '../../context/TopbarExtraContext.jsx';
 
@@ -38,11 +41,28 @@ function LayoutInner() {
   const navigate = useNavigate();
   const vista = location.pathname.replace('/', '') || 'dashboard';
   const { extra } = useTopbarExtra();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+
+  // Cierra el drawer solo al cambiar de ruta (además del onNavigate de cada
+  // link) — red de seguridad si algo dispara la navegación sin pasar por ahí.
+  useEffect(() => { setMenuAbierto(false); }, [location.pathname]);
 
   return (
     <Box id="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <SideNav />
+
+        {/* Sidebar en mobile (<md): mismo contenido, como Drawer superpuesto
+            en vez de columna fija — ver plan de responsive. */}
+        <Drawer
+          variant="temporary" open={menuAbierto} onClose={() => setMenuAbierto(false)}
+          ModalProps={{ keepMounted: true }}
+          sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { width: 252, background: 'var(--panel)' } }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '22px 16px' }}>
+            <SideNavContenido onNavigate={() => setMenuAbierto(false)} />
+          </Box>
+        </Drawer>
 
         <Box id="contenido" sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <Container maxWidth="lg" component="main" sx={{ flex: 1 }}>
@@ -52,9 +72,17 @@ function LayoutInner() {
                 en la misma fila, como en FinanzasQ.dc.html (Claude Design).
                 Un <main> puede anidar su propio <header> sin problema. */}
             <header id="topbar" className="pt-7 pb-4 flex items-end justify-between gap-5 flex-wrap">
-              <div>
-                <h1 id="titulo-vista">{TITULOS[vista]}</h1>
-                <div className="saludo">{SUBTITULOS[vista]}</div>
+              <div className="flex items-center gap-3">
+                <IconButton
+                  aria-label="Abrir menú" onClick={() => setMenuAbierto(true)}
+                  sx={{ display: { xs: 'inline-flex', md: 'none' }, color: 'var(--texto)' }}
+                >
+                  <svg className="ico" style={{ width: 22, height: 22 }}><use href="#ico-menu" /></svg>
+                </IconButton>
+                <div>
+                  <h1 id="titulo-vista">{TITULOS[vista]}</h1>
+                  <div className="saludo">{SUBTITULOS[vista]}</div>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 {extra}
