@@ -8,6 +8,7 @@ import { crearIngreso } from '../../api/movimientos.js';
 import { fmtQ, hoyISO } from '../../utils.js';
 import { campoLabel, campoBase } from './campoStyles.js';
 import { tabularNums } from '../shared/estilos.js';
+import CampoFecha from './CampoFecha.jsx';
 
 export default function FormIngreso({ inputRef, onGuardado }) {
   const { catIngreso, cuentas } = useCatalog();
@@ -70,7 +71,7 @@ export default function FormIngreso({ inputRef, onGuardado }) {
       <div className="grid gap-3" style={{ gridTemplateColumns: 'auto 1fr', alignItems: 'end' }}>
         <div className="flex flex-col gap-1.5">
           <label style={campoLabel}>Fecha</label>
-          <input type="date" required value={fecha} onChange={e => setFecha(e.target.value)} style={{ ...campoBase, width: 'auto' }} />
+          <CampoFecha value={fecha} onChange={setFecha} style={{ width: 'auto' }} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label style={campoLabel}>Nota (opcional)</label>

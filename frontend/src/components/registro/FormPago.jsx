@@ -8,6 +8,7 @@ import { crearPago } from '../../api/movimientos.js';
 import { fmtQ, hoyISO } from '../../utils.js';
 import { campoLabel, campoBase } from './campoStyles.js';
 import { tabularNums } from '../shared/estilos.js';
+import CampoFecha from './CampoFecha.jsx';
 
 export default function FormPago({ inputRef, onGuardado }) {
   const { tarjetas, cuentas } = useCatalog();
@@ -68,7 +69,7 @@ export default function FormPago({ inputRef, onGuardado }) {
 
       <div className="flex flex-col gap-1.5">
         <label style={campoLabel}>Fecha</label>
-        <input type="date" required value={fecha} onChange={e => setFecha(e.target.value)} style={campoBase} />
+        <CampoFecha value={fecha} onChange={setFecha} />
       </div>
 
       <Button type="submit" variant="contained" color="warning" size="large" fullWidth startIcon={<CheckIcon />}>Guardar pago</Button>

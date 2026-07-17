@@ -34,7 +34,7 @@ export default function AccountCard({ cuenta, onEditar }) {
           </div>
         </div>
         {!cuenta.activa && (
-          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[var(--panel2)] text-[var(--suave)]">
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[var(--panel-2)] text-[var(--suave)]">
             Inactiva
           </span>
         )}

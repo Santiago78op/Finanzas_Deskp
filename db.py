@@ -46,6 +46,8 @@ def init_db():
 
     -- Tarjetas de crédito del usuario.
     -- saldo_inicial: deuda que la tarjeta ya traía al registrarla (opcional, puede ser 0)
+    -- color_idx: índice (0-5) sobre la paleta de acentos ACC elegido a mano por
+    -- el usuario; si es NULL, se usa el rotativo automático (id % 6) de siempre.
     CREATE TABLE IF NOT EXISTS tarjetas (
         id            INTEGER PRIMARY KEY AUTOINCREMENT,
         banco         TEXT NOT NULL,
@@ -54,7 +56,8 @@ def init_db():
         dia_corte     INTEGER NOT NULL CHECK (dia_corte BETWEEN 1 AND 31),
         dia_pago      INTEGER NOT NULL CHECK (dia_pago BETWEEN 1 AND 31),
         saldo_inicial REAL NOT NULL DEFAULT 0,
-        activa        INTEGER NOT NULL DEFAULT 1
+        activa        INTEGER NOT NULL DEFAULT 1,
+        color_idx     INTEGER CHECK (color_idx BETWEEN 0 AND 5)
     );
 
     -- Cuentas de dinero del usuario (Monetaria / Ahorro) por banco.
@@ -180,6 +183,7 @@ def init_db():
 
     # Migraciones: agregar columnas nuevas a bases creadas con versiones anteriores
     _asegurar_columna(cur, "tarjetas", "saldo_inicial", "saldo_inicial REAL NOT NULL DEFAULT 0")
+    _asegurar_columna(cur, "tarjetas", "color_idx", "color_idx INTEGER")
     _asegurar_columna(cur, "ingresos", "cuenta_id", "cuenta_id INTEGER REFERENCES cuentas(id)")
     _asegurar_columna(cur, "gastos", "cuenta_id", "cuenta_id INTEGER REFERENCES cuentas(id)")
     _asegurar_columna(cur, "pagos_tarjetas", "cuenta_id", "cuenta_id INTEGER REFERENCES cuentas(id)")

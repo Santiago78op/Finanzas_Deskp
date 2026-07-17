@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
+import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/Add';
 import FormTarjeta from './FormTarjeta.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
@@ -8,14 +9,12 @@ import { getTarjetas } from '../../api/tarjetas.js';
 import { fmtQ } from '../../utils.js';
 
 // Solo tarjetas — "Mis cuentas" se fue a su propia vista (ver
-// components/cuentas/CuentasView.jsx). El form de alta/edición está oculto
-// por default (igual que en Cuentas) y aparece al tocar "Agregar tarjeta" o
-// "Editar" en una tarjeta.
+// components/cuentas/CuentasView.jsx). Alta/edición vía modal (no panel
+// embebido), igual que CuentasView.jsx.
 export default function TarjetasView() {
   const [tarjetas, setTarjetas] = useState([]);
   const [editando, setEditando] = useState(null);
-  const [formAbierto, setFormAbierto] = useState(false);
-  const formRef = useRef(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
 
   const cargar = useCallback(async () => {
     setTarjetas(await getTarjetas(true));
@@ -27,15 +26,12 @@ export default function TarjetasView() {
   const deudaTotal = activas.reduce((s, t) => s + t.saldo, 0);
   const proximoCorte = activas.length ? Math.min(...activas.map(t => t.dias_corte)) : null;
 
-  const abrirNueva = () => { setEditando(null); setFormAbierto(true); };
-  const abrirEditar = (t) => {
-    setEditando(t); setFormAbierto(true);
-    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth' }));
-  };
-  const cerrarForm = () => { setEditando(null); setFormAbierto(false); };
+  const abrirNueva = () => { setEditando(null); setModalAbierto(true); };
+  const abrirEditar = (t) => { setEditando(t); setModalAbierto(true); };
+  const cerrarModal = () => { setEditando(null); setModalAbierto(false); };
 
   return (
-    <div id="vista-tarjetas" className="vista flex flex-col gap-4">
+    <div id="vista-tarjetas" className="vista flex flex-col">
       <Card component="section" aria-label="Deuda total en tarjetas" className="p-4 flex items-center justify-between gap-5 flex-wrap">
         <div>
           <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Deuda total en tarjetas</Typography>
@@ -47,15 +43,7 @@ export default function TarjetasView() {
         </Typography>
       </Card>
 
-      {formAbierto && (
-        <div ref={formRef}>
-          <FormTarjeta
-            editando={editando}
-            onGuardado={() => { cerrarForm(); cargar(); }}
-            onCancelar={cerrarForm}
-          />
-        </div>
-      )}
+      <Divider sx={{ mt: 5, mb: 3 }} />
 
       <div className="tarjetas-grid">
         {tarjetas.map(t => (
@@ -65,6 +53,10 @@ export default function TarjetasView() {
           <AddIcon fontSize="small" /> Agregar tarjeta
         </button>
       </div>
+
+      {modalAbierto && (
+        <FormTarjeta editando={editando} onGuardado={() => { cerrarModal(); cargar(); }} onCerrar={cerrarModal} />
+      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ export const campoLabel = {
 
 export const campoBase = {
   width: '100%', padding: '13px 14px', borderRadius: 12,
-  border: '1px solid var(--borde)', background: 'var(--panel2)',
+  border: '1px solid var(--borde)', background: 'var(--panel-2)',
   color: 'var(--texto)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
   outline: 'none', boxSizing: 'border-box',
 };
@@ -19,6 +19,6 @@ export const tipoBtnEstilo = (activo, colorVar) => ({
   flex: 1, padding: '11px 8px', borderRadius: 999, cursor: 'pointer',
   fontFamily: 'inherit', fontWeight: 600, fontSize: 13.5, lineHeight: 1,
   border: activo ? '1px solid transparent' : '1px solid var(--borde)',
-  background: activo ? colorVar : 'var(--panel2)',
+  background: activo ? colorVar : 'var(--panel-2)',
   color: activo ? '#fff' : 'var(--suave)',
 });

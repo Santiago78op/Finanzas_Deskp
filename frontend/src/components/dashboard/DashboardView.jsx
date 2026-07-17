@@ -14,6 +14,7 @@ import { fmtQ, MESES } from '../../utils.js';
 import { ACC } from '../../theme/colores.js';
 import { useDashboardReveal } from '../../hooks/useDashboardReveal.js';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
+import { useTopbarExtra } from '../../context/TopbarExtraContext.jsx';
 import { motionOK } from '../../motion.js';
 import { tabularNums, puntoAcento, bordeFilaLista } from '../shared/estilos.js';
 import { balanceIzquierda, balanceDerecha, barraFondo, circuloIconoPago } from './dashboard.styles.js';
@@ -32,6 +33,7 @@ export default function DashboardView() {
   const [d, setD] = useState(null);
   const [movs, setMovs] = useState([]);
   const { version } = useDataVersion();
+  const { setExtra } = useTopbarExtra();
   const rootRef = useRef(null);
   useDashboardReveal(rootRef, motionOK, [d]);
 
@@ -50,6 +52,14 @@ export default function DashboardView() {
     setMes(m); setAnio(a);
   };
 
+  // Selector de mes vive en el topbar (junto a "Registrar"), no en el cuerpo
+  // de la vista — ver FinanzasQ.dc.html (Claude Design).
+  useEffect(() => {
+    setExtra(<MesSelector anio={anio} mes={mes} onCambiar={cambiarMes} />);
+    return () => setExtra(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anio, mes]);
+
   if (!d) return null;
 
   const aFavor = d.balance >= 0;
@@ -66,8 +76,6 @@ export default function DashboardView() {
 
   return (
     <div id="vista-dashboard" className="vista" ref={rootRef}>
-      <MesSelector anio={anio} mes={mes} onCambiar={cambiarMes} />
-
       {d.deuda_supera_ingresos && (
         <div className="banner-alerta reveal-block">
           ⚠️ Tu deuda en tarjetas ({fmtQ(d.deuda_total)}) rebasa tus ingresos del mes ({fmtQ(d.ingresos)})

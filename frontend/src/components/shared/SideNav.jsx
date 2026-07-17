@@ -63,8 +63,8 @@ export default function SideNav() {
               justifyContent: 'flex-start', gap: 1, px: 1.6, py: 1.1, borderRadius: '999px',
               fontWeight: 600, fontSize: 14.5, textAlign: 'left', textTransform: 'none',
               color: 'var(--suave)', backgroundColor: 'transparent',
-              '&:hover': { backgroundColor: 'var(--panel2)' },
-              '&.active': { color: 'var(--texto)', backgroundColor: 'var(--panel2)' },
+              '&:hover': { backgroundColor: 'var(--panel-2)' },
+              '&.active': { color: 'var(--texto)', backgroundColor: 'var(--panel-2)' },
             }}
           >
             {v.label}
@@ -79,7 +79,7 @@ export default function SideNav() {
           sx={{
             justifyContent: 'flex-start', gap: 1.4, px: 1.6, py: 1.1, borderRadius: '999px',
             border: '1px solid var(--borde)', fontWeight: 600, fontSize: 13.5, textTransform: 'none',
-            color: 'var(--suave)', '&:hover': { color: 'var(--texto)', backgroundColor: 'var(--panel2)' },
+            color: 'var(--suave)', '&:hover': { color: 'var(--texto)', backgroundColor: 'var(--panel-2)' },
           }}
         >
           <svg className="ico icon-sol" style={{ width: 17, height: 17 }}><use href="#ico-sol" /></svg>
@@ -89,7 +89,7 @@ export default function SideNav() {
         </Button>
         <Box className="flex items-center gap-2.5" sx={{ px: 0.5 }}>
           <span style={{
-            width: 32, height: 32, borderRadius: 999, flex: 'none', background: 'var(--panel2)',
+            width: 32, height: 32, borderRadius: 999, flex: 'none', background: 'var(--panel-2)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
             fontSize: 13, color: 'var(--texto)',
           }}>Q</span>

@@ -6,3 +6,5 @@ export const getCuentas = (incluirInactivas = false) =>
 export const crearCuenta = (data) => api('/api/cuentas', { method: 'POST', body: data });
 
 export const actualizarCuenta = (id, data) => api(`/api/cuentas/${id}`, { method: 'PUT', body: data });
+
+export const eliminarCuenta = (id) => api(`/api/cuentas/${id}`, { method: 'DELETE' });

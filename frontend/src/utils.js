@@ -16,6 +16,16 @@ export const hoyISO = () => {
 export const MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
+const MESES_ABREV = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+// Fecha ISO -> "Hoy · 16 jul 2026" si es hoy, si no "16 jul 2026" — como
+// muestra el campo Fecha en FinanzasQ.dc.html (Claude Design).
+export const fmtFechaChip = iso => {
+  const [a, m, d] = iso.split('-').map(Number);
+  const texto = `${d} ${MESES_ABREV[m]} ${a}`;
+  return iso === hoyISO() ? `Hoy · ${texto}` : texto;
+};
+
 export function claseUso(pct) {
   return pct < 30 ? 'uso-verde' : pct <= 70 ? 'uso-amarillo' : 'uso-rojo';
 }

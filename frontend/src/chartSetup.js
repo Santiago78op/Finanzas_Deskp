@@ -3,7 +3,7 @@
 // en main.jsx antes de renderizar cualquier gráfica.
 import {
   Chart, CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement,
-  Legend, Tooltip,
+  Legend, Tooltip, Filler,
 } from 'chart.js';
 
-Chart.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Legend, Tooltip);
+Chart.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Legend, Tooltip, Filler);

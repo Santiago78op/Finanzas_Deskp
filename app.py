@@ -130,6 +130,7 @@ class TarjetaIn(BaseModel):
     dia_pago: int
     saldo_inicial: float = 0  # deuda que ya traía la tarjeta (opcional, puede ser 0)
     activa: bool = True
+    color_idx: Optional[int] = None  # índice 0-5 sobre la paleta ACC; None = rotativo automático
 
 class CuentaIn(BaseModel):
     banco: str
@@ -288,10 +289,10 @@ def crear_tarjeta(body: TarjetaIn):
         if existe:
             raise HTTPException(400, f"Ya existe una tarjeta llamada '{body.nombre.strip()}'")
         cur = conn.execute(
-            "INSERT INTO tarjetas (banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, activa) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO tarjetas (banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, activa, color_idx) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (body.banco.strip(), body.nombre.strip(), validar_monto(body.limite),
-             body.dia_corte, body.dia_pago, body.saldo_inicial, int(body.activa)),
+             body.dia_corte, body.dia_pago, body.saldo_inicial, int(body.activa), body.color_idx),
         )
         conn.commit()
         marcar_y_sincronizar(conn)
@@ -312,10 +313,43 @@ def editar_tarjeta(tarjeta_id: int, body: TarjetaIn):
             raise HTTPException(400, f"Ya existe otra tarjeta llamada '{body.nombre.strip()}'")
         conn.execute(
             "UPDATE tarjetas SET banco=?, nombre=?, limite=?, dia_corte=?, dia_pago=?, "
-            "saldo_inicial=?, activa=? WHERE id = ?",
+            "saldo_inicial=?, activa=?, color_idx=? WHERE id = ?",
             (body.banco.strip(), body.nombre.strip(), validar_monto(body.limite),
-             body.dia_corte, body.dia_pago, body.saldo_inicial, int(body.activa), tarjeta_id),
+             body.dia_corte, body.dia_pago, body.saldo_inicial, int(body.activa),
+             body.color_idx, tarjeta_id),
         )
+        conn.commit()
+        marcar_y_sincronizar(conn)
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@app.delete("/api/tarjetas/{tarjeta_id}")
+def borrar_tarjeta(tarjeta_id: int):
+    """
+    Elimina una tarjeta definitivamente. Los gastos ya registrados con esta
+    tarjeta NO se borran (son historia real); solo se desliga la referencia,
+    igual que borrar_cuenta/borrar_recurrente. Los pagos a tarjeta SÍ
+    requieren tarjeta_id (no puede ser NULL en el esquema — un pago sin
+    tarjeta no significa nada), así que si hay pagos registrados se bloquea
+    el borrado y se pide desactivar en su lugar.
+    """
+    conn = db.get_conn()
+    try:
+        validar_tarjeta(conn, tarjeta_id)
+        tiene_pagos = conn.execute(
+            "SELECT 1 FROM pagos_tarjetas WHERE tarjeta_id = ? LIMIT 1", (tarjeta_id,)
+        ).fetchone()
+        if tiene_pagos:
+            raise HTTPException(
+                400,
+                "No podés eliminar una tarjeta con pagos ya registrados — "
+                "desactivala en su lugar para conservar ese historial.",
+            )
+        conn.execute("UPDATE gastos SET tarjeta_id = NULL WHERE tarjeta_id = ?", (tarjeta_id,))
+        conn.execute("UPDATE gastos_recurrentes SET tarjeta_id = NULL WHERE tarjeta_id = ?", (tarjeta_id,))
+        conn.execute("DELETE FROM tarjetas WHERE id = ?", (tarjeta_id,))
         conn.commit()
         marcar_y_sincronizar(conn)
         return {"ok": True}
@@ -326,6 +360,8 @@ def editar_tarjeta(tarjeta_id: int, body: TarjetaIn):
 def _validar_tarjeta_in(body: TarjetaIn):
     if not body.nombre.strip() or not body.banco.strip():
         raise HTTPException(400, "Banco y nombre son obligatorios")
+    if body.color_idx is not None and not (0 <= body.color_idx <= 5):
+        raise HTTPException(400, "color_idx debe estar entre 0 y 5")
     if not (1 <= body.dia_corte <= 31) or not (1 <= body.dia_pago <= 31):
         raise HTTPException(400, "Los días de corte y pago deben estar entre 1 y 31")
     if body.saldo_inicial < 0:
@@ -383,6 +419,28 @@ def editar_cuenta(cuenta_id: int, body: CuentaIn):
             (body.banco.strip(), body.nombre.strip(), body.tipo,
              body.saldo_inicial, int(body.activa), cuenta_id),
         )
+        conn.commit()
+        marcar_y_sincronizar(conn)
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@app.delete("/api/cuentas/{cuenta_id}")
+def borrar_cuenta(cuenta_id: int):
+    """
+    Elimina una cuenta definitivamente. Los movimientos ya registrados con
+    esta cuenta NO se borran (son historia real); solo se desliga la
+    referencia (quedan como "Sin cuenta"), igual que borrar_recurrente.
+    """
+    conn = db.get_conn()
+    try:
+        validar_cuenta(conn, cuenta_id)
+        conn.execute("UPDATE gastos SET cuenta_id = NULL WHERE cuenta_id = ?", (cuenta_id,))
+        conn.execute("UPDATE ingresos SET cuenta_id = NULL WHERE cuenta_id = ?", (cuenta_id,))
+        conn.execute("UPDATE pagos_tarjetas SET cuenta_id = NULL WHERE cuenta_id = ?", (cuenta_id,))
+        conn.execute("UPDATE gastos_recurrentes SET cuenta_id = NULL WHERE cuenta_id = ?", (cuenta_id,))
+        conn.execute("DELETE FROM cuentas WHERE id = ?", (cuenta_id,))
         conn.commit()
         marcar_y_sincronizar(conn)
         return {"ok": True}

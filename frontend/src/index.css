@@ -2,7 +2,7 @@
    componentes de formulario, tabla, modal, toast, tarjetas, etc. ya viven en
    MUI/Tailwind (ver components/**); acá solo queda lo que sigue siendo CSS a
    mano a propósito: tokens de color/tema, tipografía, y piezas bespoke sin
-   equivalente directo en MUI (ticker con marquee, iconos sprite). */
+   equivalente directo en MUI (iconos sprite). */
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 /* SIN tailwindcss/preflight.css a propósito: <CssBaseline/> de MUI (ver
@@ -188,10 +188,8 @@
 
   --fs-xs: 11px;  --fs-sm: 13px;  --fs-base: 15px; --fs-md: 17px;
   --fs-lg: 21px;  --fs-xl: 28px;
-  --fs-hero: clamp(36px, 6vw, 64px);
   --fs-display: clamp(22px, 3vw, 30px);
   --lh-tight: 0.95; --lh-normal: 1.5;
-  --tracking-tight: -.01em; --tracking-wide: .08em;
   --ff-display: 'Anton', 'Poppins', system-ui, sans-serif;
 }
 
@@ -221,27 +219,6 @@ body {
 .mov-ingreso > td:first-child { box-shadow: inset 3px 0 0 var(--ingreso); }
 .mov-pago > td:first-child { box-shadow: inset 3px 0 0 var(--pago); }
 
-/* Ticker global: franja angosta con cifras clave, loop infinito por CSS —
-   sin equivalente directo en MUI, se queda bespoke. */
-#ticker-global {
-  overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--borde);
-  background: var(--panel-2);
-}
-#ticker-global .ticker-pista {
-  display: inline-flex; width: max-content;
-  animation: marquee 26s linear infinite;
-}
-#ticker-global:hover .ticker-pista { animation-play-state: paused; }
-#ticker-global .ticker-item {
-  padding: 8px var(--sp-5); font-size: var(--fs-xs); font-weight: 700;
-  color: var(--suave); text-transform: uppercase; letter-spacing: var(--tracking-wide);
-}
-#ticker-global .ticker-item b {
-  color: var(--texto); font-variant-numeric: tabular-nums; letter-spacing: normal;
-  text-transform: none; margin-left: 6px;
-}
-@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-
 /* Carrusel Swiper (GridOCarrusel: cuentas/tarjetas del Dashboard) — paleta
    de marca en vez del azul default, y padding lateral para que las flechas
    vivan en su propio espacio en lugar de montarse sobre las cards. */
@@ -265,10 +242,10 @@ body {
 
 /* Encabezado editorial: saludo chico + título enorme en mayúsculas (el ancho
    y padding del contenedor ahora los maneja el Container de MUI en App.jsx) */
-.saludo { font-size: 13px; color: var(--suave); font-weight: 600; margin-bottom: 6px; }
+.saludo { font-size: 14px; color: var(--suave); font-weight: 600; margin-bottom: 6px; }
 #titulo-vista {
   font-family: var(--ff-display);
-  font-size: var(--fs-hero); font-weight: 400; letter-spacing: var(--tracking-tight);
+  font-size: 34px; font-weight: 400; letter-spacing: .02em;
   line-height: var(--lh-tight); text-transform: uppercase;
 }
 
@@ -296,7 +273,7 @@ body {
 /* Grids de 2 columnas de Cuentas/Tarjetas (FinanzasQ.dc.html) — página de
    gestión completa, por eso es grid fijo y no carrusel. El tile punteado al
    final ocupa una celda más y hace scroll al formulario de arriba. */
-.cuentas-grid, .tarjetas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.cuentas-grid, .tarjetas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 700px) { .cuentas-grid, .tarjetas-grid { grid-template-columns: 1fr; } }
 .tile-agregar {
   border: 1.5px dashed var(--borde); background: transparent; border-radius: 14px;

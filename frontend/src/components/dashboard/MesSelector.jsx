@@ -5,15 +5,26 @@ import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import { MESES } from '../../utils.js';
 
+// Pill en el topbar (junto a "Registrar"), como en FinanzasQ.dc.html —
+// antes era una fila propia centrada con flechas grandes. El mockup usa un
+// selector estático de solo lectura; acá mantenemos la navegación real
+// (mes anterior/siguiente) pero dentro de la misma pill compacta.
 export default function MesSelector({ anio, mes, onCambiar }) {
   return (
-    <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'center', gap: 2 }} className="mb-4">
+    <Stack
+      direction="row"
+      sx={{
+        alignItems: 'center', gap: .5, borderRadius: '999px',
+        border: '1px solid var(--borde)', background: 'var(--panel)',
+        pl: .5, pr: 1.5, py: .5,
+      }}
+    >
       <IconButton size="small" onClick={() => onCambiar(-1)} aria-label="Mes anterior">
-        <ArrowBackIosNewIcon fontSize="small" />
+        <ArrowBackIosNewIcon sx={{ fontSize: 13 }} />
       </IconButton>
-      <Typography variant="h5" fontWeight={800} letterSpacing="-.03em">{MESES[mes]} {anio}</Typography>
+      <Typography sx={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap' }}>{MESES[mes]} {anio}</Typography>
       <IconButton size="small" onClick={() => onCambiar(1)} aria-label="Mes siguiente">
-        <ArrowForwardIosIcon fontSize="small" />
+        <ArrowForwardIosIcon sx={{ fontSize: 13 }} />
       </IconButton>
     </Stack>
   );
