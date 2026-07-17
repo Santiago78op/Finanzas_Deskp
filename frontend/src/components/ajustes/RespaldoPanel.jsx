@@ -10,7 +10,11 @@ import { useToast } from '../shared/Toast.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { filaControlesCentrada } from './ajustes.styles.js';
 
-const TABLAS = ['gastos', 'ingresos', 'pagos_tarjetas', 'tarjetas', 'cuentas', 'categorias', 'ingresos_recurrentes', 'gastos_recurrentes'];
+const TABLAS = [
+  'gastos', 'ingresos', 'pagos_tarjetas', 'tarjetas', 'cuentas', 'categorias',
+  'ingresos_recurrentes', 'gastos_recurrentes',
+  'prestamos', 'pagos_prestamos', 'visacuotas', 'pagos_visacuotas',
+];
 
 export default function RespaldoPanel() {
   const { refetch } = useCatalog();

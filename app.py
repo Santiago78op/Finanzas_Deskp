@@ -421,10 +421,15 @@ def _validar_tarjeta_in(body: TarjetaIn):
 
 def _prestamo_con_saldo(conn, p):
     saldo = db.saldo_prestamo(conn, p["id"])
+    proximo_pago, dias_pago = None, None
+    if p["dia_pago"]:
+        fecha = notion_sync.proxima_fecha(p["dia_pago"])
+        proximo_pago, dias_pago = fecha.isoformat(), (fecha - date.today()).days
     return {
         **dict(p),
         "saldo": saldo,
         "pct_pagado": round((p["saldo_inicial"] - saldo) / p["saldo_inicial"] * 100, 1) if p["saldo_inicial"] else 100.0,
+        "proximo_pago": proximo_pago, "dias_pago": dias_pago,
     }
 
 
@@ -558,11 +563,16 @@ def borrar_pago_prestamo(reg_id: int):
 
 def _visacuota_con_saldo(conn, v):
     saldo, cuotas_pagadas = db.saldo_visacuota(conn, v["id"])
+    proximo_pago, dias_pago = None, None
+    if v["dia_pago"]:
+        fecha = notion_sync.proxima_fecha(v["dia_pago"])
+        proximo_pago, dias_pago = fecha.isoformat(), (fecha - date.today()).days
     return {
         **dict(v),
         "saldo": saldo,
         "cuotas_pagadas": cuotas_pagadas,
         "cuotas_restantes": max(v["num_cuotas"] - cuotas_pagadas, 0),
+        "proximo_pago": proximo_pago, "dias_pago": dias_pago,
     }
 
 
@@ -1730,6 +1740,21 @@ def _query_export(conn, tabla):
                                   JOIN categorias c ON c.id = g.categoria_id
                                   LEFT JOIN tarjetas t ON t.id = g.tarjeta_id
                                   LEFT JOIN cuentas cu ON cu.id = g.cuenta_id"""),
+        "prestamos": ("nombre,institucion,monto_original,saldo_inicial,cuota_mensual,tasa_interes,dia_pago,fecha_inicio,activo",
+                      """SELECT nombre, institucion, monto_original, saldo_inicial, cuota_mensual,
+                                tasa_interes, dia_pago, fecha_inicio, activo FROM prestamos"""),
+        "pagos_prestamos": ("fecha,prestamo,monto,cuenta",
+                            """SELECT pp.fecha, pr.nombre, pp.monto, cu.nombre FROM pagos_prestamos pp
+                               JOIN prestamos pr ON pr.id = pp.prestamo_id
+                               LEFT JOIN cuentas cu ON cu.id = pp.cuenta_id ORDER BY pp.fecha"""),
+        "visacuotas": ("descripcion,tarjeta,monto_total,num_cuotas,cuota_mensual,fecha_inicio,dia_pago,activo",
+                       """SELECT v.descripcion, t.nombre, v.monto_total, v.num_cuotas, v.cuota_mensual,
+                                 v.fecha_inicio, v.dia_pago, v.activo
+                          FROM visacuotas v JOIN tarjetas t ON t.id = v.tarjeta_id"""),
+        "pagos_visacuotas": ("fecha,visacuota,monto,cuenta",
+                             """SELECT pv.fecha, v.descripcion, pv.monto, cu.nombre FROM pagos_visacuotas pv
+                                JOIN visacuotas v ON v.id = pv.visacuota_id
+                                LEFT JOIN cuentas cu ON cu.id = pv.cuenta_id ORDER BY pv.fecha"""),
     }
     encabezado, sql = consultas[tabla]
     return encabezado.split(","), conn.execute(sql).fetchall()
@@ -1743,7 +1768,8 @@ def exportar_todo():
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
             for tabla in ("categorias", "tarjetas", "cuentas", "ingresos", "gastos",
-                          "pagos_tarjetas", "ingresos_recurrentes", "gastos_recurrentes"):
+                          "pagos_tarjetas", "ingresos_recurrentes", "gastos_recurrentes",
+                          "prestamos", "pagos_prestamos", "visacuotas", "pagos_visacuotas"):
                 encabezado, filas = _query_export(conn, tabla)
                 salida = io.StringIO()
                 w = csv.writer(salida, lineterminator="\n")
@@ -1766,7 +1792,8 @@ async def importar_csv(tabla: str, archivo: UploadFile = File(...)):
     y devuelve un resumen: cuántas entraron y cuáles se rechazaron (con motivo).
     """
     if tabla not in ("categorias", "tarjetas", "cuentas", "ingresos", "gastos",
-                     "pagos_tarjetas", "ingresos_recurrentes", "gastos_recurrentes"):
+                     "pagos_tarjetas", "ingresos_recurrentes", "gastos_recurrentes",
+                     "prestamos", "pagos_prestamos", "visacuotas", "pagos_visacuotas"):
         raise HTTPException(400, f"Tabla desconocida: {tabla}")
 
     contenido = (await archivo.read()).decode("utf-8-sig")  # tolera BOM de Excel
@@ -1779,6 +1806,8 @@ async def importar_csv(tabla: str, archivo: UploadFile = File(...)):
                 for c in conn.execute("SELECT * FROM categorias")}
         tars = {t["nombre"].lower(): t["id"] for t in conn.execute("SELECT * FROM tarjetas")}
         ctas = {c["nombre"].lower(): c["id"] for c in conn.execute("SELECT * FROM cuentas")}
+        pres = {p["nombre"].lower(): p["id"] for p in conn.execute("SELECT * FROM prestamos")}
+        vcs = {v["descripcion"].lower(): v["id"] for v in conn.execute("SELECT * FROM visacuotas")}
         metodos_fijos = {m.lower(): m for m in db.METODOS_FIJOS}
         metodos_fijos["debito"] = "Débito"  # tolerar sin tilde
 
@@ -1914,6 +1943,53 @@ async def importar_csv(tabla: str, archivo: UploadFile = File(...)):
                         (fila["descripcion"], cat_id, validar_monto(fila["monto"]),
                          int(fila["dia_mes"]), frec, dia2, met, tid, cuenta_de(fila),
                          int(fila.get("activo", "1") or 1)))
+
+                elif tabla == "prestamos":
+                    if fila["nombre"].lower() in pres:
+                        raise ValueError(f"ya existe el préstamo '{fila['nombre']}'")
+                    conn.execute(
+                        "INSERT INTO prestamos (nombre, institucion, monto_original, saldo_inicial, "
+                        "cuota_mensual, tasa_interes, dia_pago, fecha_inicio, activo) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (fila["nombre"], fila["institucion"], validar_monto(fila["monto_original"]),
+                         float(fila.get("saldo_inicial", "0") or 0), validar_monto(fila["cuota_mensual"]),
+                         float(fila["tasa_interes"]) if fila.get("tasa_interes") else None,
+                         int(fila["dia_pago"]) if fila.get("dia_pago") else None,
+                         fila.get("fecha_inicio") or None, int(fila.get("activo", "1") or 1)))
+                    pres = {p["nombre"].lower(): p["id"] for p in conn.execute("SELECT * FROM prestamos")}
+
+                elif tabla == "pagos_prestamos":
+                    pid = pres.get(fila["prestamo"].lower())
+                    if not pid:
+                        raise ValueError(f"préstamo desconocido: '{fila['prestamo']}'")
+                    conn.execute(
+                        "INSERT INTO pagos_prestamos (fecha, prestamo_id, cuenta_id, monto) "
+                        "VALUES (?, ?, ?, ?)",
+                        (validar_fecha(fila["fecha"]), pid, cuenta_de(fila), validar_monto(fila["monto"])))
+
+                elif tabla == "visacuotas":
+                    if fila["descripcion"].lower() in vcs:
+                        raise ValueError(f"ya existe la Visa Cuotas '{fila['descripcion']}'")
+                    tid = tars.get(fila["tarjeta"].lower())
+                    if not tid:
+                        raise ValueError(f"tarjeta desconocida: '{fila['tarjeta']}'")
+                    conn.execute(
+                        "INSERT INTO visacuotas (descripcion, tarjeta_id, monto_total, num_cuotas, "
+                        "cuota_mensual, fecha_inicio, dia_pago, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        (fila["descripcion"], tid, validar_monto(fila["monto_total"]), int(fila["num_cuotas"]),
+                         validar_monto(fila["cuota_mensual"]), validar_fecha(fila["fecha_inicio"]),
+                         int(fila["dia_pago"]) if fila.get("dia_pago") else None,
+                         int(fila.get("activo", "1") or 1)))
+                    vcs = {v["descripcion"].lower(): v["id"] for v in conn.execute("SELECT * FROM visacuotas")}
+
+                elif tabla == "pagos_visacuotas":
+                    vid = vcs.get(fila["visacuota"].lower())
+                    if not vid:
+                        raise ValueError(f"Visa Cuotas desconocida: '{fila['visacuota']}'")
+                    conn.execute(
+                        "INSERT INTO pagos_visacuotas (fecha, visacuota_id, cuenta_id, monto) "
+                        "VALUES (?, ?, ?, ?)",
+                        (validar_fecha(fila["fecha"]), vid, cuenta_de(fila), validar_monto(fila["monto"])))
 
                 importados += 1
             except (HTTPException, ValueError, KeyError) as e:

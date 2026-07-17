@@ -64,8 +64,22 @@ export default function DashboardView() {
 
   const aFavor = d.balance >= 0;
   const gastoBarW = d.ingresos > 0 ? Math.min(100, Math.round(d.gastos / d.ingresos * 100)) : (d.gastos > 0 ? 100 : 0);
-  const tarjetasPorPago = [...d.tarjetas].sort((a, b) => a.dias_pago - b.dias_pago).slice(0, 3);
   const maxCategoria = d.analisis.top_categorias[0]?.total || 1;
+
+  // Endeudamiento real: tarjetas + préstamos + Visa Cuotas, no solo tarjetas
+  // (antes esta vista solo mostraba deuda de tarjetas — ver Análisis > Deudas
+  // para el detalle completo con gráficas).
+  const { tarjetas: deudaTarjetas, prestamos: deudaPrestamos, visacuotas: deudaVisacuotas } = d.endeudamiento;
+  const deudaTotalGeneral = deudaTarjetas + deudaPrestamos + deudaVisacuotas;
+  const hayOtraDeuda = deudaPrestamos > 0 || deudaVisacuotas > 0;
+
+  // Próximos pagos: tarjetas (siempre tienen dia_pago) + préstamos/cuotas con
+  // dia_pago configurado (opcional) y que aún no terminaron de pagarse.
+  const proximosPagos = [
+    ...d.tarjetas.map(t => ({ id: `t${t.id}`, nombre: t.nombre, dias_pago: t.dias_pago, monto: t.saldo })),
+    ...d.prestamos.filter(p => p.dias_pago != null).map(p => ({ id: `p${p.id}`, nombre: p.nombre, dias_pago: p.dias_pago, monto: p.cuota_mensual })),
+    ...d.visacuotas.filter(v => v.dias_pago != null && v.cuotas_restantes > 0).map(v => ({ id: `v${v.id}`, nombre: v.descripcion, dias_pago: v.dias_pago, monto: v.cuota_mensual })),
+  ].sort((a, b) => a.dias_pago - b.dias_pago).slice(0, 3);
 
   const colorMovimiento = (m) => {
     if (m.tipo === 'ingreso') return 'var(--ingreso)';
@@ -91,7 +105,7 @@ export default function DashboardView() {
               {aFavor ? 'Tus gastos van por debajo de lo que entra — seguí así.' : 'Tus gastos superaron lo que entró — con cuidado los próximos días.'}
             </Typography>
             <Typography variant="body2" className="text-[var(--suave)] mt-2">
-              Ingresos {fmtQ(d.ingresos)} · Gastos {fmtQ(d.gastos)} · Deuda en tarjetas {fmtQ(d.deuda_total)}
+              Ingresos {fmtQ(d.ingresos)} · Gastos {fmtQ(d.gastos)} · {hayOtraDeuda ? 'Deuda total' : 'Deuda en tarjetas'} {fmtQ(deudaTotalGeneral)}
             </Typography>
           </div>
           <div style={balanceDerecha}>
@@ -155,18 +169,31 @@ export default function DashboardView() {
         </Card>
 
         <Card component="section" aria-labelledby="sec-cuanto-debo" className="reveal-block p-5 dash-span-4 flex flex-col gap-3">
-          <Typography id="sec-cuanto-debo" variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">¿Cuánto debo en tarjetas?</Typography>
+          <Typography id="sec-cuanto-debo" variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">
+            {hayOtraDeuda ? '¿Cuánto debo en total?' : '¿Cuánto debo en tarjetas?'}
+          </Typography>
           {d.tarjetas.length > 0
             ? <CreditCard tarjeta={d.tarjetas[0]} />
             : <Typography variant="body2" className="text-[var(--suave)]">Sin tarjetas registradas.</Typography>}
           <div className="flex items-end justify-between">
             <div>
               <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Deuda total</Typography>
-              <Typography variant="h5" fontWeight={700} className="text-[var(--pago)]" style={tabularNums}>{fmtQ(d.deuda_total)}</Typography>
+              <Typography variant="h5" fontWeight={700} className="text-[var(--pago)]" style={tabularNums}>{fmtQ(deudaTotalGeneral)}</Typography>
+              {hayOtraDeuda && (
+                <Typography variant="body2" className="text-[var(--suave)]">
+                  {[
+                    deudaTarjetas > 0 && `Tarjetas ${fmtQ(deudaTarjetas)}`,
+                    deudaPrestamos > 0 && `Préstamos ${fmtQ(deudaPrestamos)}`,
+                    deudaVisacuotas > 0 && `Cuotas ${fmtQ(deudaVisacuotas)}`,
+                  ].filter(Boolean).join(' · ')}
+                </Typography>
+              )}
             </div>
             <Typography variant="body2" className="text-[var(--suave)]" style={{ textAlign: 'right' }}>{d.tarjetas.length} tarjeta{d.tarjetas.length === 1 ? '' : 's'}</Typography>
           </div>
-          <Button size="small" onClick={() => navigate('/tarjetas')} sx={{ alignSelf: 'flex-start', mt: 'auto', textTransform: 'none', color: 'var(--suave)' }}>Ver tarjetas →</Button>
+          <Button size="small" onClick={() => navigate(hayOtraDeuda ? '/prestamos' : '/tarjetas')} sx={{ alignSelf: 'flex-start', mt: 'auto', textTransform: 'none', color: 'var(--suave)' }}>
+            {hayOtraDeuda ? 'Ver préstamos y cuotas →' : 'Ver tarjetas →'}
+          </Button>
         </Card>
 
         <Card component="section" aria-labelledby="sec-en-que-gasto" className="reveal-block p-5 dash-span-7 flex flex-col gap-2">
@@ -196,17 +223,17 @@ export default function DashboardView() {
 
         <Card component="section" aria-labelledby="sec-proximos-pagos" className="reveal-block p-5 dash-span-5 flex flex-col gap-1">
           <Typography id="sec-proximos-pagos" variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold mb-1">Próximos pagos</Typography>
-          {!tarjetasPorPago.length && <Typography variant="body2" className="text-[var(--suave)]">Sin tarjetas registradas.</Typography>}
-          {tarjetasPorPago.map(t => (
-            <div key={t.id} className="flex items-center justify-between gap-2 py-2.5">
+          {!proximosPagos.length && <Typography variant="body2" className="text-[var(--suave)]">Sin pagos próximos.</Typography>}
+          {proximosPagos.map(p => (
+            <div key={p.id} className="flex items-center justify-between gap-2 py-2.5">
               <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
                 <span style={circuloIconoPago}><ScheduleIcon sx={{ fontSize: 18 }} /></span>
                 <div style={{ minWidth: 0 }}>
-                  <div className="text-sm font-semibold truncate">{t.nombre}</div>
-                  <div className="text-xs font-semibold text-[var(--pago)]">Vence en {t.dias_pago} día{t.dias_pago === 1 ? '' : 's'}</div>
+                  <div className="text-sm font-semibold truncate">{p.nombre}</div>
+                  <div className="text-xs font-semibold text-[var(--pago)]">Vence en {p.dias_pago} día{p.dias_pago === 1 ? '' : 's'}</div>
                 </div>
               </div>
-              <div className="font-bold whitespace-nowrap" style={tabularNums}>{fmtQ(t.saldo)}</div>
+              <div className="font-bold whitespace-nowrap" style={tabularNums}>{fmtQ(p.monto)}</div>
             </div>
           ))}
         </Card>
