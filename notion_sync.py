@@ -54,7 +54,7 @@ MESES_ES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
 # al azar: mismo orden siempre, como recomienda un buen sistema de color).
 COLORES_NOTION = ["blue", "green", "yellow", "orange", "red", "purple", "pink", "brown", "gray"]
 
-ICONOS_ALERTA = {"tarjeta": "💳", "balance": "⚠️", "ritmo": "🏃"}
+ICONOS_ALERTA = {"tarjeta": "💳", "prestamo": "📄", "visacuota": "🛒", "balance": "⚠️", "ritmo": "🏃"}
 
 
 # ---------- Utilidades ----------
@@ -200,6 +200,34 @@ ESQUEMAS = {
             "Próximo pago": {"date": {}},
         },
     },
+    "prestamos": {
+        "titulo": "Préstamos",
+        "config_key": "notion_db_prestamos",
+        "icono": "📄",
+        "callout": ("📄 Préstamos", "Préstamos de banco/financiera: saldo pendiente, cuota mensual y próximo pago."),
+        "properties": {
+            "Préstamo": {"title": {}},
+            "Institución": {"rich_text": {}},
+            "Saldo pendiente": {"number": {"format": "number_with_commas"}},
+            "Cuota mensual": {"number": {"format": "number_with_commas"}},
+            "% Pagado": {"number": {"format": "percent"}},
+            "Próximo pago": {"date": {}},
+        },
+    },
+    "visacuotas": {
+        "titulo": "Visa Cuotas",
+        "config_key": "notion_db_visacuotas",
+        "icono": "🛒",
+        "callout": ("🛒 Visa Cuotas", "Compras diferidas a cuotas fijas: saldo pendiente, cuotas y tarjeta asociada."),
+        "properties": lambda conn: {
+            "Visa Cuotas": {"title": {}},
+            "Saldo pendiente": {"number": {"format": "number_with_commas"}},
+            "Cuota mensual": {"number": {"format": "number_with_commas"}},
+            "Cuotas": {"rich_text": {}},
+            "Próximo pago": {"date": {}},
+            "Tarjeta": {"relation": {"database_id": db.config_get(conn, "notion_db_tarjetas"), "dual_property": {}}},
+        },
+    },
     "alertas": {
         "titulo": "Alertas",
         "config_key": "notion_db_alertas",
@@ -210,6 +238,8 @@ ESQUEMAS = {
             "Fecha": {"date": {}},
             "Tipo": {"select": {"options": [
                 {"name": "tarjeta", "color": "orange"},
+                {"name": "prestamo", "color": "purple"},
+                {"name": "visacuota", "color": "pink"},
                 {"name": "balance", "color": "red"},
                 {"name": "ritmo", "color": "yellow"},
             ]}},
@@ -274,6 +304,36 @@ ESQUEMAS = {
             "Monto": {"number": {"format": "number_with_commas"}},
             "Fecha": {"date": {}},
             "Tarjeta": {"relation": {"database_id": db.config_get(conn, "notion_db_tarjetas"), "dual_property": {}}},
+            "Cuenta": {"relation": {"database_id": db.config_get(conn, "notion_db_cuentas"), "dual_property": {}}},
+            "Mes": {"relation": {"database_id": db.config_get(conn, "notion_db_meses"), "dual_property": {}}},
+        },
+    },
+    "pagos_prestamos_mov": {
+        "titulo": "Pagos de préstamos",
+        "config_key": "notion_db_pagos_prestamos_mov",
+        "icono": "🧾",
+        "callout": ("🧾 Pagos de préstamos", "Cada pago hecho a un préstamo, relacionado con el préstamo, "
+                                             "la cuenta de origen y el mes."),
+        "properties": lambda conn: {
+            "Descripción": {"title": {}},
+            "Monto": {"number": {"format": "number_with_commas"}},
+            "Fecha": {"date": {}},
+            "Préstamo": {"relation": {"database_id": db.config_get(conn, "notion_db_prestamos"), "dual_property": {}}},
+            "Cuenta": {"relation": {"database_id": db.config_get(conn, "notion_db_cuentas"), "dual_property": {}}},
+            "Mes": {"relation": {"database_id": db.config_get(conn, "notion_db_meses"), "dual_property": {}}},
+        },
+    },
+    "pagos_visacuotas_mov": {
+        "titulo": "Pagos de Visa Cuotas",
+        "config_key": "notion_db_pagos_visacuotas_mov",
+        "icono": "🧾",
+        "callout": ("🧾 Pagos de Visa Cuotas", "Cada pago hecho a una Visa Cuotas, relacionado con la cuota, "
+                                               "la cuenta de origen y el mes."),
+        "properties": lambda conn: {
+            "Descripción": {"title": {}},
+            "Monto": {"number": {"format": "number_with_commas"}},
+            "Fecha": {"date": {}},
+            "Visa Cuotas": {"relation": {"database_id": db.config_get(conn, "notion_db_visacuotas"), "dual_property": {}}},
             "Cuenta": {"relation": {"database_id": db.config_get(conn, "notion_db_cuentas"), "dual_property": {}}},
             "Mes": {"relation": {"database_id": db.config_get(conn, "notion_db_meses"), "dual_property": {}}},
         },
@@ -593,11 +653,47 @@ def _propiedades_pago(conn, fila):
     return props, "🧾"
 
 
+def _propiedades_pago_prestamo(conn, fila):
+    prestamo = conn.execute("SELECT nombre FROM prestamos WHERE id = ?", (fila["prestamo_id"],)).fetchone()
+    cuenta = conn.execute("SELECT nombre FROM cuentas WHERE id = ?", (fila["cuenta_id"],)).fetchone() \
+        if fila["cuenta_id"] else None
+    nombre_prestamo = prestamo["nombre"] if prestamo else "?"
+
+    props = {
+        "Descripción": {"title": [{"text": {"content": f"Pago {nombre_prestamo}"}}]},
+        "Monto": {"number": fila["monto"]},
+        "Fecha": {"date": {"start": fila["fecha"]}},
+    }
+    _agregar_relacion(props, "Préstamo", conn, "prestamos", nombre_prestamo if prestamo else None)
+    _agregar_relacion(props, "Cuenta", conn, "cuentas", cuenta["nombre"] if cuenta else None)
+    _agregar_relacion(props, "Mes", conn, "meses", fila["fecha"][:7])
+    return props, "🧾"
+
+
+def _propiedades_pago_visacuota(conn, fila):
+    visacuota = conn.execute("SELECT descripcion FROM visacuotas WHERE id = ?", (fila["visacuota_id"],)).fetchone()
+    cuenta = conn.execute("SELECT nombre FROM cuentas WHERE id = ?", (fila["cuenta_id"],)).fetchone() \
+        if fila["cuenta_id"] else None
+    nombre_visacuota = visacuota["descripcion"] if visacuota else "?"
+
+    props = {
+        "Descripción": {"title": [{"text": {"content": f"Cuota {nombre_visacuota}"}}]},
+        "Monto": {"number": fila["monto"]},
+        "Fecha": {"date": {"start": fila["fecha"]}},
+    }
+    _agregar_relacion(props, "Visa Cuotas", conn, "visacuotas", nombre_visacuota if visacuota else None)
+    _agregar_relacion(props, "Cuenta", conn, "cuentas", cuenta["nombre"] if cuenta else None)
+    _agregar_relacion(props, "Mes", conn, "meses", fila["fecha"][:7])
+    return props, "🧾"
+
+
 # tabla local -> (clave de esquema = tipo en notion_map, constructor de propiedades)
 _TRANSACCIONES = [
     ("gastos", "gastos_mov", _propiedades_gasto),
     ("ingresos", "ingresos_mov", _propiedades_ingreso),
     ("pagos_tarjetas", "pagos_mov", _propiedades_pago),
+    ("pagos_prestamos", "pagos_prestamos_mov", _propiedades_pago_prestamo),
+    ("pagos_visacuotas", "pagos_visacuotas_mov", _propiedades_pago_visacuota),
 ]
 
 
@@ -660,6 +756,36 @@ def generar_alertas(conn):
                 "clave": f"pago-{t['nombre']}-{fpago.isoformat()}",
                 "tipo": "tarjeta",
                 "mensaje": f"Pago de {t['nombre']} vence {cuando} (saldo {fmt_q(saldo)})",
+            })
+
+    # 1b. Pagos de préstamo próximos (5 días o menos) con saldo pendiente
+    for p in conn.execute("SELECT * FROM prestamos WHERE activo = 1 AND dia_pago IS NOT NULL").fetchall():
+        saldo = db.saldo_prestamo(conn, p["id"])
+        if saldo <= 0:
+            continue
+        fpago = proxima_fecha(p["dia_pago"])
+        dias = (fpago - hoy).days
+        if dias <= 5:
+            cuando = "HOY" if dias == 0 else (f"en {dias} día" + ("s" if dias > 1 else ""))
+            alertas.append({
+                "clave": f"pago-prestamo-{p['nombre']}-{fpago.isoformat()}",
+                "tipo": "prestamo",
+                "mensaje": f"Pago de {p['nombre']} vence {cuando} (saldo {fmt_q(saldo)})",
+            })
+
+    # 1c. Pagos de Visa Cuotas próximos (5 días o menos) con cuotas restantes
+    for v in conn.execute("SELECT * FROM visacuotas WHERE activo = 1 AND dia_pago IS NOT NULL").fetchall():
+        saldo, cuotas_pagadas = db.saldo_visacuota(conn, v["id"])
+        if cuotas_pagadas >= v["num_cuotas"]:
+            continue
+        fpago = proxima_fecha(v["dia_pago"])
+        dias = (fpago - hoy).days
+        if dias <= 5:
+            cuando = "HOY" if dias == 0 else (f"en {dias} día" + ("s" if dias > 1 else ""))
+            alertas.append({
+                "clave": f"pago-visacuota-{v['descripcion']}-{fpago.isoformat()}",
+                "tipo": "visacuota",
+                "mensaje": f"Cuota de {v['descripcion']} vence {cuando} (saldo {fmt_q(saldo)})",
             })
 
     # 2) Balance del mes negativo
@@ -796,8 +922,8 @@ def _organizar_layout(conn):
         return
     orden_ids = [b["id"] for b in r.json().get("results", [])]
 
-    for clave in ("cuentas", "meses", "tarjetas", "alertas", "bandeja",
-                  "gastos_mov", "ingresos_mov", "pagos_mov"):
+    for clave in ("cuentas", "meses", "tarjetas", "prestamos", "visacuotas", "alertas", "bandeja",
+                  "gastos_mov", "ingresos_mov", "pagos_mov", "pagos_prestamos_mov", "pagos_visacuotas_mov"):
         esquema = ESQUEMAS[clave]
         if "callout" not in esquema:
             continue
@@ -831,8 +957,8 @@ def _organizar_layout(conn):
 def _rich_text_menu(conn):
     """Rich text con un link (mention) a cada base ya creada, a modo de menú."""
     partes = [{"type": "text", "text": {"content": "🧭 Menú\n"}, "annotations": {"bold": True}}]
-    for clave in ("cuentas", "meses", "tarjetas", "alertas", "bandeja",
-                  "gastos_mov", "ingresos_mov", "pagos_mov"):
+    for clave in ("cuentas", "meses", "tarjetas", "prestamos", "visacuotas", "alertas", "bandeja",
+                  "gastos_mov", "ingresos_mov", "pagos_mov", "pagos_prestamos_mov", "pagos_visacuotas_mov"):
         db_id = db.config_get(conn, ESQUEMAS[clave]["config_key"])
         if not db_id:
             continue
@@ -964,9 +1090,41 @@ def sincronizar(conn):
             "Próximo pago": {"date": {"start": proxima_fecha(t["dia_pago"]).isoformat()}},
         }, icono=icono)
 
-    # --- 2b. Gastos/Ingresos/Pagos de tarjetas: una página por transacción,
-    #         relacionada con su Cuenta/Tarjeta/Mes (Cuentas/Tarjetas/Meses ya
-    #         están mapeados arriba, así que las relaciones resuelven bien) ---
+    # --- 2b. Préstamos (upsert por nombre; ícono según % pagado) ---
+    db_prestamos = _asegurar_base(conn, "prestamos")
+    for p in conn.execute("SELECT * FROM prestamos WHERE activo = 1").fetchall():
+        saldo = db.saldo_prestamo(conn, p["id"])
+        pct = round((p["saldo_inicial"] - saldo) / p["saldo_inicial"] * 100, 1) if p["saldo_inicial"] else 100.0
+        icono = "🟢" if pct >= 70 else "🟡" if pct >= 30 else "🔴"
+        _upsert_pagina(conn, "prestamos", p["nombre"], db_prestamos, {
+            "Préstamo": {"title": [{"text": {"content": p["nombre"]}}]},
+            "Institución": {"rich_text": [{"text": {"content": p["institucion"]}}]},
+            "Saldo pendiente": {"number": saldo},
+            "Cuota mensual": {"number": p["cuota_mensual"]},
+            "% Pagado": {"number": round(pct / 100, 4)},
+            "Próximo pago": {"date": {"start": proxima_fecha(p["dia_pago"]).isoformat()} if p["dia_pago"] else None},
+        }, icono=icono)
+
+    # --- 2c. Visa Cuotas (upsert por descripción; ícono ✅ si ya se completó) ---
+    db_visacuotas = _asegurar_base(conn, "visacuotas")
+    for v in conn.execute("SELECT * FROM visacuotas WHERE activo = 1").fetchall():
+        saldo, cuotas_pagadas = db.saldo_visacuota(conn, v["id"])
+        completa = cuotas_pagadas >= v["num_cuotas"]
+        props = {
+            "Visa Cuotas": {"title": [{"text": {"content": v["descripcion"]}}]},
+            "Saldo pendiente": {"number": saldo},
+            "Cuota mensual": {"number": v["cuota_mensual"]},
+            "Cuotas": {"rich_text": [{"text": {"content": f"{cuotas_pagadas} de {v['num_cuotas']}"}}]},
+            "Próximo pago": {"date": {"start": proxima_fecha(v["dia_pago"]).isoformat()} if (v["dia_pago"] and not completa) else None},
+        }
+        tarjeta = conn.execute("SELECT nombre FROM tarjetas WHERE id = ?", (v["tarjeta_id"],)).fetchone()
+        _agregar_relacion(props, "Tarjeta", conn, "tarjetas", tarjeta["nombre"] if tarjeta else None)
+        _upsert_pagina(conn, "visacuotas", v["descripcion"], db_visacuotas, props, icono="✅" if completa else "🛒")
+
+    # --- 2d. Gastos/Ingresos/Pagos de tarjetas/préstamos/cuotas: una página por
+    #         transacción, relacionada con su Cuenta/Tarjeta/Préstamo/Cuota/Mes
+    #         (esas bases ya están mapeadas arriba, así que las relaciones
+    #         resuelven bien) ---
     for tabla, clave_esquema, construir in _TRANSACCIONES:
         db_mov = _asegurar_base(conn, clave_esquema)
         _sincronizar_transacciones(conn, tabla, clave_esquema, db_mov, construir, ym_actual)
