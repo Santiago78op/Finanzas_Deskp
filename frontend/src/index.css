@@ -199,6 +199,12 @@ html { color-scheme: light; }
 body {
   font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", sans-serif;
   transition: background .25s ease, color .25s ease;
+  /* macOS renderiza las fuentes con subpíxeles por default — se ve más
+     grueso/borroso que en Windows. Esto es lo que Safari/Chrome en Mac
+     necesitan para que el texto se vea fino y nítido (look nativo). */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* Ícono base: hereda el color del texto (currentColor), como los íconos Lucide */

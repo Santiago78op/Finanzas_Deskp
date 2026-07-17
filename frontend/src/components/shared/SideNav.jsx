@@ -34,8 +34,8 @@ export default function SideNav() {
       sx={{
         width: 252, flex: 'none', display: 'flex', flexDirection: 'column',
         background: 'var(--panel)', borderRight: '1px solid var(--borde)',
-        padding: '22px 16px', position: 'sticky', top: 0, height: '100vh',
-        overflowY: 'auto',
+        padding: '22px 16px', position: 'sticky', top: 0, minHeight: '100vh',
+        alignSelf: 'stretch', overflowY: 'auto',
       }}
     >
       <Box className="flex items-center gap-2" sx={{ padding: '4px 8px 24px' }}>

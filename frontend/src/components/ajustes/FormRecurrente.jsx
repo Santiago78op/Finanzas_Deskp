@@ -109,20 +109,22 @@ export default function FormRecurrente({ onCambio }) {
       </form>
 
       {!recs.length && <Typography variant="body2" className="text-[var(--suave)]">Configurá tu salario acá para que la app lo registre cada mes.</Typography>}
-      {recs.map(r => (
-        <Stack direction="row" sx={filaItem} key={r.id} className="border-t border-[var(--borde)] pt-2">
-          <span className={r.activo ? '' : 'opacity-50'}>
-            <b>{r.descripcion}</b> ({r.categoria}) —{' '}
-            {r.frecuencia === 'Quincenal'
-              ? `${fmtQ(r.monto)} por quincena, los días ${r.dia_mes} y ${r.dia_mes_2}`
-              : `${fmtQ(r.monto)} el día ${r.dia_mes}`}
-          </span>
-          <Stack direction="row" sx={filaAcciones}>
-            <Button size="small" variant="outlined" onClick={() => setEditando(r)}>Editar</Button>
-            <Button size="small" variant="outlined" color="error" onClick={() => borrar(r)}>Eliminar</Button>
+      <div className="flex flex-col" style={{ maxHeight: 340, overflowY: 'auto' }}>
+        {recs.map(r => (
+          <Stack direction="row" sx={filaItem} key={r.id} className="border-t border-[var(--borde)] pt-2 pb-2">
+            <span className={r.activo ? '' : 'opacity-50'}>
+              <b>{r.descripcion}</b> ({r.categoria}) —{' '}
+              {r.frecuencia === 'Quincenal'
+                ? `${fmtQ(r.monto)} por quincena, los días ${r.dia_mes} y ${r.dia_mes_2}`
+                : `${fmtQ(r.monto)} el día ${r.dia_mes}`}
+            </span>
+            <Stack direction="row" sx={filaAcciones}>
+              <Button size="small" variant="outlined" onClick={() => setEditando(r)}>Editar</Button>
+              <Button size="small" variant="outlined" color="error" onClick={() => borrar(r)}>Eliminar</Button>
+            </Stack>
           </Stack>
-        </Stack>
-      ))}
+        ))}
+      </div>
     </Card>
   );
 }

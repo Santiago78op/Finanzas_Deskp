@@ -62,15 +62,17 @@ export default function CategoriaManager() {
         </TextField>
         <Button type="submit" variant="outlined" size="small">Agregar</Button>
       </Stack>
-      {cats.map(c => (
-        <Stack direction="row" sx={filaItem} key={c.id} className="border-t border-[var(--borde)] pt-2">
-          <span className={c.activa ? '' : 'opacity-50'}>{c.nombre} <small>({c.tipo})</small></span>
-          <Stack direction="row" sx={filaAcciones}>
-            <Button size="small" variant="outlined" onClick={() => renombrar(c)}>Renombrar</Button>
-            <Button size="small" variant="outlined" onClick={() => toggle(c)}>{c.activa ? 'Desactivar' : 'Activar'}</Button>
+      <div className="flex flex-col" style={{ maxHeight: 420, overflowY: 'auto' }}>
+        {cats.map(c => (
+          <Stack direction="row" sx={filaItem} key={c.id} className="border-t border-[var(--borde)] pt-2 pb-2">
+            <span className={c.activa ? '' : 'opacity-50'}>{c.nombre} <small>({c.tipo})</small></span>
+            <Stack direction="row" sx={filaAcciones}>
+              <Button size="small" variant="outlined" onClick={() => renombrar(c)}>Renombrar</Button>
+              <Button size="small" variant="outlined" onClick={() => toggle(c)}>{c.activa ? 'Desactivar' : 'Activar'}</Button>
+            </Stack>
           </Stack>
-        </Stack>
-      ))}
+        ))}
+      </div>
     </Card>
   );
 }
