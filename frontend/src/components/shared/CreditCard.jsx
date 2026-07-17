@@ -39,7 +39,7 @@ export default function CreditCard({ tarjeta, onEditar }) {
           style={{ borderTop: `3px solid ${acento}`, minHeight: 180 }}
         >
           <div className="flex items-start justify-between gap-2">
-            <span className="text-sm font-semibold tracking-wide uppercase opacity-90">{tarjeta.banco}{compacta ? ' · Crédito' : ''}</span>
+            <span style={{ fontSize: 12, fontWeight: 400, letterSpacing: '.05em' }}>{tarjeta.banco}{compacta ? ' · Crédito' : ''}</span>
             <div className="flex items-center gap-2">
               {!tarjeta.activa && (
                 <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white/15">Inactiva</span>
