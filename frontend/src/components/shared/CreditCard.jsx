@@ -1,6 +1,6 @@
 import Card from '@mui/material/Card';
 import IconButton from '@mui/material/IconButton';
-import EditIcon from '@mui/icons-material/Edit';
+import EditIcon from '@mui/icons-material/EditOutlined';
 import { fmtQ } from '../../utils.js';
 import { ACC } from '../../theme/colores.js';
 import { tabularNums } from './estilos.js';

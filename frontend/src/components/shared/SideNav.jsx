@@ -1,23 +1,20 @@
 import { NavLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutlineOutlined';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import CreditCardIcon from '@mui/icons-material/CreditCard';
-import InsightsIcon from '@mui/icons-material/Insights';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { useTheme } from '../../hooks/useTheme.jsx';
 
+// Íconos outline (trazo 2px, sin relleno) del sprite en index.html — mismo
+// lenguaje visual que FinanzasQ.dc.html (stroke, no MUI sólido). Se
+// instancian con <svg class="ico"><use href="#ico-x"/></svg>, currentColor
+// hereda el color del texto del botón (suave/texto según activo).
 const VISTAS = [
-  { key: 'dashboard', label: 'Dashboard', Icon: DashboardIcon },
-  { key: 'registro', label: 'Registro rápido', Icon: AddCircleOutlineIcon },
-  { key: 'cuentas', label: 'Mis cuentas', Icon: AccountBalanceIcon },
-  { key: 'tarjetas', label: 'Tarjetas', Icon: CreditCardIcon },
-  { key: 'analisis', label: 'Análisis', Icon: InsightsIcon },
-  { key: 'movimientos', label: 'Movimientos', Icon: ReceiptLongIcon },
-  { key: 'ajustes', label: 'Ajustes', Icon: SettingsIcon },
+  { key: 'dashboard', label: 'Dashboard', icono: 'dashboard' },
+  { key: 'registro', label: 'Registro rápido', icono: 'registro' },
+  { key: 'cuentas', label: 'Mis cuentas', icono: 'banco' },
+  { key: 'tarjetas', label: 'Tarjetas', icono: 'tarjeta' },
+  { key: 'analisis', label: 'Análisis', icono: 'barras' },
+  { key: 'movimientos', label: 'Movimientos', icono: 'recibo' },
+  { key: 'ajustes', label: 'Ajustes', icono: 'ajustes' },
 ];
 
 export { VISTAS };
@@ -58,7 +55,7 @@ export default function SideNav() {
             component={NavLink}
             to={`/${v.key}`}
             className={({ isActive }) => (isActive ? 'active' : undefined)}
-            startIcon={<v.Icon fontSize="small" />}
+            startIcon={<svg className="ico" style={{ width: 18, height: 18 }}><use href={`#ico-${v.icono}`} /></svg>}
             sx={{
               justifyContent: 'flex-start', gap: 1, px: 1.6, py: 1.1, borderRadius: '999px',
               fontWeight: 600, fontSize: 14.5, textAlign: 'left', textTransform: 'none',

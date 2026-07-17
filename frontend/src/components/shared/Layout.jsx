@@ -2,7 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
-import AddIcon from '@mui/icons-material/Add';
+import AddIcon from '@mui/icons-material/AddOutlined';
 import SideNav from './SideNav.jsx';
 import Footer from './Footer.jsx';
 import { TopbarExtraProvider, useTopbarExtra } from '../../context/TopbarExtraContext.jsx';

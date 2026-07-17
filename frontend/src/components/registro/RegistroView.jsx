@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import ScheduleIcon from '@mui/icons-material/Schedule';
+import TrendingDownIcon from '@mui/icons-material/TrendingDownOutlined';
+import TrendingUpIcon from '@mui/icons-material/TrendingUpOutlined';
+import ScheduleIcon from '@mui/icons-material/ScheduleOutlined';
 import AvisoSalario from './AvisoSalario.jsx';
 import FormGasto from './FormGasto.jsx';
 import FormPago from './FormPago.jsx';

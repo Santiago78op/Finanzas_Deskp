@@ -1,8 +1,8 @@
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNewOutlined';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIosOutlined';
 import { MESES } from '../../utils.js';
 
 // Pill en el topbar (junto a "Registrar"), como en FinanzasQ.dc.html —

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Button from '@mui/material/Button';
-import CheckIcon from '@mui/icons-material/Check';
+import CheckIcon from '@mui/icons-material/CheckOutlined';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { useToast } from '../shared/Toast.jsx';

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-import AddIcon from '@mui/icons-material/Add';
+import AddIcon from '@mui/icons-material/AddOutlined';
 import FormCuenta from './FormCuenta.jsx';
 import AccountCard from '../shared/AccountCard.jsx';
 import { getCuentas } from '../../api/cuentas.js';

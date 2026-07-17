@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-import AddIcon from '@mui/icons-material/Add';
+import AddIcon from '@mui/icons-material/AddOutlined';
 import FormTarjeta from './FormTarjeta.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
 import { getTarjetas } from '../../api/tarjetas.js';

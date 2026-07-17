@@ -3,7 +3,7 @@ import TextField from '@mui/material/TextField';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Button from '@mui/material/Button';
-import CheckIcon from '@mui/icons-material/Check';
+import CheckIcon from '@mui/icons-material/CheckOutlined';
 import Modal from '../shared/Modal.jsx';
 import { crearTarjeta, actualizarTarjeta, eliminarTarjeta } from '../../api/tarjetas.js';
 import { useToast } from '../shared/Toast.jsx';
