@@ -38,7 +38,7 @@ export default function TarjetasView() {
           <Typography variant="h4" fontWeight={700} letterSpacing="-.02em" className="text-[var(--pago)]">{fmtQ(deudaTotal)}</Typography>
         </div>
         <Typography variant="body2" className="text-[var(--suave)] max-w-xs">
-          Repartida en {tarjetas.length} tarjeta{tarjetas.length === 1 ? '' : 's'}.
+          Repartida en {activas.length} tarjeta{activas.length === 1 ? '' : 's'}.
           {proximoCorte !== null && ` La próxima corta en ${proximoCorte} día${proximoCorte === 1 ? '' : 's'}.`}
         </Typography>
       </Card>

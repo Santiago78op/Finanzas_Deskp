@@ -23,7 +23,11 @@ export default function CuentasView() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const disponibleTotal = cuentas.filter(c => c.activa).reduce((s, c) => s + c.saldo, 0);
+  // La grilla lista todas (incluidas las inactivas, en gris), pero el "disponible
+  // total" y su conteo salen SOLO de las activas: una cuenta cerrada no es plata
+  // que tengas hoy, así que tampoco se cuenta en la frase de abajo.
+  const activas = cuentas.filter(c => c.activa);
+  const disponibleTotal = activas.reduce((s, c) => s + c.saldo, 0);
 
   const abrirNueva = () => { setEditando(null); setModalAbierto(true); };
   const abrirEditar = (c) => { setEditando(c); setModalAbierto(true); };
@@ -37,7 +41,7 @@ export default function CuentasView() {
           <Typography variant="h4" fontWeight={700} letterSpacing="-.02em">{fmtQ(disponibleTotal)}</Typography>
         </div>
         <Typography variant="body2" className="text-[var(--suave)] max-w-xs">
-          Sumado de tus {cuentas.length} cuenta{cuentas.length === 1 ? '' : 's'}. Es lo que tenés hoy, sin contar deuda de tarjetas.
+          Sumado de tus {activas.length} cuenta{activas.length === 1 ? '' : 's'}. Es lo que tenés hoy, sin contar deuda de tarjetas.
         </Typography>
       </Card>
 
