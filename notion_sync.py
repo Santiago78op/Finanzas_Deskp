@@ -149,6 +149,16 @@ def proxima_fecha(dia_del_mes, desde=None):
     return f
 
 
+def ultima_fecha(dia_del_mes, desde=None):
+    """Última ocurrencia (hoy o pasada) de un día del mes dado."""
+    hoy = desde or date.today()
+    f = _clamp_dia(hoy.year, hoy.month, dia_del_mes)
+    if f > hoy:
+        anio, mes = (hoy.year - 1, 12) if hoy.month == 1 else (hoy.year, hoy.month - 1)
+        f = _clamp_dia(anio, mes, dia_del_mes)
+    return f
+
+
 # ---------- Creación / verificación de las bases en Notion ----------
 
 ESQUEMAS = {

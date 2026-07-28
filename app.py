@@ -145,6 +145,10 @@ class TarjetaIn(BaseModel):
     saldo_inicial: float = 0  # deuda que ya traía la tarjeta (opcional, puede ser 0)
     activa: bool = True
     color_idx: Optional[int] = None  # índice 0-5 sobre la paleta ACC; None = rotativo automático
+    # Valores del resumen del banco, cargados a mano (opcionales, None = sin dato):
+    saldo_dia: Optional[float] = None
+    saldo_corte: Optional[float] = None
+    pago_contado: Optional[float] = None
 
 class CuentaIn(BaseModel):
     banco: str
@@ -299,13 +303,26 @@ def editar_categoria(cat_id: int, body: CategoriaEdit):
 # TARJETAS
 # ============================================================
 
+def _resumen_vencido(t):
+    """True si los valores del resumen quedaron viejos: se cargaron antes del
+    último corte que ya pasó (o sea, cerró un resumen nuevo desde entonces)."""
+    tiene_valores = any(t[k] is not None for k in ("saldo_dia", "saldo_corte", "pago_contado"))
+    if not tiene_valores or not t["resumen_actualizado"]:
+        return False
+    ultimo_corte = notion_sync.ultima_fecha(t["dia_corte"]).isoformat()
+    return t["resumen_actualizado"] < ultimo_corte
+
+
 def _tarjeta_con_saldo(conn, t):
     """Arma el dict de una tarjeta con saldo, disponible, % de uso y días a corte/pago."""
     saldo = db.saldo_tarjeta(conn, t["id"])
     hoy = date.today()
+    # saldo_dia / saldo_corte / pago_contado son valores del resumen cargados a
+    # mano: llegan tal cual desde dict(t) (pueden ser None si no se completaron).
     return {
         **dict(t),
         "saldo": saldo,
+        "resumen_vencido": _resumen_vencido(t),
         "disponible": round(t["limite"] - saldo, 2),
         "pct_uso": round(saldo / t["limite"] * 100, 1) if t["limite"] else 0,
         "proximo_corte": notion_sync.proxima_fecha(t["dia_corte"]).isoformat(),
@@ -326,6 +343,18 @@ def listar_tarjetas(incluir_inactivas: bool = False):
         conn.close()
 
 
+def _fecha_resumen(body, previo=None):
+    """Fecha (ISO) para resumen_actualizado: hoy cuando se cargan o cambian los
+    valores del resumen; None si no hay ninguno; se conserva la previa si los
+    valores no cambiaron (así no se 'refresca' al editar otra cosa)."""
+    nuevos = (body.saldo_dia, body.saldo_corte, body.pago_contado)
+    if all(v is None for v in nuevos):
+        return None
+    if previo is None or nuevos != (previo["saldo_dia"], previo["saldo_corte"], previo["pago_contado"]):
+        return date.today().isoformat()
+    return previo["resumen_actualizado"]
+
+
 @app.post("/api/tarjetas")
 def crear_tarjeta(body: TarjetaIn):
     _validar_tarjeta_in(body)
@@ -336,10 +365,12 @@ def crear_tarjeta(body: TarjetaIn):
         if existe:
             raise HTTPException(400, f"Ya existe una tarjeta llamada '{body.nombre.strip()}'")
         cur = conn.execute(
-            "INSERT INTO tarjetas (banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, activa, color_idx) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO tarjetas (banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, "
+            "activa, color_idx, saldo_dia, saldo_corte, pago_contado, resumen_actualizado) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (body.banco.strip(), body.nombre.strip(), validar_monto(body.limite),
-             body.dia_corte, body.dia_pago, body.saldo_inicial, int(body.activa), body.color_idx),
+             body.dia_corte, body.dia_pago, body.saldo_inicial, int(body.activa), body.color_idx,
+             body.saldo_dia, body.saldo_corte, body.pago_contado, _fecha_resumen(body)),
         )
         conn.commit()
         marcar_y_sincronizar(conn)
@@ -358,12 +389,17 @@ def editar_tarjeta(tarjeta_id: int, body: TarjetaIn):
                                  (body.nombre.strip(), tarjeta_id)).fetchone()
         if duplicada:
             raise HTTPException(400, f"Ya existe otra tarjeta llamada '{body.nombre.strip()}'")
+        previo = conn.execute(
+            "SELECT saldo_dia, saldo_corte, pago_contado, resumen_actualizado "
+            "FROM tarjetas WHERE id = ?", (tarjeta_id,)).fetchone()
         conn.execute(
             "UPDATE tarjetas SET banco=?, nombre=?, limite=?, dia_corte=?, dia_pago=?, "
-            "saldo_inicial=?, activa=?, color_idx=? WHERE id = ?",
+            "saldo_inicial=?, activa=?, color_idx=?, saldo_dia=?, saldo_corte=?, pago_contado=?, "
+            "resumen_actualizado=? WHERE id = ?",
             (body.banco.strip(), body.nombre.strip(), validar_monto(body.limite),
              body.dia_corte, body.dia_pago, body.saldo_inicial, int(body.activa),
-             body.color_idx, tarjeta_id),
+             body.color_idx, body.saldo_dia, body.saldo_corte, body.pago_contado,
+             _fecha_resumen(body, previo), tarjeta_id),
         )
         conn.commit()
         marcar_y_sincronizar(conn)
@@ -902,7 +938,12 @@ def _validar_gasto(conn, body: GastoIn):
 
 @app.delete("/api/gastos/{reg_id}")
 def borrar_gasto(reg_id: int):
-    return _borrar("gastos", reg_id)
+    # Un gasto puede estar referenciado por notion_bandeja_procesados (si vino de
+    # la bandeja de Notion). Desvinculamos antes de borrar para no violar la FK; la
+    # página queda marcada como procesada y no se reimporta.
+    return _borrar("gastos", reg_id, pre_sql=[
+        ("UPDATE notion_bandeja_procesados SET gasto_id = NULL WHERE gasto_id = ?", (reg_id,)),
+    ])
 
 
 @app.post("/api/pagos_tarjetas")
@@ -949,10 +990,16 @@ def borrar_pago(reg_id: int):
     return _borrar("pagos_tarjetas", reg_id)
 
 
-def _borrar(tabla, reg_id):
-    """Borra un registro de la tabla indicada (uso interno, tabla controlada)."""
+def _borrar(tabla, reg_id, pre_sql=None):
+    """Borra un registro de la tabla indicada (uso interno, tabla controlada).
+
+    pre_sql: sentencias (sql, params) a ejecutar antes del DELETE, p. ej. para
+    desvincular filas que referencian este registro y no violar una FK.
+    """
     conn = db.get_conn()
     try:
+        for sql, params in (pre_sql or []):
+            conn.execute(sql, params)
         cur = conn.execute(f"DELETE FROM {tabla} WHERE id = ?", (reg_id,))
         if cur.rowcount == 0:
             raise HTTPException(404, "Registro no encontrado")
@@ -1707,8 +1754,9 @@ def _query_export(conn, tabla):
     consultas = {
         "categorias": ("nombre,tipo,activa",
                        "SELECT nombre, tipo, activa FROM categorias ORDER BY tipo, nombre"),
-        "tarjetas": ("banco,nombre,limite,dia_corte,dia_pago,saldo_inicial,activa",
-                     "SELECT banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, activa FROM tarjetas"),
+        "tarjetas": ("banco,nombre,limite,dia_corte,dia_pago,saldo_inicial,activa,saldo_dia,saldo_corte,pago_contado,resumen_actualizado",
+                     "SELECT banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, activa, "
+                     "saldo_dia, saldo_corte, pago_contado, resumen_actualizado FROM tarjetas"),
         "cuentas": ("banco,nombre,tipo,saldo_inicial,activa",
                     "SELECT banco, nombre, tipo, saldo_inicial, activa FROM cuentas"),
         "ingresos": ("fecha,descripcion,categoria,monto,cuenta",
@@ -1892,13 +1940,19 @@ async def importar_csv(tabla: str, archivo: UploadFile = File(...)):
                 elif tabla == "tarjetas":
                     if fila["nombre"].lower() in tars:
                         raise ValueError(f"ya existe la tarjeta '{fila['nombre']}'")
+                    # Valores del resumen: opcionales, None si la celda viene vacía
+                    # o si el CSV es viejo y no trae esas columnas.
+                    resumen = tuple(float(fila[c]) if fila.get(c) else None
+                                    for c in ("saldo_dia", "saldo_corte", "pago_contado"))
                     conn.execute(
-                        "INSERT INTO tarjetas (banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, activa) "
-                        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO tarjetas (banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, "
+                        "activa, saldo_dia, saldo_corte, pago_contado, resumen_actualizado) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         (fila["banco"], fila["nombre"], validar_monto(fila["limite"]),
                          int(fila["dia_corte"]), int(fila["dia_pago"]),
                          float(fila.get("saldo_inicial", "0") or 0),
-                         int(fila.get("activa", "1") or 1)))
+                         int(fila.get("activa", "1") or 1),
+                         *resumen, fila.get("resumen_actualizado") or None))
                     tars = {t["nombre"].lower(): t["id"] for t in conn.execute("SELECT * FROM tarjetas")}
 
                 elif tabla == "ingresos_recurrentes":

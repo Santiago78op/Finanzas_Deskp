@@ -1,7 +1,7 @@
 import Card from '@mui/material/Card';
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/EditOutlined';
-import { fmtQ } from '../../utils.js';
+import { fmtQ, fmtFecha } from '../../utils.js';
 import { ACC } from '../../theme/colores.js';
 import { tabularNums } from './estilos.js';
 
@@ -13,6 +13,10 @@ import { tabularNums } from './estilos.js';
 // marca (Visa/Mastercard) ni número real en el modelo de datos: la marca se
 // infiere del nombre ("Visa BI" -> VISA) y el número se enmascara con uno
 // derivado del id — no se inventa un dato falso.
+// Valores del resumen (saldo al día/corte/contado) son opcionales: si no se
+// cargaron llegan null -> mostramos "—" en vez de "Q NaN".
+const fmtQopt = (v) => (v == null ? '—' : fmtQ(v));
+
 function marcaDe(nombre) {
   const n = (nombre || '').toLowerCase();
   if (n.includes('visa')) return 'VISA';
@@ -44,6 +48,17 @@ export default function CreditCard({ tarjeta, onEditar }) {
               {!tarjeta.activa && (
                 <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white/15">Inactiva</span>
               )}
+              {/* En la mini del dashboard no hay bloque de resumen, así que el
+                  aviso de "valores viejos" va acá en el encabezado. */}
+              {compacta && tarjeta.resumen_vencido && (
+                <span
+                  className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                  style={{ background: 'rgba(245,158,11,.25)', color: '#fbbf24' }}
+                  title="Ya cerró un corte nuevo desde que cargaste los valores del resumen"
+                >
+                  Desactualizado
+                </span>
+              )}
               {marca && <span className="font-display" style={{ fontSize: 15, letterSpacing: '.04em' }}>{marca}</span>}
             </div>
           </div>
@@ -61,6 +76,27 @@ export default function CreditCard({ tarjeta, onEditar }) {
               <div className="flex justify-between items-end gap-2 text-xs">
                 <div><div className="opacity-60 uppercase tracking-wide text-[10px]">Saldo usado</div><div className="font-semibold" style={tabularNums}>{fmtQ(tarjeta.saldo)}</div></div>
                 <div style={{ textAlign: 'right' }}><div className="opacity-60 uppercase tracking-wide text-[10px]">Límite</div><div className="font-semibold" style={tabularNums}>{fmtQ(tarjeta.limite)}</div></div>
+              </div>
+              <div className="pt-2 mt-1 border-t border-white/10 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="opacity-60 uppercase tracking-wide text-[10px]">
+                    Resumen{tarjeta.resumen_actualizado ? ` · ${fmtFecha(tarjeta.resumen_actualizado)}` : ''}
+                  </span>
+                  {tarjeta.resumen_vencido && (
+                    <span
+                      className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                      style={{ background: 'rgba(245,158,11,.25)', color: '#fbbf24' }}
+                      title="Ya cerró un corte nuevo desde que cargaste estos valores"
+                    >
+                      Desactualizado
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div><div className="opacity-60 uppercase tracking-wide text-[10px]">Saldo al día</div><div className="font-semibold" style={tabularNums}>{fmtQopt(tarjeta.saldo_dia)}</div></div>
+                  <div><div className="opacity-60 uppercase tracking-wide text-[10px]">Al corte</div><div className="font-semibold" style={tabularNums}>{fmtQopt(tarjeta.saldo_corte)}</div></div>
+                  <div style={{ textAlign: 'right' }}><div className="opacity-60 uppercase tracking-wide text-[10px]">De contado</div><div className="font-semibold" style={tabularNums}>{fmtQopt(tarjeta.pago_contado)}</div></div>
+                </div>
               </div>
             </div>
           )}

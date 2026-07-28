@@ -11,7 +11,11 @@ import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { ACC } from '../../theme/colores.js';
 
-const VACIO = { banco: '', nombre: '', limite: '', dia_corte: '', dia_pago: '', saldo_inicial: '0', activa: true, color_idx: null };
+const VACIO = { banco: '', nombre: '', limite: '', dia_corte: '', dia_pago: '', saldo_inicial: '0', activa: true, color_idx: null, saldo_dia: '', saldo_corte: '', pago_contado: '' };
+
+// '' -> null, número -> float. Los valores del resumen son opcionales.
+const numOpt = (v) => (v === '' || v == null ? null : parseFloat(v));
+const strOpt = (v) => (v == null ? '' : String(v));
 
 // Modal (no panel embebido) para que "agregar/editar tarjeta" resalte de
 // verdad en vez de empujar el resto del layout — mismo patrón que
@@ -25,6 +29,8 @@ export default function FormTarjeta({ editando, onGuardado, onCerrar }) {
     dia_corte: String(editando.dia_corte), dia_pago: String(editando.dia_pago),
     saldo_inicial: String(editando.saldo_inicial), activa: !!editando.activa,
     color_idx: editando.color_idx ?? null,
+    saldo_dia: strOpt(editando.saldo_dia), saldo_corte: strOpt(editando.saldo_corte),
+    pago_contado: strOpt(editando.pago_contado),
   } : VACIO);
 
   const elegirColor = (idx) => setForm(f => ({ ...f, color_idx: f.color_idx === idx ? null : idx }));
@@ -35,6 +41,8 @@ export default function FormTarjeta({ editando, onGuardado, onCerrar }) {
       dia_corte: parseInt(form.dia_corte), dia_pago: parseInt(form.dia_pago),
       saldo_inicial: parseFloat(form.saldo_inicial || 0), activa: form.activa,
       color_idx: form.color_idx,
+      saldo_dia: numOpt(form.saldo_dia), saldo_corte: numOpt(form.saldo_corte),
+      pago_contado: numOpt(form.pago_contado),
     };
     try {
       if (editando) await actualizarTarjeta(editando.id, body);
@@ -80,6 +88,16 @@ export default function FormTarjeta({ editando, onGuardado, onCerrar }) {
       <TextField label="Saldo pendiente hoy (Q)" type="number" inputProps={{ step: 0.01, min: 0 }}
         helperText="Opcional, deuda que ya traés (puede ser 0)"
         value={form.saldo_inicial} onChange={e => setForm(f => ({ ...f, saldo_inicial: e.target.value }))} />
+
+      <TextField label="Saldo al día (Q)" type="number" inputProps={{ step: 0.01, min: 0 }}
+        helperText="Del resumen del banco. Opcional, dejar vacío si no lo tenés"
+        value={form.saldo_dia} onChange={e => setForm(f => ({ ...f, saldo_dia: e.target.value }))} />
+      <TextField label="Saldo al corte (Q)" type="number" inputProps={{ step: 0.01, min: 0 }}
+        helperText="Del resumen del banco. Opcional"
+        value={form.saldo_corte} onChange={e => setForm(f => ({ ...f, saldo_corte: e.target.value }))} />
+      <TextField label="De pago al contado (Q)" type="number" inputProps={{ step: 0.01, min: 0 }}
+        helperText="Del resumen del banco. Opcional"
+        value={form.pago_contado} onChange={e => setForm(f => ({ ...f, pago_contado: e.target.value }))} />
 
       <div className="flex flex-col gap-1.5">
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--suave)', textTransform: 'uppercase', letterSpacing: '.04em' }}>

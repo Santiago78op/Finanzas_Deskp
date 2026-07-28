@@ -233,6 +233,14 @@ def init_db():
     # Migraciones: agregar columnas nuevas a bases creadas con versiones anteriores
     _asegurar_columna(cur, "tarjetas", "saldo_inicial", "saldo_inicial REAL NOT NULL DEFAULT 0")
     _asegurar_columna(cur, "tarjetas", "color_idx", "color_idx INTEGER")
+    # Valores tomados del resumen del banco (se cargan a mano, opcionales):
+    # saldo al día, saldo al corte y monto para pago al contado del resumen.
+    _asegurar_columna(cur, "tarjetas", "saldo_dia", "saldo_dia REAL")
+    _asegurar_columna(cur, "tarjetas", "saldo_corte", "saldo_corte REAL")
+    _asegurar_columna(cur, "tarjetas", "pago_contado", "pago_contado REAL")
+    # Fecha (ISO) en que se cargaron/cambiaron esos valores del resumen; sirve
+    # para marcarlos como viejos si ya cerró un corte nuevo desde entonces.
+    _asegurar_columna(cur, "tarjetas", "resumen_actualizado", "resumen_actualizado TEXT")
     _asegurar_columna(cur, "ingresos", "cuenta_id", "cuenta_id INTEGER REFERENCES cuentas(id)")
     _asegurar_columna(cur, "gastos", "cuenta_id", "cuenta_id INTEGER REFERENCES cuentas(id)")
     _asegurar_columna(cur, "pagos_tarjetas", "cuenta_id", "cuenta_id INTEGER REFERENCES cuentas(id)")
