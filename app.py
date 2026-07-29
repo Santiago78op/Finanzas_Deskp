@@ -2094,4 +2094,13 @@ if __name__ == "__main__":
     print("Finanzas Personales — http://localhost:8000")
     # SOLO localhost: nadie más en la red (wifi del trabajo, etc.) puede ver tus datos.
     # Para consultar desde el celular se usa la sincronización con Notion.
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    #
+    # DEDUN_RELOAD=1 (lo pone `start.bat dev` / `./start.sh dev`) reinicia el
+    # servidor solo al guardar un .py. Sin esto hay que matar y relanzar a mano
+    # cada vez que se toca app.py o db.py. Va por variable de entorno y no por
+    # default porque --reload exige pasar la app como string de importación, y
+    # eso levanta un proceso supervisor extra que en uso normal no hace falta.
+    if os.environ.get("DEDUN_RELOAD") == "1":
+        uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    else:
+        uvicorn.run(app, host="127.0.0.1", port=8000)

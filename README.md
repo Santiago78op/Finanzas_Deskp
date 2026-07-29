@@ -56,6 +56,45 @@ python3 app.py
 
 En ambos casos, abrí **http://localhost:8000** en el navegador. Listo.
 
+### Modos del script de arranque
+
+El script hace más que arrancar: verifica que estén Python y Node, crea el
+`.venv`, reinstala dependencias si `requirements.txt` cambió, y **recompila el
+frontend en cada arranque**. Eso último importa: antes solo compilaba si
+`static/index.html` no existía, así que tocabas `frontend/src`, arrancabas, y
+seguías viendo el build viejo sin ningún aviso.
+
+| Comando | Qué hace |
+|---|---|
+| `start.bat` / `./start.sh` | Compila el frontend y arranca en http://localhost:8000 |
+| `start.bat dev` / `./start.sh dev` | Igual, pero el servidor se reinicia solo al guardar un `.py` |
+| `start.bat test` / `./start.sh test` | Corre la suite de pruebas y sale (instala `pytest` si falta) |
+| `start.bat --no-build` / `./start.sh --no-build` | Arranca sin recompilar (más rápido si no tocaste el frontend) |
+
+> **Detrás de un proxy corporativo**: si `pip` falla con un error `407`, probá
+> `set NO_PROXY=*` (Windows) o `export NO_PROXY='*'` (macOS/Linux) antes de
+> correr el script. El propio script te lo recuerda si la instalación falla.
+
+## Pruebas
+
+```bat
+start.bat test          rem  Windows
+./start.sh test         #    macOS/Linux
+```
+
+O directo: `.venv\Scripts\python -m pytest` (Windows) / `.venv/bin/python -m pytest`.
+
+La suite cubre la parte donde un error cuesta dinero de verdad: el cálculo de
+saldos de tarjetas, cuentas, préstamos y Visa Cuotas (incluidos los cortes por
+mes y el hecho de que las cuentas/tarjetas inactivas no se suman), el contrato
+HTTP de `/api/tarjetas`, y las migraciones de esquema sobre una base vieja.
+
+**Los tests nunca tocan tu `finanzas.db`.** `db.py` lee la ruta de la base de
+la variable `DEDUN_DB`, y `tests/conftest.py` la apunta a un archivo temporal
+*antes* de importar `app` (que migra la base al importarse). El mismo
+`conftest.py` desactiva la sincronización con Notion, así que la suite tampoco
+le escribe a tu Notion.
+
 > **Nota macOS**: en Mac el comando es `python3` (no `python`). Todas las
 > dependencias tienen binarios nativos para Apple Silicon, así que no hay nada
 > especial que hacer en una M5.
@@ -248,8 +287,10 @@ git clone <url-de-tu-repo> finanzas && cd finanzas
 Detalles de compatibilidad ya resueltos en el código:
 
 - Rutas construidas con `os.path` (funcionan igual en Windows y macOS).
-- `.gitattributes` fuerza `LF` en `start.sh` para que no se rompa al clonarlo
-  desde Windows.
+- `.gitattributes` fuerza `LF` en `start.sh` y `CRLF` en `start.bat`. Los dos
+  hacen falta: un `.sh` con CRLF no corre en Mac/Linux, y un `.bat` con LF hace
+  que `cmd.exe` se coma la primera letra de cada línea y muera con errores
+  incomprensibles.
 - SQLite viene incluido con Python; el archivo `finanzas.db` es portable
   entre sistemas y arquitecturas sin conversión.
 - Sin dependencias con compilación problemática: todas tienen wheels
@@ -266,8 +307,11 @@ Dedun/
 ├── frontend/         ← frontend en React + Vite (código fuente, sí va al repo)
 │   └── src/
 ├── static/           ← build del frontend (generado, NO va al repo)
-├── start.bat         ← arranque en Windows (crea .venv y compila el frontend la primera vez)
+├── start.bat         ← arranque en Windows (verifica, instala, compila y corre; modos dev/test)
 ├── start.sh          ← arranque en macOS/Linux (ídem)
+├── pytest.ini        ← configuración de la suite
+├── requirements-dev.txt ← dependencias solo para correr las pruebas
+├── tests/            ← suite de pytest (saldos, API de tarjetas, migraciones)
 ├── finanzas.db       ← TU BASE DE DATOS (respaldá este archivo; no va al repo)
 ├── .env              ← token de Notion (NO compartir; no va al repo)
 └── requirements.txt

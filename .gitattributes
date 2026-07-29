@@ -4,6 +4,11 @@
 # Los scripts de shell SIEMPRE con LF (si llevan CRLF fallan en Mac/Linux)
 *.sh text eol=lf
 
+# Y los .bat SIEMPRE con CRLF: cmd.exe lee los batch byte a byte y sin CR se
+# desincroniza — se come la primera letra de cada línea ("setlocal" le llega
+# como "tlocal") y el script muere con errores incomprensibles.
+*.bat text eol=crlf
+
 # Binarios
 *.db binary
 *.zip binary

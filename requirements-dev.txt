@@ -1,0 +1,9 @@
+# Dependencias SOLO para correr la suite de pruebas.
+# Se instalan aparte de requirements.txt para que el arranque normal de la app
+# no cargue con ellas: `start.bat` / `start.sh` no las necesitan.
+#
+#   .venv\Scripts\pip install -r requirements-dev.txt   (Windows)
+#   ./.venv/bin/pip install -r requirements-dev.txt     (macOS/Linux)
+-r requirements.txt
+pytest
+httpx          # lo necesita TestClient de FastAPI para hablar con la app

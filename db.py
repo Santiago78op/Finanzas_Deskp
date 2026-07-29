@@ -7,8 +7,16 @@ La base es un archivo local junto a app.py; para respaldar basta copiar el archi
 import os
 import sqlite3
 
-# Ruta del archivo de base de datos, siempre junto a este script
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "finanzas.db")
+# Ruta del archivo de base de datos: por defecto junto a este script.
+#
+# DEDUN_DB permite apuntar a otro archivo. Existe para que los tests corran
+# contra una base temporal: sin esto, `pytest` abriría la finanzas.db real y
+# le escribiría encima — o sea, la suite de pruebas te borraría los datos.
+# En uso normal no se define y todo queda igual que antes.
+DB_PATH = os.environ.get(
+    "DEDUN_DB",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "finanzas.db"),
+)
 
 # Categorías precargadas la primera vez que se crea la base
 CATEGORIAS_GASTO = [
