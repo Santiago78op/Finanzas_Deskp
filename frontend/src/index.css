@@ -111,8 +111,50 @@
   /* 12px en tarjetas, 8px en controles */
   --radio: 12px;
   --radio-sm: 8px;
-  /* Sin sombras difusas: la jerarquía la da el filete de 1px y el aire. */
-  --sombra: none;
+
+  /* ---- Relieve ----
+     Tres niveles de elevación real. Cada uno combina TRES cosas, y las tres
+     hacen falta para que se lea como volumen y no como una mancha gris:
+       1. filo de luz arriba (inset)  — la luz pegando en el canto de arriba
+       2. sombra de contacto cerrada  — 1-2px, ancla el objeto al fondo
+       3. sombra de proyección difusa — dice a qué altura está
+     Sin la de contacto, el objeto flota; sin la difusa, se ve pegado.
+       · nivel 1 -> tarjetas en reposo
+       · nivel 2 -> hover
+       · nivel 3 -> modales, que sí están muy por encima de todo
+       · hundido -> inputs: el relieve va para adentro, campo troquelado */
+  --filo-luz: rgba(255, 255, 255, .95);
+  --tinta-sombra: rgba(11, 31, 58, .10);
+  --relieve-1:
+    inset 0 1px 0 var(--filo-luz),
+    0 1px 1px rgba(11, 31, 58, .05),
+    0 2px 6px -2px rgba(11, 31, 58, .08);
+  --relieve-2:
+    inset 0 1px 0 var(--filo-luz),
+    0 1px 1px rgba(11, 31, 58, .06),
+    0 8px 18px -6px rgba(11, 31, 58, .16);
+  --relieve-3:
+    inset 0 1px 0 var(--filo-luz),
+    0 2px 4px rgba(11, 31, 58, .08),
+    0 24px 48px -12px rgba(11, 31, 58, .28);
+  --relieve-hundido:
+    inset 0 1px 3px rgba(11, 31, 58, .10),
+    inset 0 -1px 0 var(--filo-luz);
+  --sombra: var(--relieve-1);
+
+  /* Degradado sutilísimo de superficie: arriba un punto más claro que abajo,
+     como una hoja con luz de ventana. Da volumen a la tarjeta sin que se note
+     que hay un degradado. */
+  --superficie: linear-gradient(180deg, #FFFFFF 0%, #FCFBF8 100%);
+
+  /* ---- Textura ----
+     Grano de papel: ruido fractal en un SVG embebido (sin archivos, sin red).
+     Dos capas: `--grano` para el fondo de la página y `--grano-panel` (más
+     fino y más tenue) para las superficies, que si llevaran el mismo grano
+     grueso se verían sucias en vez de con textura. */
+  --grano: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
+  --grano-opacidad: .07;
+  --grano-panel-opacidad: .035;
 }
 
 /* El informe solo define el esquema claro; el oscuro se deriva usando el
@@ -158,7 +200,33 @@
   --grid-grafica: rgba(232, 228, 220, .12);
   --tinta-grafica: #A8B4C4;
 
-  --sombra: none;
+  /* En oscuro el relieve cambia de fuente: el filo de luz es un blanco al 7%
+     (al 95% sería una línea blanca brillante) y las sombras tienen que ser
+     mucho más profundas, porque sobre marino una sombra al 8% no existe. */
+  --filo-luz: rgba(255, 255, 255, .07);
+  --tinta-sombra: rgba(0, 0, 0, .5);
+  --relieve-1:
+    inset 0 1px 0 var(--filo-luz),
+    0 1px 1px rgba(0, 0, 0, .3),
+    0 2px 8px -2px rgba(0, 0, 0, .4);
+  --relieve-2:
+    inset 0 1px 0 var(--filo-luz),
+    0 1px 1px rgba(0, 0, 0, .3),
+    0 10px 22px -6px rgba(0, 0, 0, .55);
+  --relieve-3:
+    inset 0 1px 0 var(--filo-luz),
+    0 2px 4px rgba(0, 0, 0, .4),
+    0 28px 56px -12px rgba(0, 0, 0, .7);
+  --relieve-hundido:
+    inset 0 1px 3px rgba(0, 0, 0, .4),
+    inset 0 -1px 0 rgba(255, 255, 255, .04);
+  --sombra: var(--relieve-1);
+
+  --superficie: linear-gradient(180deg, #0D2340 0%, #0A1B33 100%);
+
+  /* El grano se nota mucho más sobre superficies oscuras: bien abajo. */
+  --grano-opacidad: .05;
+  --grano-panel-opacidad: .02;
 }
 
 /* ---------- Escala de espaciado y tipografía (independiente de tema) ----------
@@ -190,6 +258,7 @@ body {
   font-size: var(--fs-base);
   line-height: var(--lh-normal);
   transition: background .25s ease, color .25s ease;
+  position: relative;
   /* macOS renderiza las fuentes con subpíxeles por default — se ve más
      grueso/borroso que en Windows. Esto es lo que Safari/Chrome en Mac
      necesitan para que el texto se vea fino y nítido (look nativo). */
@@ -197,6 +266,56 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
+
+/* Grano de papel sobre TODO el fondo. Va en un ::before fijo al viewport y no
+   como background-image del body: así el patrón no se desplaza con el scroll
+   (un grano que se mueve se nota como textura falsa) y no hay que pelear con
+   los fondos de los paneles. pointer-events:none para que no coma clicks. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--grano);
+  opacity: var(--grano-opacidad);
+  /* El ruido crudo es gris; multiplicar lo tiñe con el color de abajo en vez
+     de ensuciarlo con una capa gris uniforme. */
+  mix-blend-mode: multiply;
+}
+:root[data-theme="dark"] body::before {
+  /* Sobre marino, multiplicar solo oscurece más. Screen deja que el grano
+     aporte los puntos de luz, que es como se ve el papel en penumbra. */
+  mix-blend-mode: screen;
+}
+/* El contenido va por encima del grano. */
+#app { position: relative; z-index: 1; }
+
+/* Textura y volumen en las superficies. El grano del fondo NO se ve a través
+   de las tarjetas (son opacas), así que cada superficie necesita el suyo —
+   más fino y más tenue, porque el grano grueso del fondo sobre un panel se ve
+   sucio y no texturado.
+   Se pinta en un ::after y no como segundo background-image para no pisar el
+   degradado de --superficie, y con inherit del radio para que no asome en las
+   esquinas redondeadas. */
+.MuiCard-root {
+  background-image: var(--superficie);
+  position: relative;
+  isolation: isolate;   /* contiene el blend del grano dentro de la tarjeta */
+}
+.MuiCard-root::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--grano);
+  background-size: 100px 100px;
+  opacity: var(--grano-panel-opacidad);
+  mix-blend-mode: multiply;
+  z-index: -1;   /* debajo del contenido, encima del fondo de la tarjeta */
+}
+:root[data-theme="dark"] .MuiCard-root::after { mix-blend-mode: screen; }
 
 /* Antetítulo: el rótulo chiquito en mayúsculas que encabeza cada bloque
    ("¿CUÁNTO TENGO?", "DEUDA TOTAL"). 11px con mucho tracking — a ese tamaño,
@@ -218,6 +337,48 @@ body {
 
 /* Párrafos de texto corrido: nunca más anchos que la medida legible. */
 .medida { max-width: var(--medida); }
+
+/* ---------- Jerarquía de filetes ----------
+   Antes TODO borde era el mismo 1px de --borde, así que el marco de una
+   tarjeta pesaba igual que la línea entre dos filas de una lista y la vista se
+   leía como una reja. Tres pesos, que es como un informe separa cosas:
+     · hairline  — filas dentro de un bloque (lo más liviano posible)
+     · filete    — el default de --borde: marcos de tarjeta, cabeceras de tabla
+     · regla     — corte entre secciones de la página, con latón
+   La regla lleva latón porque es el único lugar donde ese color cumple su
+   función (acento en filetes) sin problemas de contraste: no es texto. */
+.hairline-b { border-bottom: 1px solid color-mix(in srgb, var(--borde) 55%, transparent); }
+.hairline-t { border-top: 1px solid color-mix(in srgb, var(--borde) 55%, transparent); }
+
+.regla {
+  border: 0;
+  height: 1px;
+  background: var(--borde);
+  position: relative;
+  margin: var(--sp-6) 0 var(--sp-5);
+}
+/* El pequeño tramo de latón a la izquierda: marca el arranque de la sección
+   sin pintar un bloque de color (el latón nunca en superficie grande). */
+.regla::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0;
+  width: 44px; height: 1px;
+  background: var(--laton);
+}
+
+/* Los <Divider> de MUI que separan secciones heredan el mismo tratamiento,
+   para no tener dos lenguajes de separador en la misma app.
+   Va como DEGRADADO sobre el propio <hr> y no como pseudo-elemento: el hr de
+   MUI mide 1px de alto con overflow:hidden, así que cualquier ::before queda
+   recortado y no se ve. El gradiente de tramos duros (0→44px latón, de ahí en
+   adelante borde) no depende de posicionamiento y no se puede recortar.
+   Solo horizontales: en un divider vertical el tramo saldría arriba. */
+.MuiDivider-root:not(.MuiDivider-vertical) {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, var(--laton) 0 44px, var(--borde) 44px);
+}
 
 /* Ícono base: hereda el color del texto (currentColor), como los íconos Lucide */
 .ico { width: 20px; height: 20px; flex: none; display: inline-block; }

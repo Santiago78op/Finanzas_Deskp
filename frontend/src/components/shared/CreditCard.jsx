@@ -4,7 +4,7 @@ import EditIcon from '@mui/icons-material/EditOutlined';
 import { fmtQ, fmtFecha } from '../../utils.js';
 import { ACC } from '../../theme/colores.js';
 import { identidadBanco } from '../../theme/bancos.js';
-import { alzarCard, varsItem } from '../../motion.js';
+import { alzarCard, ENTRADA, varsItem } from '../../motion.js';
 import BarraProgreso from './BarraProgreso.jsx';
 import { LogoRed, redDe } from './LogosRed.jsx';
 import { tabularNums } from './estilos.js';
@@ -63,23 +63,57 @@ function MonogramaBanco({ banco }) {
   );
 }
 
+// La cara se ARMA por partes al entrar: primero se traza el filo de acento de
+// arriba (de izquierda a derecha, como la regla de las secciones), después
+// suben el encabezado y el número. Es la misma idea que las reglas: una
+// tarjeta que aparece entera no cuenta nada, una que se dibuja dirige el ojo
+// al acento —que es lo que la identifica— y después al dato.
+//
+// El escalón NO usa varsLista: el contenedor de esta cara ya recibe el
+// `visible` heredado de la grilla de tarjetas, así que definir el stagger acá
+// haría que la cara espere su turno DOS veces (una por la grilla, otra por sí
+// misma) y se sentiría lenta.
+const varsCara = {
+  oculto: {},
+  visible: { transition: { delayChildren: 0.12, staggerChildren: 0.07 } },
+};
+const varsPieza = {
+  oculto: { opacity: 0, y: 6 },
+  visible: { opacity: 1, y: 0, transition: ENTRADA },
+};
+const varsFilo = {
+  oculto: { scaleX: 0 },
+  visible: { scaleX: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+};
+
 function CaraTarjeta({ tarjeta, ancho, acento, red }) {
   const escala = ancho / ANCHO_BASE;
   const numero = String(1000 + ((tarjeta.id * 7919) % 9000)).padStart(4, '0');
 
   return (
     <div style={{ width: ancho, height: ALTO_BASE * escala }} className="relative flex">
-      <div
+      <motion.div
         style={{
           transform: `scale(${escala})`, width: ANCHO_BASE, height: ALTO_BASE,
-          background: 'var(--panel)',
+          background: 'var(--superficie)',
           border: '1px solid var(--borde)',
-          borderTop: `3px solid ${acento}`,
           borderRadius: 'var(--radio)',
+          boxShadow: 'var(--relieve-1)',
         }}
         className="absolute top-0 left-0 origin-top-left flex flex-col justify-between overflow-hidden p-4"
+        variants={varsCara}
       >
-        <div className="flex items-start justify-between gap-2">
+        {/* El filo de acento pasó de `border-top` a un elemento propio: un
+            borde no se puede animar por tramos, un div sí. */}
+        <motion.div
+          aria-hidden="true"
+          variants={varsFilo}
+          style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+            background: acento, originX: 0,
+          }}
+        />
+        <motion.div className="flex items-start justify-between gap-2" variants={varsPieza}>
           <div className="flex items-center gap-2.5 min-w-0">
             <MonogramaBanco banco={tarjeta.banco} />
             <div style={{ minWidth: 0 }}>
@@ -97,9 +131,9 @@ function CaraTarjeta({ tarjeta, ancho, acento, red }) {
               </Pastilla>
             )}
           </div>
-        </div>
+        </motion.div>
 
-        <div className="flex items-end justify-between gap-3">
+        <motion.div className="flex items-end justify-between gap-3" variants={varsPieza}>
           <div className="flex min-w-0 flex-col gap-1.5">
             <div className="antetitulo truncate">{tarjeta.nombre}</div>
             <div className="cifra" style={{ fontSize: 16, letterSpacing: '.08em', color: 'var(--texto)' }}>
@@ -115,8 +149,8 @@ function CaraTarjeta({ tarjeta, ancho, acento, red }) {
               <LogoRed marca={red} />
             </span>
           )}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

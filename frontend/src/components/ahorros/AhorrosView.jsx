@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/AddOutlined';
 import AhorroCard from './AhorroCard.jsx';
 import FormAhorro from './FormAhorro.jsx';
 import FormAporte from './FormAporte.jsx';
 import PanelCapacidad from './PanelCapacidad.jsx';
 import PanelPlan from './PanelPlan.jsx';
+import PanelAvance from './PanelAvance.jsx';
 import MontoAnimado from '../shared/MontoAnimado.jsx';
 import PanelesSkeleton from '../shared/PanelesSkeleton.jsx';
 import { getAhorros } from '../../api/ahorros.js';
@@ -16,6 +16,7 @@ import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { fmtQ } from '../../utils.js';
 import { varsItem, varsLista } from '../../motion.js';
 import { tabularNums } from '../shared/estilos.js';
+import Regla from '../shared/Regla.jsx';
 
 // Ahorros = fondo de emergencia + metas de compra.
 //
@@ -98,12 +99,18 @@ export default function AhorrosView() {
           <PanelCapacidad capacidad={capacidad} requeridoTotal={requerido_mensual_total} />
         </div>
 
-        <div className="dash-span-12">
+        <div className="dash-span-7">
           <PanelPlan plan={plan} onAplicado={recargar} />
+        </div>
+
+        {/* PanelAvance se autooculta con menos de dos sobres con objetivo, así
+            que el span solo importa cuando hay algo que mostrar. */}
+        <div className="dash-span-5">
+          <PanelAvance ahorros={ahorros} />
         </div>
       </div>
 
-      <Divider sx={{ mt: 5, mb: 2 }} />
+      <Regla />
       <Typography variant="h6" sx={{ mb: 2 }}>Fondo de emergencia</Typography>
       {!emergencia.length && (
         <Typography variant="body2" className="text-[var(--suave)] medida" sx={{ mb: 2 }}>
@@ -124,7 +131,7 @@ export default function AhorrosView() {
         )}
       </motion.div>
 
-      <Divider sx={{ mt: 5, mb: 2 }} />
+      <Regla />
       <Typography variant="h6" sx={{ mb: 2 }}>Metas</Typography>
       <motion.div className="cuentas-grid" variants={varsLista} initial="oculto" animate="visible">
         {metas.map(a => (

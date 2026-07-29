@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/AddOutlined';
 import FormCuenta from './FormCuenta.jsx';
 import AccountCard from '../shared/AccountCard.jsx';
 import MontoAnimado from '../shared/MontoAnimado.jsx';
 import { getCuentas } from '../../api/cuentas.js';
 import { varsItem, varsLista } from '../../motion.js';
+import Regla from '../shared/Regla.jsx';
 
 // "Mis cuentas" con vista propia (antes vivía combinada con Tarjetas en
 // TarjetasView.jsx) — split que pide FinanzasQ.dc.html (Claude Design).
@@ -47,7 +47,7 @@ export default function CuentasView() {
         </Typography>
       </Card>
 
-      <Divider sx={{ mt: 5, mb: 3 }} />
+      <Regla />
 
       {/* Contenedor variante: las cards entran escalonadas en vez de aparecer
           las N de golpe cuando responde la API. El escalón lee como "esta es

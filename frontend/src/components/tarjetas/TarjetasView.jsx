@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/AddOutlined';
 import FormTarjeta from './FormTarjeta.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
 import MontoAnimado from '../shared/MontoAnimado.jsx';
 import { getTarjetas } from '../../api/tarjetas.js';
 import { varsItem, varsLista } from '../../motion.js';
+import Regla from '../shared/Regla.jsx';
 
 // Solo tarjetas — "Mis cuentas" se fue a su propia vista (ver
 // components/cuentas/CuentasView.jsx). Alta/edición vía modal (no panel
@@ -45,7 +45,7 @@ export default function TarjetasView() {
         </Typography>
       </Card>
 
-      <Divider sx={{ mt: 5, mb: 3 }} />
+      <Regla />
 
       <motion.div className="tarjetas-grid" variants={varsLista} initial="oculto" animate="visible">
         {tarjetas.map(t => (

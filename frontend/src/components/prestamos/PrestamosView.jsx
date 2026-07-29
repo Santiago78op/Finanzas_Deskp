@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/AddOutlined';
 import PrestamoCard from './PrestamoCard.jsx';
 import VisacuotaCard from './VisacuotaCard.jsx';
@@ -14,6 +13,7 @@ import { getPrestamos } from '../../api/prestamos.js';
 import { getVisacuotas } from '../../api/visacuotas.js';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { varsItem, varsLista } from '../../motion.js';
+import Regla from '../shared/Regla.jsx';
 
 // "Préstamos" con vista propia: registra deuda que hoy no vivía en ningún
 // lado de la app (préstamos de banco/financiera + compras diferidas a Visa
@@ -84,7 +84,7 @@ export default function PrestamosView() {
         </div>
       </Card>
 
-      <Divider sx={{ mt: 5, mb: 2 }} />
+      <Regla />
       <Typography variant="h6" sx={{ mb: 2 }}>Préstamos</Typography>
       <motion.div className="prestamos-grid" variants={varsLista} initial="oculto" animate="visible">
         {prestamos.map(p => (
@@ -97,7 +97,7 @@ export default function PrestamosView() {
         </motion.button>
       </motion.div>
 
-      <Divider sx={{ mt: 5, mb: 2 }} />
+      <Regla />
       <Typography variant="h6" sx={{ mb: 2 }}>Visa Cuotas</Typography>
       <motion.div className="prestamos-grid" variants={varsLista} initial="oculto" animate="visible">
         {visacuotas.map(v => (

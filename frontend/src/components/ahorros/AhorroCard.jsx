@@ -6,7 +6,7 @@ import EditIcon from '@mui/icons-material/EditOutlined';
 import { fmtQ, fmtFecha } from '../../utils.js';
 import { ACC } from '../../theme/colores.js';
 import { alzarCard, varsItem } from '../../motion.js';
-import BarraProgreso from '../shared/BarraProgreso.jsx';
+import AnilloProgreso from '../shared/AnilloProgreso.jsx';
 import { tabularNums } from '../shared/estilos.js';
 
 const MotionCard = motion.create(Card);
@@ -37,38 +37,33 @@ export default function AhorroCard({ ahorro, onEditar, onAportar }) {
         <div className="text-[17px] font-medium truncate">{ahorro.nombre}</div>
       </div>
 
-      <div>
-        <div className="flex items-baseline gap-2">
-          <span style={{ fontSize: 24, fontWeight: 500, ...tabularNums }}>{fmtQ(ahorro.saldo)}</span>
-          {objetivo != null && (
-            <span className="text-[var(--suave)]" style={{ fontSize: 15, ...tabularNums }}>
+      {/* Con objetivo, el avance manda: anillo a la izquierda y las cifras a
+          la derecha. Sin objetivo calculable (fondo de emergencia sin
+          historial) no hay porcentaje que dibujar, así que solo va la cifra y
+          la explicación de por qué falta la meta. */}
+      {objetivo != null ? (
+        <div className="flex items-center gap-4">
+          <AnilloProgreso pct={ahorro.pct ?? 0} color={acento} etiqueta={ahorro.nombre} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 22, fontWeight: 500, ...tabularNums }}>{fmtQ(ahorro.saldo)}</div>
+            <div className="text-[13px] text-[var(--suave)]" style={tabularNums}>
               de {fmtQ(objetivo)}
-            </span>
-          )}
+            </div>
+            <div className="text-[13px] mt-1.5">
+              {ahorro.completado
+                ? <span style={{ color: 'var(--alza)' }}>Completado</span>
+                : <span className="text-[var(--suave)]">Faltan {fmtQ(ahorro.falta)}</span>}
+            </div>
+          </div>
         </div>
-        {/* Sin objetivo calculable (fondo de emergencia sin historial de
-            gastos) no se inventa una meta: se dice por qué falta. */}
-        {objetivo == null && (
+      ) : (
+        <div>
+          <div style={{ fontSize: 24, fontWeight: 500, ...tabularNums }}>{fmtQ(ahorro.saldo)}</div>
           <div className="text-[13px] text-[var(--suave)]">
             El objetivo son {ahorro.meses_gastos} {ahorro.meses_gastos === 1 ? 'mes' : 'meses'} de
             gastos, pero todavía no hay historial para calcularlo.
           </div>
-        )}
-      </div>
-
-      {objetivo != null && (
-        <>
-          <BarraProgreso alto={6} pct={ahorro.pct ?? 0} color={acento}
-            etiqueta={`Progreso de ${ahorro.nombre}`} />
-          <div className="flex items-center justify-between gap-2 text-[13px]">
-            <span className="text-[var(--suave)]">
-              {ahorro.completado
-                ? 'Completado'
-                : `Faltan ${fmtQ(ahorro.falta)}`}
-            </span>
-            <span className="font-medium" style={tabularNums}>{Math.round(ahorro.pct)}%</span>
-          </div>
-        </>
+        </div>
       )}
 
       {esEmergencia && objetivo != null && (

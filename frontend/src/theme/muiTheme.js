@@ -15,8 +15,14 @@ import { PALETA } from './colores.js';
 export function getTheme(modo) {
   const p = PALETA[modo];
 
-  // MUI trae 25 niveles de elevación; el diseño no usa ninguno.
+  // MUI trae 25 niveles de elevación con sombras difusas de Material. Este
+  // diseño no usa ninguna: el relieve lo dan los tokens --relieve-* de
+  // index.css (filo de luz arriba + sombra cerrada de 1-2px), que se leen como
+  // placa impresa y no como una tarjeta flotando. Se anulan los 25 y se aplica
+  // el relieve a mano donde corresponde.
   const sinSombras = Array(25).fill('none');
+  const RELIEVE_1 = 'var(--relieve-1)';
+  const RELIEVE_2 = 'var(--relieve-2)';
 
   return createTheme({
     palette: {
@@ -51,11 +57,23 @@ export function getTheme(modo) {
             border: `1px solid ${p.borde}`,
             backgroundImage: 'none',
             borderRadius: 12,
+            boxShadow: RELIEVE_1,
+            // La transición es de sombra, NO de transform: el levantarse lo
+            // hace Motion (alzarCard) y si acá también se moviera algo, serían
+            // dos animaciones peleando por el mismo hover.
+            transition: 'box-shadow .18s ease, border-color .18s ease',
+            '&:hover': { boxShadow: RELIEVE_2 },
           },
         },
       },
       MuiPaper: {
         styleOverrides: { root: { backgroundImage: 'none' } },
+      },
+      // El modal sí está levantado de verdad sobre el resto: relieve alto.
+      MuiDialog: {
+        styleOverrides: {
+          paper: { boxShadow: 'var(--relieve-3)', border: `1px solid ${p.borde}` },
+        },
       },
       MuiButton: {
         disableElevation: true,
@@ -64,13 +82,32 @@ export function getTheme(modo) {
           // Antes eran píldoras de 999px, que es justo el lenguaje "app" que
           // este diseño evita.
           root: { borderRadius: 8 },
+          // Los botones sólidos (el "Registrar" petróleo) llevan filo de luz
+          // arriba: es lo que los hace ver como una tecla y no como un
+          // rectángulo de color pegado.
+          contained: {
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.18), 0 1px 1px var(--tinta-sombra)',
+            '&:hover': {
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,.24), 0 2px 3px -1px var(--tinta-sombra)',
+            },
+          },
+          outlined: { borderColor: 'var(--borde-fuerte)' },
         },
       },
       MuiChip: {
         styleOverrides: { root: { borderRadius: 8, fontWeight: 500 } },
       },
       MuiOutlinedInput: {
-        styleOverrides: { root: { borderRadius: 8 } },
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            backgroundColor: 'var(--panel-2)',
+            // Relieve HACIA ADENTRO: el campo se lee troquelado en el papel,
+            // que es la contraparte de las tarjetas (que sobresalen). Es la
+            // pista de que ahí se escribe.
+            boxShadow: 'var(--relieve-hundido)',
+          },
+        },
       },
       // MuiFormHelperText hereda typography.caption, que acá es el antetítulo
       // (11px, MAYÚSCULAS, tracking .14em). Un texto de ayuda de formulario no
