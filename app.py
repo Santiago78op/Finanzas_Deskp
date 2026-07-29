@@ -818,18 +818,7 @@ def _capacidad_de_ahorro(conn):
     pagos a tarjeta descontaría dos veces la misma compra. Los préstamos y las
     Visa Cuotas sí van aparte: sus pagos no viven en `gastos`.
     """
-    ingreso = 0.0
-    for r in conn.execute(
-        "SELECT monto, frecuencia, mes_2 FROM ingresos_recurrentes WHERE activo = 1"
-    ):
-        if r["frecuencia"] == "Quincenal":
-            factor = 2
-        elif r["frecuencia"] == "Anual":
-            factor = (2 if r["mes_2"] else 1) / 12
-        else:
-            factor = 1
-        ingreso += r["monto"] * factor
-
+    ingreso = db.ingreso_mensual_recurrente(conn)
     gasto = db.gasto_mensual_promedio(conn)
     meses_historial = conn.execute(
         """SELECT COUNT(*) AS n FROM (
@@ -1644,25 +1633,10 @@ def dashboard(anio: Optional[int] = None, mes: Optional[int] = None):
         pago_mensual_visacuotas = round(
             sum(v["cuota_mensual"] for v in visacuotas if v["cuotas_restantes"] > 0), 2)
 
-        # Ingreso mensual de referencia = ingresos recurrentes activos,
-        # normalizado a mensual. El monto guardado es SIEMPRE por pago:
-        #   Quincenal -> dos pagos al mes            -> x2
-        #   Anual     -> uno o dos pagos AL AÑO      -> /12 (prorrateado)
-        #   Mensual   -> tal cual
-        # Lo anual prorrateado importa: un Bono 14 de Q8,000 contado como
-        # mensual inflaba esta referencia en Q8,000 y hacía que el porcentaje
-        # de endeudamiento se viera sano cuando no lo está.
-        ingreso_mensual_ref = 0.0
-        for r in conn.execute(
-            "SELECT monto, frecuencia, mes_2 FROM ingresos_recurrentes WHERE activo = 1"
-        ):
-            if r["frecuencia"] == "Quincenal":
-                factor = 2
-            elif r["frecuencia"] == "Anual":
-                factor = (2 if r["mes_2"] else 1) / 12
-            else:
-                factor = 1
-            ingreso_mensual_ref += r["monto"] * factor
+        # Ingreso mensual de referencia: la regla de normalización vive en
+        # db.ingreso_mensual_recurrente (estaba copiada acá y en la capacidad
+        # de ahorro).
+        ingreso_mensual_ref = db.ingreso_mensual_recurrente(conn)
 
         endeudamiento = {
             "tarjetas": datos["deuda_total"],
@@ -1818,58 +1792,65 @@ def borrar_recurrente(rec_id: int):
         conn.close()
 
 
-@app.get("/api/recurrentes/pendientes")
-def recurrentes_pendientes():
+def _pendientes(sql_recurrentes, tabla_confirmaciones):
     """
-    Ingresos recurrentes cuyo día ya pasó este mes y que aún no fueron
-    confirmados NI omitidos. La confirmación se registra aparte de la tabla
-    de ingresos: borrar el ingreso generado no vuelve a activar el aviso.
+    Motor único de "pendientes", compartido por ingresos y gastos recurrentes.
+
+    Devuelve las ocurrencias cuyo día ya pasó este mes y que todavía no fueron
+    confirmadas ni omitidas. La confirmación se guarda en una tabla aparte de
+    ingresos/gastos: borrar el movimiento generado NO vuelve a activar el aviso.
+
+    Antes esto estaba escrito dos veces, con ~40 líneas idénticas cada una. No
+    era solo repetición: al agregar la frecuencia Anual hubo que elegir a mano
+    cuál de las dos copias editar, y la otra quedó sin soportarla. Con un solo
+    motor, la próxima frecuencia que se agregue vale para las dos.
+
+    Lo único que cambia entre los dos casos es el SELECT (los JOIN de cada
+    tabla) y en qué tabla viven las confirmaciones — por eso son los dos
+    parámetros. El calendario y las etiquetas salen de db.ocurrencias_del_mes y
+    db.etiqueta_ocurrencia.
+
+    NOTA: el motor ya soporta 'Anual', pero `gastos_recurrentes` todavía no
+    tiene las columnas mes_1/mes_2 ni ese valor en su CHECK, así que en la
+    práctica sus filas solo pueden ser Mensual o Quincenal. Habilitarlo es una
+    migración más el cambio del formulario.
     """
     hoy = date.today()
     ym = hoy.strftime("%Y-%m")
     conn = db.get_conn()
     try:
         pendientes = []
-        for r in conn.execute(
-            """SELECT r.*, c.nombre AS categoria FROM ingresos_recurrentes r
-               JOIN categorias c ON c.id = r.categoria_id WHERE r.activo = 1"""
-        ).fetchall():
-            # Ocurrencias que caen ESTE mes: una (Mensual), dos (Quincenal), o
-            # las que coincidan con mes_1/mes_2 (Anual — Bono 14, aguinaldo).
-            # Un anual solo aparece en su mes; el resto del año no existe.
-            if r["frecuencia"] == "Anual":
-                ocurrencias = []
-                if r["mes_1"] == hoy.month:
-                    ocurrencias.append((1, r["dia_mes"]))
-                if r["mes_2"] == hoy.month:
-                    ocurrencias.append((2, r["dia_mes_2"] or r["dia_mes"]))
-            else:
-                ocurrencias = [(1, r["dia_mes"])]
-                if r["frecuencia"] == "Quincenal" and r["dia_mes_2"]:
-                    ocurrencias.append((2, r["dia_mes_2"]))
-            for quincena, dia in ocurrencias:
+        for r in conn.execute(sql_recurrentes).fetchall():
+            for indice, dia in db.ocurrencias_del_mes(r, hoy.month):
                 fecha_este_mes = clamp_dia(hoy.year, hoy.month, dia)
                 if fecha_este_mes > hoy:
                     continue  # todavía no toca este mes
                 ya = conn.execute(
-                    "SELECT 1 FROM recurrentes_confirmaciones "
+                    f"SELECT 1 FROM {tabla_confirmaciones} "
                     "WHERE recurrente_id = ? AND anio_mes = ? AND quincena = ?",
-                    (r["id"], ym, quincena),
+                    (r["id"], ym, indice),
                 ).fetchone()
                 if not ya:
-                    if r["frecuencia"] == "Quincenal":
-                        etiqueta = f'{r["descripcion"]} (quincena {quincena})'
-                    elif r["frecuencia"] == "Anual" and r["mes_2"]:
-                        # Aguinaldo: "pago 1 de 2" (diciembre) y "pago 2 de 2" (enero)
-                        etiqueta = f'{r["descripcion"]} (pago {quincena} de 2)'
-                    else:
-                        etiqueta = r["descripcion"]
-                    pendientes.append({**dict(r), "quincena": quincena, "etiqueta": etiqueta,
-                                       "fecha_sugerida": fecha_este_mes.isoformat(),
-                                       "mes_nombre": MESES_ES[hoy.month]})
+                    pendientes.append({
+                        **dict(r),
+                        "quincena": indice,
+                        "etiqueta": db.etiqueta_ocurrencia(r, indice),
+                        "fecha_sugerida": fecha_este_mes.isoformat(),
+                        "mes_nombre": MESES_ES[hoy.month],
+                    })
         return pendientes
     finally:
         conn.close()
+
+
+@app.get("/api/recurrentes/pendientes")
+def recurrentes_pendientes():
+    """Ingresos recurrentes (salario, Bono 14, aguinaldo) pendientes de confirmar."""
+    return _pendientes(
+        """SELECT r.*, c.nombre AS categoria FROM ingresos_recurrentes r
+           JOIN categorias c ON c.id = r.categoria_id WHERE r.activo = 1""",
+        "recurrentes_confirmaciones",
+    )
 
 
 def _marcar_confirmado(conn, rec_id, ym, quincena):
@@ -2036,39 +2017,14 @@ def borrar_gasto_recurrente(rec_id: int):
 
 @app.get("/api/gastos_recurrentes/pendientes")
 def gastos_recurrentes_pendientes():
-    """Pagos frecuentes cuyo día ya pasó este mes y aún no fueron confirmados ni omitidos."""
-    hoy = date.today()
-    ym = hoy.strftime("%Y-%m")
-    conn = db.get_conn()
-    try:
-        pendientes = []
-        for r in conn.execute(
-            """SELECT g.*, c.nombre AS categoria, t.nombre AS tarjeta, cu.nombre AS cuenta
-               FROM gastos_recurrentes g JOIN categorias c ON c.id = g.categoria_id
-               LEFT JOIN tarjetas t ON t.id = g.tarjeta_id
-               LEFT JOIN cuentas cu ON cu.id = g.cuenta_id WHERE g.activo = 1"""
-        ).fetchall():
-            ocurrencias = [(1, r["dia_mes"])]
-            if r["frecuencia"] == "Quincenal" and r["dia_mes_2"]:
-                ocurrencias.append((2, r["dia_mes_2"]))
-            for quincena, dia in ocurrencias:
-                fecha_este_mes = clamp_dia(hoy.year, hoy.month, dia)
-                if fecha_este_mes > hoy:
-                    continue
-                ya = conn.execute(
-                    "SELECT 1 FROM gastos_rec_confirmaciones "
-                    "WHERE recurrente_id = ? AND anio_mes = ? AND quincena = ?",
-                    (r["id"], ym, quincena),
-                ).fetchone()
-                if not ya:
-                    etiqueta = r["descripcion"] + (
-                        f" (quincena {quincena})" if r["frecuencia"] == "Quincenal" else "")
-                    pendientes.append({**dict(r), "quincena": quincena, "etiqueta": etiqueta,
-                                       "fecha_sugerida": fecha_este_mes.isoformat(),
-                                       "mes_nombre": MESES_ES[hoy.month]})
-        return pendientes
-    finally:
-        conn.close()
+    """Pagos frecuentes (renta, internet, streaming) pendientes de confirmar."""
+    return _pendientes(
+        """SELECT g.*, c.nombre AS categoria, t.nombre AS tarjeta, cu.nombre AS cuenta
+           FROM gastos_recurrentes g JOIN categorias c ON c.id = g.categoria_id
+           LEFT JOIN tarjetas t ON t.id = g.tarjeta_id
+           LEFT JOIN cuentas cu ON cu.id = g.cuenta_id WHERE g.activo = 1""",
+        "gastos_rec_confirmaciones",
+    )
 
 
 def _marcar_gasto_confirmado(conn, rec_id, ym, quincena):

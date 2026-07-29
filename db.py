@@ -546,6 +546,95 @@ def saldo_cuenta(conn, cuenta_id):
     return round(inicial + entradas - salidas - pagos, 2)
 
 
+def _col(fila, nombre):
+    """
+    Lee una columna que puede no existir en la fila.
+
+    `sqlite3.Row` levanta IndexError si se pide una columna ausente, y las dos
+    tablas de recurrentes NO tienen las mismas: `ingresos_recurrentes` tiene
+    mes_1/mes_2 (para los anuales) y `gastos_recurrentes` no. Esto es lo que
+    permite que un mismo motor sirva a las dos.
+    """
+    return fila[nombre] if nombre in fila.keys() else None
+
+
+def ocurrencias_del_mes(fila, mes):
+    """
+    Qué pagos de un recurrente caen en `mes`, como [(indice, dia), ...].
+
+    El índice es 1 o 2 y es lo que se guarda en las tablas de confirmaciones
+    (la columna se llama `quincena` por razones históricas, pero para un anual
+    significa "primer o segundo pago del año").
+
+        Mensual   -> [(1, dia_mes)]                    todos los meses
+        Quincenal -> [(1, dia_mes), (2, dia_mes_2)]    todos los meses
+        Anual     -> solo si mes coincide con mes_1 o mes_2
+
+    Función PURA (no toca la base) porque así se puede probar el calendario sin
+    montar filas reales, que es la parte donde de verdad se cometen errores.
+    """
+    if fila["frecuencia"] == "Anual":
+        ocurrencias = []
+        if _col(fila, "mes_1") == mes:
+            ocurrencias.append((1, fila["dia_mes"]))
+        if _col(fila, "mes_2") == mes:
+            ocurrencias.append((2, _col(fila, "dia_mes_2") or fila["dia_mes"]))
+        return ocurrencias
+
+    ocurrencias = [(1, fila["dia_mes"])]
+    if fila["frecuencia"] == "Quincenal" and _col(fila, "dia_mes_2"):
+        ocurrencias.append((2, fila["dia_mes_2"]))
+    return ocurrencias
+
+
+def etiqueta_ocurrencia(fila, indice):
+    """
+    Cómo se nombra una ocurrencia en el aviso de pendientes.
+
+    Un mensual es solo su descripción; los que tienen dos pagos necesitan decir
+    cuál de los dos es, o los dos avisos del mes se ven idénticos.
+    """
+    if fila["frecuencia"] == "Quincenal":
+        return f'{fila["descripcion"]} (quincena {indice})'
+    if fila["frecuencia"] == "Anual" and _col(fila, "mes_2"):
+        # Aguinaldo: "pago 1 de 2" (diciembre) y "pago 2 de 2" (enero)
+        return f'{fila["descripcion"]} (pago {indice} de 2)'
+    return fila["descripcion"]
+
+
+def ingreso_mensual_recurrente(conn):
+    """
+    Suma de los ingresos recurrentes activos, normalizada a UN mes.
+
+    El monto guardado es siempre POR PAGO, así que hay que multiplicarlo por
+    cuántos pagos caen en un mes:
+        Quincenal -> dos pagos al mes        -> x2
+        Anual     -> uno o dos pagos AL AÑO  -> /12 (prorrateado)
+        Mensual   -> tal cual
+    Lo anual prorrateado importa: un Bono 14 de Q8,000 contado como mensual
+    inflaba la referencia en Q8,000 y hacía que el % de endeudamiento se viera
+    sano cuando no lo está.
+
+    Vive acá y no en app.py porque es una REGLA DE NEGOCIO que necesitan dos
+    lugares distintos (la referencia de endeudamiento del dashboard y la
+    capacidad de ahorro). Estuvo copiada en los dos y era exactamente el tipo
+    de duplicado que se desincroniza: al cambiar cómo se prorratea el Bono 14
+    se corrige una copia y la otra sigue mintiendo.
+    """
+    total = 0.0
+    for r in conn.execute(
+        "SELECT monto, frecuencia, mes_2 FROM ingresos_recurrentes WHERE activo = 1"
+    ):
+        if r["frecuencia"] == "Quincenal":
+            factor = 2
+        elif r["frecuencia"] == "Anual":
+            factor = (2 if r["mes_2"] else 1) / 12
+        else:
+            factor = 1
+        total += r["monto"] * factor
+    return round(total, 2)
+
+
 def saldo_ahorro(conn, ahorro_id):
     """Cuánto hay apartado en un sobre = suma de sus aportes (los retiros son negativos)."""
     total = conn.execute(
