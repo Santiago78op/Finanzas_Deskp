@@ -23,7 +23,12 @@ CATEGORIAS_GASTO = [
     "Alimentación", "Vivienda", "Transporte", "Servicios", "Salud",
     "Educación", "Entretenimiento", "Ropa", "Ahorro/Inversión", "Deudas", "Otros",
 ]
-CATEGORIAS_INGRESO = ["Salario", "Negocio", "Freelance", "Intereses", "Remesas", "Otros"]
+# Bono 14 y Aguinaldo van como categorías propias y no dentro de "Salario":
+# son las dos prestaciones anuales obligatorias en Guatemala (Decretos 42-92 y
+# 76-78) y meterlas en Salario distorsiona el análisis — julio y diciembre
+# aparecerían como meses de ingreso el doble de alto sin explicación visible.
+CATEGORIAS_INGRESO = ["Salario", "Bono 14", "Aguinaldo", "Negocio", "Freelance",
+                      "Intereses", "Remesas", "Otros"]
 
 # Métodos de pago fijos (además de las tarjetas del usuario)
 METODOS_FIJOS = ["Efectivo", "Débito", "Transferencia"]
@@ -43,6 +48,7 @@ def init_db():
     cur = conn.cursor()
 
     _migrar_visacuotas_tarjeta_obligatoria(cur)
+    _migrar_recurrentes_anual(conn)
 
     cur.executescript("""
     -- Categorías de ingreso y gasto (se pueden desactivar, no borrar)
@@ -127,8 +133,15 @@ def init_db():
         categoria_id INTEGER NOT NULL REFERENCES categorias(id),
         monto        REAL NOT NULL CHECK (monto > 0),
         dia_mes      INTEGER NOT NULL CHECK (dia_mes BETWEEN 1 AND 31),
-        frecuencia   TEXT NOT NULL DEFAULT 'Mensual' CHECK (frecuencia IN ('Mensual', 'Quincenal')),
+        frecuencia   TEXT NOT NULL DEFAULT 'Mensual'
+                     CHECK (frecuencia IN ('Mensual', 'Quincenal', 'Anual')),
         dia_mes_2    INTEGER CHECK (dia_mes_2 BETWEEN 1 AND 31),
+        -- Solo para frecuencia 'Anual': en qué mes cae cada pago. Es lo que
+        -- permite representar el Bono 14 (un pago en julio) y el aguinaldo
+        -- (mitad en diciembre, mitad en enero). En Mensual/Quincenal van NULL:
+        -- ahí el pago ocurre todos los meses y el mes no discrimina nada.
+        mes_1        INTEGER CHECK (mes_1 BETWEEN 1 AND 12),
+        mes_2        INTEGER CHECK (mes_2 BETWEEN 1 AND 12),
         activo       INTEGER NOT NULL DEFAULT 1
     );
 
@@ -284,6 +297,80 @@ def _asegurar_columna(cur, tabla, columna, ddl):
     columnas = [c[1] for c in cur.execute(f"PRAGMA table_info({tabla})").fetchall()]
     if columna not in columnas:
         cur.execute(f"ALTER TABLE {tabla} ADD COLUMN {ddl}")
+
+
+_DDL_RECURRENTES = """
+    CREATE TABLE {nombre} (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        descripcion  TEXT NOT NULL,
+        categoria_id INTEGER NOT NULL REFERENCES categorias(id),
+        monto        REAL NOT NULL CHECK (monto > 0),
+        dia_mes      INTEGER NOT NULL CHECK (dia_mes BETWEEN 1 AND 31),
+        frecuencia   TEXT NOT NULL DEFAULT 'Mensual'
+                     CHECK (frecuencia IN ('Mensual', 'Quincenal', 'Anual')),
+        dia_mes_2    INTEGER CHECK (dia_mes_2 BETWEEN 1 AND 31),
+        mes_1        INTEGER CHECK (mes_1 BETWEEN 1 AND 12),
+        mes_2        INTEGER CHECK (mes_2 BETWEEN 1 AND 12),
+        activo       INTEGER NOT NULL DEFAULT 1
+    )
+"""
+
+
+def _migrar_recurrentes_anual(conn):
+    """
+    `frecuencia` admite ahora 'Anual' (Bono 14, aguinaldo) además de
+    'Mensual'/'Quincenal'.
+
+    Ese CHECK vive dentro del CREATE TABLE y SQLite no permite modificar una
+    restricción de una tabla existente: en una base que ya venía de antes, el
+    CHECK viejo sigue vigente y RECHAZA cualquier fila 'Anual' — la app
+    aceptaría el dato en el formulario y explotaría al guardar. Hay que
+    recrear la tabla y copiar las filas.
+
+    OJO CON EL ORDEN — la primera versión de esta migración hacía
+    `ALTER TABLE ingresos_recurrentes RENAME TO _viejo`, y eso rompió la base:
+    desde SQLite 3.25 un RENAME **reescribe las referencias que otras tablas
+    le hacen**, así que la FK de `recurrentes_confirmaciones` pasó a apuntar a
+    `_viejo`... que después se borraba. Resultado: FK colgada y la tabla de
+    confirmaciones inutilizable ("no such table: main._recurrentes_viejo").
+
+    Por eso acá se usa el procedimiento que recomienda la documentación de
+    SQLite: crear la tabla nueva con un nombre TEMPORAL, copiar, borrar la
+    vieja y recién entonces renombrar la nueva al nombre definitivo. Ese
+    último RENAME solo reescribiría referencias al nombre temporal (no hay
+    ninguna), y la FK de confirmaciones —que apunta a `ingresos_recurrentes`—
+    queda correcta.
+    """
+    cur = conn.cursor()
+    fila = cur.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='ingresos_recurrentes'"
+    ).fetchone()
+    if not fila:
+        return  # base nueva: el CREATE TABLE IF NOT EXISTS de init_db la hace bien
+    if "'Anual'" in (fila[0] or ""):
+        return  # ya migrada
+
+    # Las FK se apagan durante el trasvase: `ingresos_recurrentes` es padre de
+    # `recurrentes_confirmaciones` y con las FK activas el DROP falla si hay
+    # confirmaciones guardadas. El pragma no funciona dentro de una
+    # transacción, de ahí el commit previo.
+    conn.commit()
+    cur.execute("PRAGMA foreign_keys=OFF")
+    try:
+        cur.execute(_DDL_RECURRENTES.format(nombre="_recurrentes_nuevo"))
+        # Columnas explícitas: la tabla vieja no tiene mes_1/mes_2 y un
+        # INSERT..SELECT * fallaría por cantidad de columnas.
+        cur.execute("""
+            INSERT INTO _recurrentes_nuevo
+                (id, descripcion, categoria_id, monto, dia_mes, frecuencia, dia_mes_2, activo)
+            SELECT id, descripcion, categoria_id, monto, dia_mes, frecuencia, dia_mes_2, activo
+            FROM ingresos_recurrentes
+        """)
+        cur.execute("DROP TABLE ingresos_recurrentes")
+        cur.execute("ALTER TABLE _recurrentes_nuevo RENAME TO ingresos_recurrentes")
+        conn.commit()
+    finally:
+        cur.execute("PRAGMA foreign_keys=ON")
 
 
 def _migrar_visacuotas_tarjeta_obligatoria(cur):

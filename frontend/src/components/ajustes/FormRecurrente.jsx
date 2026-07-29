@@ -14,7 +14,46 @@ import { useCatalog } from '../../context/CatalogContext.jsx';
 import { fmtQ } from '../../utils.js';
 import { filaAcciones, filaItem } from './ajustes.styles.js';
 
-const VACIO = { descripcion: '', categoria_id: '', frecuencia: 'Mensual', monto: '', dia_mes: '', dia_mes_2: '', activo: true };
+const VACIO = { descripcion: '', categoria_id: '', frecuencia: 'Mensual', monto: '', dia_mes: '', dia_mes_2: '', mes_1: '', mes_2: '', activo: true };
+
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+// Las dos prestaciones anuales obligatorias en Guatemala. Se ofrecen como
+// atajos porque sus fechas las fija la ley y no tiene sentido que el usuario
+// las recuerde:
+//   · Bono 14 (Decreto 42-92): un pago en la primera quincena de JULIO.
+//   · Aguinaldo (Decreto 76-78): 50% en la primera quincena de DICIEMBRE y
+//     50% en la segunda quincena de ENERO.
+// El monto queda vacío a propósito: depende del sueldo y del tiempo trabajado
+// en el año de servicio, y no se adivina.
+const PRESETS = [
+  {
+    clave: 'bono14', boton: 'Bono 14',
+    ayuda: 'Un pago en julio. El monto es un sueldo completo si trabajaste el año de servicio entero (1 de julio a 30 de junio); si no, la parte proporcional.',
+    valores: { descripcion: 'Bono 14', frecuencia: 'Anual', dia_mes: '15', mes_1: '7', mes_2: '', dia_mes_2: '' },
+    categoria: 'Bono 14',
+  },
+  {
+    clave: 'aguinaldo', boton: 'Aguinaldo',
+    ayuda: 'Dos pagos: la mitad en diciembre y la mitad en enero. Poné en "Monto" lo de CADA pago, o sea la mitad del aguinaldo.',
+    valores: { descripcion: 'Aguinaldo', frecuencia: 'Anual', dia_mes: '15', mes_1: '12', dia_mes_2: '20', mes_2: '1' },
+    categoria: 'Aguinaldo',
+  },
+];
+
+// Frase legible de cuándo y cuánto cobra cada recurrente.
+function describir(r) {
+  if (r.frecuencia === 'Quincenal') {
+    return `${fmtQ(r.monto)} por quincena, los días ${r.dia_mes} y ${r.dia_mes_2}`;
+  }
+  if (r.frecuencia === 'Anual') {
+    const primero = `${MESES[r.mes_1 - 1]} ${r.dia_mes}`;
+    if (!r.mes_2) return `${fmtQ(r.monto)} una vez al año, el ${primero}`;
+    return `${fmtQ(r.monto)} por pago, el ${primero} y el ${MESES[r.mes_2 - 1]} ${r.dia_mes_2 || r.dia_mes}`;
+  }
+  return `${fmtQ(r.monto)} el día ${r.dia_mes}`;
+}
 
 export default function FormRecurrente({ onCambio }) {
   const { catIngreso } = useCatalog();
@@ -32,11 +71,29 @@ export default function FormRecurrente({ onCambio }) {
       descripcion: editando.descripcion, categoria_id: String(editando.categoria_id),
       frecuencia: editando.frecuencia || 'Mensual', monto: String(editando.monto),
       dia_mes: String(editando.dia_mes), dia_mes_2: editando.dia_mes_2 ? String(editando.dia_mes_2) : '',
+      mes_1: editando.mes_1 ? String(editando.mes_1) : '',
+      mes_2: editando.mes_2 ? String(editando.mes_2) : '',
       activo: !!editando.activo,
     } : { ...VACIO, categoria_id: catIngreso[0] ? String(catIngreso[0].id) : '' });
   }, [editando, catIngreso]);
 
   const esQuincenal = form.frecuencia === 'Quincenal';
+  const esAnual = form.frecuencia === 'Anual';
+  const dosPagosAnuales = esAnual && !!form.mes_2;
+
+  // Aplica un preset (Bono 14 / Aguinaldo) sobre el formulario vacío y
+  // selecciona su categoría homónima si existe.
+  const aplicarPreset = (preset) => {
+    const cat = catIngreso.find(c => c.nombre === preset.categoria);
+    setEditando(null);
+    setForm(f => ({
+      ...VACIO,
+      ...preset.valores,
+      categoria_id: cat ? String(cat.id) : f.categoria_id,
+    }));
+  };
+
+  const ayudaPreset = PRESETS.find(p => p.valores.descripcion === form.descripcion)?.ayuda;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -44,7 +101,11 @@ export default function FormRecurrente({ onCambio }) {
       descripcion: form.descripcion, categoria_id: parseInt(form.categoria_id),
       monto: parseFloat(form.monto), dia_mes: parseInt(form.dia_mes),
       frecuencia: form.frecuencia,
-      dia_mes_2: esQuincenal ? parseInt(form.dia_mes_2) : null,
+      // dia_mes_2 significa cosas distintas según la frecuencia: el segundo
+      // día del mes en Quincenal, el día del segundo pago en Anual.
+      dia_mes_2: (esQuincenal || dosPagosAnuales) ? parseInt(form.dia_mes_2) : null,
+      mes_1: esAnual ? parseInt(form.mes_1) : null,
+      mes_2: dosPagosAnuales ? parseInt(form.mes_2) : null,
       activo: form.activo,
     };
     try {
@@ -74,6 +135,21 @@ export default function FormRecurrente({ onCambio }) {
   return (
     <Card component="section" aria-labelledby="sec-ingresos-recurrentes" className="p-5 flex flex-col gap-4">
       <Typography id="sec-ingresos-recurrentes" variant="h6">{editando ? `Editar: ${editando.descripcion}` : 'Ingresos recurrentes (salario)'}</Typography>
+
+      {!editando && (
+        <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Typography variant="body2" className="text-[var(--suave)]">Atajos:</Typography>
+          {PRESETS.map(p => (
+            <Button key={p.clave} size="small" variant="outlined" onClick={() => aplicarPreset(p)}>
+              {p.boton}
+            </Button>
+          ))}
+        </Stack>
+      )}
+      {ayudaPreset && (
+        <Typography variant="body2" className="text-[var(--suave)] medida">{ayudaPreset}</Typography>
+      )}
+
       <form className="grid gap-3 sm:grid-cols-2" autoComplete="off" onSubmit={submit}>
         <TextField label="Descripción" placeholder="ej. Salario" required
           value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} />
@@ -85,16 +161,39 @@ export default function FormRecurrente({ onCambio }) {
           onChange={e => setForm(f => ({ ...f, frecuencia: e.target.value }))}>
           <MenuItem value="Mensual">Mensual (una vez al mes)</MenuItem>
           <MenuItem value="Quincenal">Quincenal (dos veces al mes)</MenuItem>
+          <MenuItem value="Anual">Anual (Bono 14, aguinaldo)</MenuItem>
         </TextField>
-        <TextField label={esQuincenal ? 'Monto por quincena (Q)' : 'Monto (Q)'} type="number"
-          inputProps={{ step: 0.01, min: 0.01 }} required
+        <TextField
+          label={esQuincenal ? 'Monto por quincena (Q)' : dosPagosAnuales ? 'Monto por pago (Q)' : 'Monto (Q)'}
+          type="number" inputProps={{ step: 0.01, min: 0.01 }} required
+          helperText={dosPagosAnuales ? 'Lo de cada pago, no el total del año' : undefined}
           value={form.monto} onChange={e => setForm(f => ({ ...f, monto: e.target.value }))} />
-        <TextField label="Día de pago" type="number" inputProps={{ min: 1, max: 31 }} required
+
+        {esAnual && (
+          <TextField select label="Mes del pago" required value={form.mes_1}
+            onChange={e => setForm(f => ({ ...f, mes_1: e.target.value }))}>
+            {MESES.map((m, i) => <MenuItem key={m} value={String(i + 1)}>{m}</MenuItem>)}
+          </TextField>
+        )}
+        <TextField label={esAnual ? 'Día del pago' : 'Día de pago'} type="number"
+          inputProps={{ min: 1, max: 31 }} required
           value={form.dia_mes} onChange={e => setForm(f => ({ ...f, dia_mes: e.target.value }))} />
-        {esQuincenal && (
+
+        {esAnual && (
+          <TextField select label="Segundo pago (opcional)" value={form.mes_2}
+            helperText="El aguinaldo se paga mitad en diciembre y mitad en enero"
+            onChange={e => setForm(f => ({ ...f, mes_2: e.target.value }))}>
+            <MenuItem value="">Sin segundo pago</MenuItem>
+            {MESES.map((m, i) => <MenuItem key={m} value={String(i + 1)}>{m}</MenuItem>)}
+          </TextField>
+        )}
+        {(esQuincenal || dosPagosAnuales) && (
           <TextField
-            label="Segundo día de pago" type="number" inputProps={{ min: 1, max: 31 }} required={esQuincenal}
-            title="El primer día de pago ya lo pusiste arriba — acá va la segunda fecha del mes (ej. si cobrás los 15 y los 30, acá va 30)."
+            label={esQuincenal ? 'Segundo día de pago' : 'Día del segundo pago'}
+            type="number" inputProps={{ min: 1, max: 31 }} required
+            title={esQuincenal
+              ? 'El primer día de pago ya lo pusiste arriba — acá va la segunda fecha del mes (ej. si cobrás los 15 y los 30, acá va 30).'
+              : 'Día del mes en que cae el segundo pago anual.'}
             value={form.dia_mes_2} onChange={e => setForm(f => ({ ...f, dia_mes_2: e.target.value }))}
           />
         )}
@@ -113,10 +212,7 @@ export default function FormRecurrente({ onCambio }) {
         {recs.map(r => (
           <Stack direction="row" sx={filaItem} key={r.id} className="border-t border-[var(--borde)] pt-2 pb-2">
             <span className={r.activo ? '' : 'opacity-50'}>
-              <b>{r.descripcion}</b> ({r.categoria}) —{' '}
-              {r.frecuencia === 'Quincenal'
-                ? `${fmtQ(r.monto)} por quincena, los días ${r.dia_mes} y ${r.dia_mes_2}`
-                : `${fmtQ(r.monto)} el día ${r.dia_mes}`}
+              <b>{r.descripcion}</b> ({r.categoria}) — {describir(r)}
             </span>
             <Stack direction="row" sx={filaAcciones}>
               <Button size="small" variant="outlined" onClick={() => setEditando(r)}>Editar</Button>

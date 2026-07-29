@@ -207,6 +207,26 @@ Al registrar un gasto con **Débito o Transferencia** podés indicar de qué cue
 salió (opcional); igual en pagos de tarjeta e ingresos. Así el dashboard sabe
 cuánto dinero te queda en cada cuenta.
 
+### Bono 14 y aguinaldo
+
+Las dos prestaciones anuales de Guatemala se configuran como ingresos
+recurrentes de frecuencia **Anual**, en *Ajustes → Ingresos recurrentes*. Hay
+dos atajos que llenan las fechas por vos:
+
+| | Cuándo | Cómo queda |
+|---|---|---|
+| **Bono 14** (Decreto 42-92) | Primera quincena de julio | Un pago, mes = julio |
+| **Aguinaldo** (Decreto 76-78) | 50% en diciembre, 50% en enero | Dos pagos, meses = diciembre y enero |
+
+El **monto es por pago**, no el total del año: en el aguinaldo poné la mitad,
+que es lo que cobrás cada vez. Los montos no se calculan solos porque dependen
+del tiempo que llevés trabajando en el año de servicio.
+
+Van en sus propias categorías (no dentro de "Salario") para que julio y
+diciembre no aparezcan en el análisis como meses de ingreso el doble de alto
+sin explicación. Y en el cálculo de endeudamiento se prorratean entre 12: un
+Bono 14 no es plata que entre todos los meses.
+
 ### Ingresos recurrentes y pagos frecuentes
 
 En **Ajustes** podés configurar:

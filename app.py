@@ -216,10 +216,14 @@ class PagoVisacuotaIn(BaseModel):
 class RecurrenteIn(BaseModel):
     descripcion: str
     categoria_id: int
-    monto: float               # si es Quincenal, es el monto POR quincena
+    monto: float               # POR PAGO, no anual: si son dos pagos, es cada uno
     dia_mes: int
-    frecuencia: str = "Mensual"      # 'Mensual' | 'Quincenal'
-    dia_mes_2: Optional[int] = None  # segundo día del mes (solo Quincenal)
+    frecuencia: str = "Mensual"      # 'Mensual' | 'Quincenal' | 'Anual'
+    dia_mes_2: Optional[int] = None  # segundo día (Quincenal) o día del 2º pago (Anual)
+    # Solo 'Anual': en qué mes cae cada pago. Bono 14 -> mes_1=7; aguinaldo
+    # -> mes_1=12 y mes_2=1 (la ley lo parte 50/50 entre diciembre y enero).
+    mes_1: Optional[int] = None
+    mes_2: Optional[int] = None
     activo: bool = True
 
 class ConfirmarIn(BaseModel):
@@ -1137,10 +1141,17 @@ def dashboard(anio: Optional[int] = None, mes: Optional[int] = None):
         disponible_salario = round(datos["ingresos"] - datos["gastos"] - pagos_mes, 2)
 
         # Días hasta el próximo ingreso recurrente (el día de cobro más cercano,
-        # contando ambos días de los quincenales)
+        # contando ambos días de los quincenales).
+        #
+        # Los anuales quedan FUERA: proxima_fecha() razona en día-del-mes, así
+        # que un Bono 14 del día 15 se leería como "cobrás el 15 del mes que
+        # viene" cuando en realidad falta casi un año. Y aunque se calculara
+        # bien, un bono anual nunca es "el próximo sueldo" — el mensual o
+        # quincenal siempre cae antes.
         dias_salario = None
         for rec in conn.execute(
-            "SELECT dia_mes, frecuencia, dia_mes_2 FROM ingresos_recurrentes WHERE activo = 1"
+            "SELECT dia_mes, frecuencia, dia_mes_2 FROM ingresos_recurrentes "
+            "WHERE activo = 1 AND frecuencia != 'Anual'"
         ).fetchall():
             dias = [rec["dia_mes"]]
             if rec["frecuencia"] == "Quincenal" and rec["dia_mes_2"]:
@@ -1262,11 +1273,25 @@ def dashboard(anio: Optional[int] = None, mes: Optional[int] = None):
         pago_mensual_visacuotas = round(
             sum(v["cuota_mensual"] for v in visacuotas if v["cuotas_restantes"] > 0), 2)
 
-        # Ingreso mensual de referencia = salario(s) recurrente(s) activos,
-        # normalizado a mensual (Quincenal es el monto POR quincena → x2).
+        # Ingreso mensual de referencia = ingresos recurrentes activos,
+        # normalizado a mensual. El monto guardado es SIEMPRE por pago:
+        #   Quincenal -> dos pagos al mes            -> x2
+        #   Anual     -> uno o dos pagos AL AÑO      -> /12 (prorrateado)
+        #   Mensual   -> tal cual
+        # Lo anual prorrateado importa: un Bono 14 de Q8,000 contado como
+        # mensual inflaba esta referencia en Q8,000 y hacía que el porcentaje
+        # de endeudamiento se viera sano cuando no lo está.
         ingreso_mensual_ref = 0.0
-        for r in conn.execute("SELECT monto, frecuencia FROM ingresos_recurrentes WHERE activo = 1"):
-            ingreso_mensual_ref += r["monto"] * (2 if r["frecuencia"] == "Quincenal" else 1)
+        for r in conn.execute(
+            "SELECT monto, frecuencia, mes_2 FROM ingresos_recurrentes WHERE activo = 1"
+        ):
+            if r["frecuencia"] == "Quincenal":
+                factor = 2
+            elif r["frecuencia"] == "Anual":
+                factor = (2 if r["mes_2"] else 1) / 12
+            else:
+                factor = 1
+            ingreso_mensual_ref += r["monto"] * factor
 
         endeudamiento = {
             "tarjetas": datos["deuda_total"],
@@ -1320,13 +1345,40 @@ def listar_recurrentes():
 def _validar_recurrente_in(body: RecurrenteIn):
     if not (1 <= body.dia_mes <= 31):
         raise HTTPException(400, "El día del mes debe estar entre 1 y 31")
-    if body.frecuencia not in ("Mensual", "Quincenal"):
-        raise HTTPException(400, "La frecuencia debe ser 'Mensual' o 'Quincenal'")
+    if body.frecuencia not in ("Mensual", "Quincenal", "Anual"):
+        raise HTTPException(400, "La frecuencia debe ser 'Mensual', 'Quincenal' o 'Anual'")
     if body.frecuencia == "Quincenal":
         if not body.dia_mes_2 or not (1 <= body.dia_mes_2 <= 31):
             raise HTTPException(400, "Para frecuencia quincenal indicá el segundo día (1-31)")
         if body.dia_mes_2 == body.dia_mes:
             raise HTTPException(400, "Los dos días de la quincena deben ser distintos")
+    if body.frecuencia == "Anual":
+        if not body.mes_1 or not (1 <= body.mes_1 <= 12):
+            raise HTTPException(400, "Para frecuencia anual indicá el mes del pago (1-12)")
+        if body.mes_2 is not None:
+            if not (1 <= body.mes_2 <= 12):
+                raise HTTPException(400, "El mes del segundo pago debe estar entre 1 y 12")
+            if body.mes_2 == body.mes_1:
+                raise HTTPException(400, "Los dos pagos anuales deben caer en meses distintos")
+
+
+def _campos_anuales(body: RecurrenteIn):
+    """
+    Normaliza los campos que dependen de la frecuencia, para no repetir la
+    misma lógica en el INSERT y en el UPDATE.
+
+    `dia_mes_2` cambia de significado según la frecuencia (segundo día del mes
+    en Quincenal, día del segundo pago en Anual), y en Mensual no aplica. Se
+    guarda NULL en los campos que no correspondan para que la fila no arrastre
+    datos de una frecuencia anterior al editarla.
+    """
+    if body.frecuencia == "Quincenal":
+        return body.dia_mes_2, None, None
+    if body.frecuencia == "Anual":
+        # Sin día propio para el segundo pago se reutiliza el del primero.
+        segundo_dia = body.dia_mes_2 if body.mes_2 else None
+        return (segundo_dia or body.dia_mes) if body.mes_2 else None, body.mes_1, body.mes_2
+    return None, None, None
 
 
 @app.post("/api/recurrentes")
@@ -1335,13 +1387,13 @@ def crear_recurrente(body: RecurrenteIn):
     conn = db.get_conn()
     try:
         validar_categoria(conn, body.categoria_id, "ingreso")
+        dia_2, mes_1, mes_2 = _campos_anuales(body)
         cur = conn.execute(
             "INSERT INTO ingresos_recurrentes "
-            "(descripcion, categoria_id, monto, dia_mes, frecuencia, dia_mes_2, activo) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "(descripcion, categoria_id, monto, dia_mes, frecuencia, dia_mes_2, mes_1, mes_2, activo) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (body.descripcion.strip(), body.categoria_id, validar_monto(body.monto),
-             body.dia_mes, body.frecuencia,
-             body.dia_mes_2 if body.frecuencia == "Quincenal" else None, int(body.activo)),
+             body.dia_mes, body.frecuencia, dia_2, mes_1, mes_2, int(body.activo)),
         )
         conn.commit()
         return {"id": cur.lastrowid}
@@ -1357,13 +1409,12 @@ def editar_recurrente(rec_id: int, body: RecurrenteIn):
         if not conn.execute("SELECT 1 FROM ingresos_recurrentes WHERE id = ?", (rec_id,)).fetchone():
             raise HTTPException(404, "Ingreso recurrente no encontrado")
         validar_categoria(conn, body.categoria_id, "ingreso")
+        dia_2, mes_1, mes_2 = _campos_anuales(body)
         conn.execute(
             "UPDATE ingresos_recurrentes SET descripcion=?, categoria_id=?, monto=?, dia_mes=?, "
-            "frecuencia=?, dia_mes_2=?, activo=? WHERE id = ?",
+            "frecuencia=?, dia_mes_2=?, mes_1=?, mes_2=?, activo=? WHERE id = ?",
             (body.descripcion.strip(), body.categoria_id, validar_monto(body.monto),
-             body.dia_mes, body.frecuencia,
-             body.dia_mes_2 if body.frecuencia == "Quincenal" else None,
-             int(body.activo), rec_id),
+             body.dia_mes, body.frecuencia, dia_2, mes_1, mes_2, int(body.activo), rec_id),
         )
         conn.commit()
         return {"ok": True}
@@ -1406,10 +1457,19 @@ def recurrentes_pendientes():
             """SELECT r.*, c.nombre AS categoria FROM ingresos_recurrentes r
                JOIN categorias c ON c.id = r.categoria_id WHERE r.activo = 1"""
         ).fetchall():
-            # Ocurrencias del mes: una (Mensual) o dos (Quincenal)
-            ocurrencias = [(1, r["dia_mes"])]
-            if r["frecuencia"] == "Quincenal" and r["dia_mes_2"]:
-                ocurrencias.append((2, r["dia_mes_2"]))
+            # Ocurrencias que caen ESTE mes: una (Mensual), dos (Quincenal), o
+            # las que coincidan con mes_1/mes_2 (Anual — Bono 14, aguinaldo).
+            # Un anual solo aparece en su mes; el resto del año no existe.
+            if r["frecuencia"] == "Anual":
+                ocurrencias = []
+                if r["mes_1"] == hoy.month:
+                    ocurrencias.append((1, r["dia_mes"]))
+                if r["mes_2"] == hoy.month:
+                    ocurrencias.append((2, r["dia_mes_2"] or r["dia_mes"]))
+            else:
+                ocurrencias = [(1, r["dia_mes"])]
+                if r["frecuencia"] == "Quincenal" and r["dia_mes_2"]:
+                    ocurrencias.append((2, r["dia_mes_2"]))
             for quincena, dia in ocurrencias:
                 fecha_este_mes = clamp_dia(hoy.year, hoy.month, dia)
                 if fecha_este_mes > hoy:
@@ -1420,8 +1480,13 @@ def recurrentes_pendientes():
                     (r["id"], ym, quincena),
                 ).fetchone()
                 if not ya:
-                    etiqueta = r["descripcion"] + (
-                        f" (quincena {quincena})" if r["frecuencia"] == "Quincenal" else "")
+                    if r["frecuencia"] == "Quincenal":
+                        etiqueta = f'{r["descripcion"]} (quincena {quincena})'
+                    elif r["frecuencia"] == "Anual" and r["mes_2"]:
+                        # Aguinaldo: "pago 1 de 2" (diciembre) y "pago 2 de 2" (enero)
+                        etiqueta = f'{r["descripcion"]} (pago {quincena} de 2)'
+                    else:
+                        etiqueta = r["descripcion"]
                     pendientes.append({**dict(r), "quincena": quincena, "etiqueta": etiqueta,
                                        "fecha_sugerida": fecha_este_mes.isoformat(),
                                        "mes_nombre": MESES_ES[hoy.month]})
@@ -1777,9 +1842,9 @@ def _query_export(conn, tabla):
                            """SELECT p.fecha, t.nombre, p.monto, cu.nombre FROM pagos_tarjetas p
                               JOIN tarjetas t ON t.id = p.tarjeta_id
                               LEFT JOIN cuentas cu ON cu.id = p.cuenta_id ORDER BY p.fecha"""),
-        "ingresos_recurrentes": ("descripcion,categoria,monto,dia_mes,frecuencia,dia_mes_2,activo",
+        "ingresos_recurrentes": ("descripcion,categoria,monto,dia_mes,frecuencia,dia_mes_2,mes_1,mes_2,activo",
                                  """SELECT r.descripcion, c.nombre, r.monto, r.dia_mes,
-                                           r.frecuencia, r.dia_mes_2, r.activo
+                                           r.frecuencia, r.dia_mes_2, r.mes_1, r.mes_2, r.activo
                                     FROM ingresos_recurrentes r
                                     JOIN categorias c ON c.id = r.categoria_id"""),
         "gastos_recurrentes": ("descripcion,categoria,monto,dia_mes,frecuencia,dia_mes_2,metodo,cuenta,activo",
@@ -1969,17 +2034,29 @@ async def importar_csv(tabla: str, archivo: UploadFile = File(...)):
                     if not cat_id:
                         raise ValueError(f"categoría de ingreso desconocida: '{fila['categoria']}'")
                     frec = fila.get("frecuencia", "") or "Mensual"
-                    if frec not in ("Mensual", "Quincenal"):
-                        raise ValueError(f"frecuencia inválida: '{frec}' (Mensual o Quincenal)")
-                    dia2 = int(fila["dia_mes_2"]) if (frec == "Quincenal" and fila.get("dia_mes_2")) else None
+                    if frec not in ("Mensual", "Quincenal", "Anual"):
+                        raise ValueError(
+                            f"frecuencia inválida: '{frec}' (Mensual, Quincenal o Anual)")
+                    dia2 = int(fila["dia_mes_2"]) if fila.get("dia_mes_2") else None
                     if frec == "Quincenal" and not dia2:
                         raise ValueError("frecuencia Quincenal requiere la columna dia_mes_2")
+                    # mes_1/mes_2 solo aplican a Anual; en un CSV viejo la
+                    # columna no existe y quedan en None, que es lo correcto
+                    # para Mensual/Quincenal.
+                    mes1 = int(fila["mes_1"]) if fila.get("mes_1") else None
+                    mes2 = int(fila["mes_2"]) if fila.get("mes_2") else None
+                    if frec == "Anual":
+                        if not mes1:
+                            raise ValueError("frecuencia Anual requiere la columna mes_1 (1-12)")
+                    else:
+                        mes1 = mes2 = None
                     conn.execute(
                         "INSERT INTO ingresos_recurrentes "
-                        "(descripcion, categoria_id, monto, dia_mes, frecuencia, dia_mes_2, activo) "
-                        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        "(descripcion, categoria_id, monto, dia_mes, frecuencia, dia_mes_2, "
+                        "mes_1, mes_2, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         (fila["descripcion"], cat_id, validar_monto(fila["monto"]),
-                         int(fila["dia_mes"]), frec, dia2, int(fila.get("activo", "1") or 1)))
+                         int(fila["dia_mes"]), frec, dia2, mes1, mes2,
+                         int(fila.get("activo", "1") or 1)))
 
                 elif tabla == "gastos_recurrentes":
                     cat_id = cats.get((fila["categoria"].lower(), "gasto"))
