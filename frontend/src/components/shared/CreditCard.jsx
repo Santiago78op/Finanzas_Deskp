@@ -1,120 +1,192 @@
-import Card from '@mui/material/Card';
+import { motion } from 'motion/react';
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/EditOutlined';
 import { fmtQ, fmtFecha } from '../../utils.js';
 import { ACC } from '../../theme/colores.js';
+import { identidadBanco } from '../../theme/bancos.js';
+import { alzarCard, varsItem } from '../../motion.js';
+import BarraProgreso from './BarraProgreso.jsx';
+import { LogoRed, redDe } from './LogosRed.jsx';
 import { tabularNums } from './estilos.js';
 
-// Cara de tarjeta oscura y realista (FinanzasQ.dc.html, Claude Design): filo
-// de acento 3px arriba (no fondo saturado — "no lee como tarjeta real"),
-// barra de uso + Saldo usado/Límite adentro del degradado, y "Corte día N" /
-// "N% usado" como fila propia debajo, AFUERA de la tarjeta (con espacio real,
-// no pegada al borde — así lo separa FinanzasQ.dc.html). No hay campo de
-// marca (Visa/Mastercard) ni número real en el modelo de datos: la marca se
-// infiere del nombre ("Visa BI" -> VISA) y el número se enmascara con uno
-// derivado del id — no se inventa un dato falso.
-// Valores del resumen (saldo al día/corte/contado) son opcionales: si no se
-// cargaron llegan null -> mostramos "—" en vez de "Q NaN".
+// Cara de tarjeta sobrio-editorial: superficie plana, filete de 1px, esquinas
+// de 12px. Nada de degradados, vidrio esmerilado ni sombras difusas — pasó
+// por una versión "transparent-gradient" (Untitled UI) y quedó descartada al
+// adoptar el sistema del informe impreso.
+//
+// Lo que identifica la tarjeta ya no es un fondo de color: es el filete
+// superior de 3px con el acento, el monograma del banco y el logo de la red.
+//
+// Medidas 316×190 (proporción de tarjeta real), escalada con transform sobre
+// un lienzo fijo para que tipografía y espacios se achiquen en proporción.
+//
+// El modelo no tiene titular ni vencimiento (y no se inventan): en esos dos
+// lugares van el nombre de la tarjeta y el día de corte, que es lo que se
+// necesita leer de un vistazo.
+const ANCHO_BASE = 316;
+const ALTO_BASE = 190;
+
 const fmtQopt = (v) => (v == null ? '—' : fmtQ(v));
 
-function marcaDe(nombre) {
-  const n = (nombre || '').toLowerCase();
-  if (n.includes('visa')) return 'VISA';
-  if (n.includes('master')) return 'MASTERCARD';
-  return null;
+function Pastilla({ children, aviso, titulo }) {
+  return (
+    <span
+      className="antetitulo shrink-0"
+      style={{
+        fontSize: 9, padding: '2px 6px', borderRadius: 4,
+        border: `1px solid ${aviso ? 'var(--laton)' : 'var(--borde-fuerte)'}`,
+        color: aviso ? 'var(--texto)' : 'var(--suave)',
+      }}
+      title={titulo}
+    >
+      {children}
+    </span>
+  );
 }
 
-// mini (usada por el panel "¿Cuánto debo en tarjetas?" del Dashboard, sin
-// onEditar): número más corto y SALDO/CORTE en vez de barra de uso +
-// Saldo usado/Límite + la fila externa — así lo dibuja FinanzasQ.dc.html
-// para esta vista, distinto de la tarjeta completa de la vista Tarjetas.
-export default function CreditCard({ tarjeta, onEditar }) {
-  const compacta = !onEditar;
-  const acento = ACC[tarjeta.color_idx ?? (tarjeta.id % 6)];
+// Monograma del banco: iniciales sobre el color de la casa. Ver
+// theme/bancos.js para por qué no son los logos reales.
+function MonogramaBanco({ banco }) {
+  const { iniciales, color } = identidadBanco(banco);
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 30, height: 30, borderRadius: 6, background: color, color: '#fff',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: iniciales.length > 2 ? 10 : 12, fontWeight: 500, letterSpacing: '.02em',
+        flex: 'none',
+      }}
+    >
+      {iniciales}
+    </span>
+  );
+}
+
+function CaraTarjeta({ tarjeta, ancho, acento, red }) {
+  const escala = ancho / ANCHO_BASE;
   const numero = String(1000 + ((tarjeta.id * 7919) % 9000)).padStart(4, '0');
-  const marca = marcaDe(tarjeta.nombre);
-  const uso = Math.min(100, Math.max(0, Math.round(tarjeta.pct_uso)));
 
   return (
-    <div style={{ width: compacta ? 'min(260px, 100%)' : '100%', maxWidth: 320 }}>
-      <Card component="article" className={`overflow-hidden${tarjeta.activa ? '' : ' opacity-50'}`}>
-        <div
-          className="relative p-4 text-white bg-gradient-to-br from-neutral-800 to-neutral-950 flex flex-col gap-5"
-          style={{ borderTop: `3px solid ${acento}`, minHeight: 180 }}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <span style={{ fontSize: 12, fontWeight: 400, letterSpacing: '.05em' }}>{tarjeta.banco}{compacta ? ' · Crédito' : ''}</span>
-            <div className="flex items-center gap-2">
-              {!tarjeta.activa && (
-                <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white/15">Inactiva</span>
-              )}
-              {/* En la mini del dashboard no hay bloque de resumen, así que el
-                  aviso de "valores viejos" va acá en el encabezado. */}
-              {compacta && tarjeta.resumen_vencido && (
-                <span
-                  className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
-                  style={{ background: 'rgba(245,158,11,.25)', color: '#fbbf24' }}
-                  title="Ya cerró un corte nuevo desde que cargaste los valores del resumen"
-                >
-                  Desactualizado
-                </span>
-              )}
-              {marca && <span className="font-display" style={{ fontSize: 15, letterSpacing: '.04em' }}>{marca}</span>}
+    <div style={{ width: ancho, height: ALTO_BASE * escala }} className="relative flex">
+      <div
+        style={{
+          transform: `scale(${escala})`, width: ANCHO_BASE, height: ALTO_BASE,
+          background: 'var(--panel)',
+          border: '1px solid var(--borde)',
+          borderTop: `3px solid ${acento}`,
+          borderRadius: 'var(--radio)',
+        }}
+        className="absolute top-0 left-0 origin-top-left flex flex-col justify-between overflow-hidden p-4"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <MonogramaBanco banco={tarjeta.banco} />
+            <div style={{ minWidth: 0 }}>
+              <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: 'var(--texto)' }}>
+                {tarjeta.banco}
+              </div>
+              <div className="antetitulo truncate">Crédito</div>
             </div>
           </div>
-          <div className="font-mono text-lg tracking-[0.2em]">{compacta ? `•••• ${numero}` : `•••• •••• •••• ${numero}`}</div>
-          {compacta ? (
-            <div className="mt-auto flex justify-between items-end gap-2 text-xs">
-              <div><div className="opacity-60 uppercase tracking-wide text-[10px]">Saldo</div><div className="font-semibold" style={tabularNums}>{fmtQ(tarjeta.saldo)}</div></div>
-              <div style={{ textAlign: 'right' }}><div className="opacity-60 uppercase tracking-wide text-[10px]">Corte</div><div className="font-semibold">Día {tarjeta.dia_corte}</div></div>
-            </div>
-          ) : (
-            <div className="mt-auto flex flex-col gap-2">
-              <div className="h-1.5 rounded-full bg-white/15 overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${uso}%`, background: acento }} />
-              </div>
-              <div className="flex justify-between items-end gap-2 text-xs">
-                <div><div className="opacity-60 uppercase tracking-wide text-[10px]">Saldo usado</div><div className="font-semibold" style={tabularNums}>{fmtQ(tarjeta.saldo)}</div></div>
-                <div style={{ textAlign: 'right' }}><div className="opacity-60 uppercase tracking-wide text-[10px]">Límite</div><div className="font-semibold" style={tabularNums}>{fmtQ(tarjeta.limite)}</div></div>
-              </div>
-              <div className="pt-2 mt-1 border-t border-white/10 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="opacity-60 uppercase tracking-wide text-[10px]">
-                    Resumen{tarjeta.resumen_actualizado ? ` · ${fmtFecha(tarjeta.resumen_actualizado)}` : ''}
-                  </span>
-                  {tarjeta.resumen_vencido && (
-                    <span
-                      className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
-                      style={{ background: 'rgba(245,158,11,.25)', color: '#fbbf24' }}
-                      title="Ya cerró un corte nuevo desde que cargaste estos valores"
-                    >
-                      Desactualizado
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div><div className="opacity-60 uppercase tracking-wide text-[10px]">Saldo al día</div><div className="font-semibold" style={tabularNums}>{fmtQopt(tarjeta.saldo_dia)}</div></div>
-                  <div><div className="opacity-60 uppercase tracking-wide text-[10px]">Al corte</div><div className="font-semibold" style={tabularNums}>{fmtQopt(tarjeta.saldo_corte)}</div></div>
-                  <div style={{ textAlign: 'right' }}><div className="opacity-60 uppercase tracking-wide text-[10px]">De contado</div><div className="font-semibold" style={tabularNums}>{fmtQopt(tarjeta.pago_contado)}</div></div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
-      {!compacta && (
-        <div className="flex items-center justify-between text-xs" style={{ marginTop: 12, padding: '0 2px' }}>
-          <span className="font-semibold text-[var(--suave)]">Corte día {tarjeta.dia_corte}</span>
-          <div className="flex items-center gap-1">
-            <span className="font-bold text-[var(--pago)]">{uso}% usado</span>
-            {onEditar && (
-              <IconButton size="small" onClick={onEditar} aria-label="Editar tarjeta" sx={{ color: 'var(--suave)' }}>
-                <EditIcon sx={{ fontSize: 15 }} />
-              </IconButton>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {!tarjeta.activa && <Pastilla>Inactiva</Pastilla>}
+            {tarjeta.resumen_vencido && (
+              <Pastilla aviso titulo="Ya cerró un corte nuevo desde que cargaste los valores del resumen">
+                Desactualizado
+              </Pastilla>
             )}
           </div>
         </div>
-      )}
+
+        <div className="flex items-end justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <div className="antetitulo truncate">{tarjeta.nombre}</div>
+            <div className="cifra" style={{ fontSize: 16, letterSpacing: '.08em', color: 'var(--texto)' }}>
+              ···· ···· ···· {numero}
+            </div>
+            <div className="antetitulo">Corte día {tarjeta.dia_corte}</div>
+          </div>
+          {/* Logo de la red. Sin `marca` en la base cae a deducirlo del
+              nombre (ver redDe), así que las tarjetas viejas no se quedan sin
+              logo hasta que se editen. */}
+          {red && (
+            <span className="shrink-0 flex items-end" style={{ paddingBottom: 2 }}>
+              <LogoRed marca={red} />
+            </span>
+          )}
+        </div>
+      </div>
     </div>
+  );
+}
+
+// `compacta` (sin onEditar): la usa el panel "¿Cuánto debo en tarjetas?" del
+// Dashboard — misma cara, más chica, y debajo solo Saldo/Corte. La versión
+// completa suma la barra de uso, Saldo usado/Límite y el bloque de resumen,
+// todos AFUERA de la cara: una tarjeta real no lleva impreso su saldo.
+export default function CreditCard({ tarjeta, onEditar }) {
+  const compacta = !onEditar;
+  const acento = ACC[tarjeta.color_idx ?? (tarjeta.id % 6)];
+  const red = redDe(tarjeta);
+  const uso = Math.min(100, Math.max(0, Math.round(tarjeta.pct_uso)));
+  const ancho = compacta ? 260 : ANCHO_BASE;
+
+  return (
+    <motion.div
+      className={tarjeta.activa ? undefined : 'opacity-60'}
+      style={{ width: ancho }}
+      variants={varsItem}
+      {...alzarCard}
+    >
+      <CaraTarjeta tarjeta={tarjeta} ancho={ancho} acento={acento} red={red} />
+
+      {compacta ? (
+        <div className="flex justify-between items-end gap-2" style={{ marginTop: 14 }}>
+          <div>
+            <div className="antetitulo">Saldo</div>
+            <div style={{ fontSize: 15, fontWeight: 500, ...tabularNums }}>{fmtQ(tarjeta.saldo)}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div className="antetitulo">Corte</div>
+            <div style={{ fontSize: 15, fontWeight: 500 }}>Día {tarjeta.dia_corte}</div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3" style={{ marginTop: 16 }}>
+          <BarraProgreso alto={4} pct={uso} color={acento} etiqueta={`Uso del límite de ${tarjeta.nombre}`} />
+          <div className="flex justify-between items-end gap-2">
+            <div>
+              <div className="antetitulo">Saldo usado</div>
+              <div style={{ fontSize: 15, fontWeight: 500, ...tabularNums }}>{fmtQ(tarjeta.saldo)}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div className="antetitulo">Límite</div>
+              <div style={{ fontSize: 15, fontWeight: 500, ...tabularNums }}>{fmtQ(tarjeta.limite)}</div>
+            </div>
+          </div>
+
+          <div className="pt-3 flex flex-col gap-2" style={{ borderTop: '1px solid var(--borde)' }}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="antetitulo">
+                Resumen{tarjeta.resumen_actualizado ? ` · ${fmtFecha(tarjeta.resumen_actualizado)}` : ''}
+              </span>
+              <span className="antetitulo" style={{ color: 'var(--texto)' }}>{uso}% usado</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div><div className="antetitulo">Saldo al día</div><div style={{ fontSize: 14, fontWeight: 500, ...tabularNums }}>{fmtQopt(tarjeta.saldo_dia)}</div></div>
+              <div><div className="antetitulo">Al corte</div><div style={{ fontSize: 14, fontWeight: 500, ...tabularNums }}>{fmtQopt(tarjeta.saldo_corte)}</div></div>
+              <div style={{ textAlign: 'right' }}><div className="antetitulo">De contado</div><div style={{ fontSize: 14, fontWeight: 500, ...tabularNums }}>{fmtQopt(tarjeta.pago_contado)}</div></div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end">
+            <IconButton size="small" onClick={onEditar} aria-label="Editar tarjeta" sx={{ color: 'var(--suave)' }}>
+              <EditIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </div>
+        </div>
+      )}
+    </motion.div>
   );
 }

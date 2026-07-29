@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
@@ -9,6 +10,7 @@ import AddIcon from '@mui/icons-material/AddOutlined';
 import SideNav, { SideNavContenido } from './SideNav.jsx';
 import Footer from './Footer.jsx';
 import { TopbarExtraProvider, useTopbarExtra } from '../../context/TopbarExtraContext.jsx';
+import { varsPagina } from '../../motion.js';
 
 const TITULOS = {
   dashboard: 'Dashboard', registro: 'Registro rápido', cuentas: 'Mis cuentas',
@@ -61,7 +63,10 @@ function LayoutInner() {
           sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { width: 252, background: 'var(--panel)' } }}
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '22px 16px' }}>
-            <SideNavContenido onNavigate={() => setMenuAbierto(false)} />
+            {/* idPastilla propio: el sidebar de escritorio sigue montado
+                (keepMounted) y compartir layoutId haría saltar la pastilla
+                entre los dos. */}
+            <SideNavContenido onNavigate={() => setMenuAbierto(false)} idPastilla="nav-pastilla-movil" />
           </Box>
         </Drawer>
 
@@ -80,6 +85,36 @@ function LayoutInner() {
                 >
                   <svg className="ico" style={{ width: 22, height: 22 }}><use href="#ico-menu" /></svg>
                 </IconButton>
+                {/* Lámina del encabezado. La ilustración es naranja de trazo
+                    redondeado y no comparte paleta con el sistema, así que en
+                    vez de pegarla suelta va montada como una FIGURA de informe:
+                    placa con filete de 1px y esquina de 12px. Así se lee como
+                    una imagen impresa dentro de la maqueta y no como un clipart
+                    flotando.
+                    El <img> va MÁS GRANDE que la placa y centrado con overflow
+                    oculto: el archivo original (360×360) trae un margen muerto
+                    enorme alrededor del dibujo, así que a tamaño natural el
+                    motivo quedaba diminuto y se leía como un borrón. Escalarlo
+                    y recortar ese aire es lo que lo hace legible a 68px.
+                    Se oculta en mobile: ahí el ancho es para el título. */}
+                <span
+                  aria-hidden="true"
+                  className="hidden sm:block shrink-0 relative overflow-hidden"
+                  style={{
+                    width: 68, height: 68,
+                    borderRadius: 'var(--radio)', border: '1px solid var(--borde)',
+                  }}
+                >
+                  <img
+                    src="/static/img/motivo-finanzas.png"
+                    alt=""
+                    style={{
+                      position: 'absolute', width: 96, height: 96,
+                      top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                      maxWidth: 'none',
+                    }}
+                  />
+                </span>
                 <div>
                   <h1 id="titulo-vista">{TITULOS[vista]}</h1>
                   <div className="saludo">{SUBTITULOS[vista]}</div>
@@ -98,9 +133,24 @@ function LayoutInner() {
               </div>
             </header>
 
-            <div className="py-6">
-              <Outlet />
-            </div>
+            {/* Transición de vista, ahora con SALIDA de verdad: <AnimatePresence
+                mode="wait"> retiene la vista vieja hasta que termina su exit y
+                recién ahí monta la nueva. Antes (RouteFade + GSAP) solo se
+                podía animar la entrada, porque react-router desmonta la vista
+                anterior de inmediato y no quedaba nada que animar — el cambio
+                de pantalla "cortaba" en seco. `initial={false}` para que la
+                primera carga de la app no haga fade (ya la hace el reveal de
+                cada vista): la animación es para NAVEGAR, no para arrancar. */}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={vista}
+                className="py-6"
+                variants={varsPagina}
+                initial="oculto" animate="visible" exit="saliendo"
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
           </Container>
           <Footer />
         </Box>

@@ -2,6 +2,7 @@ import { StrictMode, useMemo } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
+import { MotionConfig } from 'motion/react'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
@@ -31,19 +32,25 @@ function MuiBridge({ children }) {
   );
 }
 
+// `reducedMotion="user"`: un solo lugar decide si la app se mueve. Si el
+// sistema pide motion reducido, Motion desactiva transform/layout en TODOS los
+// componentes <motion.*> y deja solo los fades (que no marean). Reemplaza al
+// flag `motionOK` que antes cada hook chequeaba por su cuenta con GSAP.
 function Root() {
   return (
     <TemaProvider>
       <MuiBridge>
-        <ToastProvider>
-          <ConfirmProvider>
-            <DataVersionProvider>
-              <CatalogProvider>
-                <App />
-              </CatalogProvider>
-            </DataVersionProvider>
-          </ConfirmProvider>
-        </ToastProvider>
+        <MotionConfig reducedMotion="user">
+          <ToastProvider>
+            <ConfirmProvider>
+              <DataVersionProvider>
+                <CatalogProvider>
+                  <App />
+                </CatalogProvider>
+              </DataVersionProvider>
+            </ConfirmProvider>
+          </ToastProvider>
+        </MotionConfig>
       </MuiBridge>
     </TemaProvider>
   );

@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/shared/Layout.jsx';
-import RouteFade from './components/shared/RouteFade.jsx';
 import RegistroView from './components/registro/RegistroView.jsx';
 import DashboardView from './components/dashboard/DashboardView.jsx';
 import MovimientosView from './components/movimientos/MovimientosView.jsx';
@@ -14,6 +13,11 @@ import AjustesView from './components/ajustes/AjustesView.jsx';
 // una vez al montar — la URL nunca cambiaba al navegar). "/" es el home y
 // redirige a "/dashboard" (la pantalla estrella del diseño, no hace falta
 // una Home aparte). Cualquier path desconocido también cae a "/dashboard".
+//
+// Las vistas ya no se envuelven en <RouteFade>: la transición de entrada Y
+// salida la hace un solo <AnimatePresence> alrededor del <Outlet/> en
+// Layout.jsx, así que vale para todas las rutas por igual (Dashboard incluido,
+// que antes quedaba afuera).
 export default function App() {
   return (
     <BrowserRouter>
@@ -21,13 +25,13 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardView />} />
-          <Route path="registro" element={<RouteFade><RegistroView /></RouteFade>} />
-          <Route path="cuentas" element={<RouteFade><CuentasView /></RouteFade>} />
-          <Route path="tarjetas" element={<RouteFade><TarjetasView /></RouteFade>} />
-          <Route path="prestamos" element={<RouteFade><PrestamosView /></RouteFade>} />
-          <Route path="analisis" element={<RouteFade><AnalisisView /></RouteFade>} />
-          <Route path="movimientos" element={<RouteFade><MovimientosView /></RouteFade>} />
-          <Route path="ajustes" element={<RouteFade><AjustesView /></RouteFade>} />
+          <Route path="registro" element={<RegistroView />} />
+          <Route path="cuentas" element={<CuentasView />} />
+          <Route path="tarjetas" element={<TarjetasView />} />
+          <Route path="prestamos" element={<PrestamosView />} />
+          <Route path="analisis" element={<AnalisisView />} />
+          <Route path="movimientos" element={<MovimientosView />} />
+          <Route path="ajustes" element={<AjustesView />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

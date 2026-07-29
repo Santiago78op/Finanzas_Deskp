@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/AddOutlined';
 import FormCuenta from './FormCuenta.jsx';
 import AccountCard from '../shared/AccountCard.jsx';
+import MontoAnimado from '../shared/MontoAnimado.jsx';
 import { getCuentas } from '../../api/cuentas.js';
-import { fmtQ } from '../../utils.js';
+import { varsItem, varsLista } from '../../motion.js';
 
 // "Mis cuentas" con vista propia (antes vivía combinada con Tarjetas en
 // TarjetasView.jsx) — split que pide FinanzasQ.dc.html (Claude Design).
@@ -38,7 +40,7 @@ export default function CuentasView() {
       <Card component="section" aria-label="Disponible total" className="p-5 flex items-center justify-between gap-5 flex-wrap">
         <div>
           <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Disponible total</Typography>
-          <Typography variant="h4" fontWeight={700} letterSpacing="-.02em">{fmtQ(disponibleTotal)}</Typography>
+          <Typography variant="h4" fontWeight={700} letterSpacing="-.02em"><MontoAnimado valor={disponibleTotal} /></Typography>
         </div>
         <Typography variant="body2" className="text-[var(--suave)] max-w-xs">
           Sumado de tus {activas.length} cuenta{activas.length === 1 ? '' : 's'}. Es lo que tenés hoy, sin contar deuda de tarjetas.
@@ -47,14 +49,17 @@ export default function CuentasView() {
 
       <Divider sx={{ mt: 5, mb: 3 }} />
 
-      <div className="cuentas-grid">
+      {/* Contenedor variante: las cards entran escalonadas en vez de aparecer
+          las N de golpe cuando responde la API. El escalón lee como "esta es
+          tu lista" y no como un salto de layout. */}
+      <motion.div className="cuentas-grid" variants={varsLista} initial="oculto" animate="visible">
         {cuentas.map(c => (
           <AccountCard key={c.id} cuenta={c} onEditar={() => abrirEditar(c)} />
         ))}
-        <button type="button" onClick={abrirNueva} className="tile-agregar">
+        <motion.button type="button" onClick={abrirNueva} className="tile-agregar" variants={varsItem}>
           <AddIcon fontSize="small" /> Agregar cuenta
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {modalAbierto && (
         <FormCuenta editando={editando} onGuardado={() => { cerrarModal(); cargar(); }} onCerrar={cerrarModal} />

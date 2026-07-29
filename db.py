@@ -59,7 +59,8 @@ def init_db():
         dia_pago      INTEGER NOT NULL CHECK (dia_pago BETWEEN 1 AND 31),
         saldo_inicial REAL NOT NULL DEFAULT 0,
         activa        INTEGER NOT NULL DEFAULT 1,
-        color_idx     INTEGER CHECK (color_idx BETWEEN 0 AND 5)
+        color_idx     INTEGER CHECK (color_idx BETWEEN 0 AND 5),
+        marca         TEXT CHECK (marca IN ('Visa', 'Mastercard'))
     );
 
     -- Cuentas de dinero del usuario (Monetaria / Ahorro) por banco.
@@ -233,6 +234,11 @@ def init_db():
     # Migraciones: agregar columnas nuevas a bases creadas con versiones anteriores
     _asegurar_columna(cur, "tarjetas", "saldo_inicial", "saldo_inicial REAL NOT NULL DEFAULT 0")
     _asegurar_columna(cur, "tarjetas", "color_idx", "color_idx INTEGER")
+    # Red de la tarjeta ('Visa' | 'Mastercard' | NULL). Antes la cara de la
+    # tarjeta la adivinaba del nombre ("Visa BI" -> VISA), así que una tarjeta
+    # llamada "Crédito BI" no mostraba ninguna. Ahora es un dato del usuario y
+    # la inferencia por nombre queda solo como respaldo para las filas viejas.
+    _asegurar_columna(cur, "tarjetas", "marca", "marca TEXT")
     # Valores tomados del resumen del banco (se cargan a mano, opcionales):
     # saldo al día, saldo al corte y monto para pago al contado del resumen.
     _asegurar_columna(cur, "tarjetas", "saldo_dia", "saldo_dia REAL")

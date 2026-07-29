@@ -1,9 +1,13 @@
+import { motion } from 'motion/react';
 import Card from '@mui/material/Card';
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/EditOutlined';
 import { fmtQ } from '../../utils.js';
 import { ACC } from '../../theme/colores.js';
+import { alzarCard, varsItem } from '../../motion.js';
 import { tabularNums, puntoAcento } from './estilos.js';
+
+const MotionCard = motion.create(Card);
 
 // Card de cuenta (FinanzasQ.dc.html, Claude Design): punto de acento + nombre
 // arriba, "Disponible" + cifra grande abajo — sin el bloque de fondo
@@ -15,17 +19,19 @@ export default function AccountCard({ cuenta, onEditar }) {
   const acento = ACC[cuenta.id % 6];
 
   return (
-    <Card
+    <MotionCard
       component="article"
       className={`p-[18px] flex flex-col gap-3.5 relative${cuenta.activa ? '' : ' opacity-60'}`}
       sx={{ width: compacta ? 240 : '100%', maxWidth: 300 }}
+      variants={varsItem}
+      {...alzarCard}
     >
       {onEditar && (
         <IconButton size="small" onClick={onEditar} aria-label="Editar cuenta" sx={{ position: 'absolute', top: 8, right: 8, color: 'var(--suave)' }}>
           <EditIcon sx={{ fontSize: 16 }} />
         </IconButton>
       )}
-      <div className="flex items-center justify-between gap-2 pr-6">
+      <div className="relative flex items-center justify-between gap-2 pr-6">
         <div className="flex items-center gap-2.5" style={{ minWidth: 0 }}>
           <span style={puntoAcento(acento, 11)} />
           <div style={{ minWidth: 0 }}>
@@ -39,10 +45,10 @@ export default function AccountCard({ cuenta, onEditar }) {
           </span>
         )}
       </div>
-      <div>
+      <div className="relative">
         <div className="text-[11.5px] font-semibold uppercase tracking-wide text-[var(--suave)]">Disponible</div>
         <div className="text-[23px] font-bold" style={tabularNums}>{fmtQ(cuenta.saldo)}</div>
       </div>
-    </Card>
+    </MotionCard>
   );
 }

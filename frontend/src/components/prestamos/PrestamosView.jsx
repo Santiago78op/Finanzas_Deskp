@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
@@ -8,10 +9,11 @@ import VisacuotaCard from './VisacuotaCard.jsx';
 import FormPrestamo from './FormPrestamo.jsx';
 import FormVisacuota from './FormVisacuota.jsx';
 import FormPagoDeuda from './FormPagoDeuda.jsx';
+import MontoAnimado from '../shared/MontoAnimado.jsx';
 import { getPrestamos } from '../../api/prestamos.js';
 import { getVisacuotas } from '../../api/visacuotas.js';
 import { useCatalog } from '../../context/CatalogContext.jsx';
-import { fmtQ } from '../../utils.js';
+import { varsItem, varsLista } from '../../motion.js';
 
 // "Préstamos" con vista propia: registra deuda que hoy no vivía en ningún
 // lado de la app (préstamos de banco/financiera + compras diferidas a Visa
@@ -72,41 +74,41 @@ export default function PrestamosView() {
           <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">
             Deuda total (préstamos + cuotas)
           </Typography>
-          <Typography variant="h4" fontWeight={700} letterSpacing="-.02em">{fmtQ(deudaTotal)}</Typography>
+          <Typography variant="h4" fontWeight={700} letterSpacing="-.02em"><MontoAnimado valor={deudaTotal} /></Typography>
         </div>
         <div style={{ textAlign: 'right' }}>
           <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">
             Pago mensual comprometido
           </Typography>
-          <Typography variant="h5" fontWeight={700}>{fmtQ(pagoMensualTotal)}</Typography>
+          <Typography variant="h5" fontWeight={700}><MontoAnimado valor={pagoMensualTotal} /></Typography>
         </div>
       </Card>
 
       <Divider sx={{ mt: 5, mb: 2 }} />
       <Typography variant="h6" sx={{ mb: 2 }}>Préstamos</Typography>
-      <div className="prestamos-grid">
+      <motion.div className="prestamos-grid" variants={varsLista} initial="oculto" animate="visible">
         {prestamos.map(p => (
           <PrestamoCard key={p.id} prestamo={p}
             onEditar={() => abrirEditarPrestamo(p)}
             onPagar={() => setPagando({ tipo: 'prestamo', entidad: p })} />
         ))}
-        <button type="button" onClick={abrirNuevoPrestamo} className="tile-agregar">
+        <motion.button type="button" onClick={abrirNuevoPrestamo} className="tile-agregar" variants={varsItem}>
           <AddIcon fontSize="small" /> Agregar préstamo
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       <Divider sx={{ mt: 5, mb: 2 }} />
       <Typography variant="h6" sx={{ mb: 2 }}>Visa Cuotas</Typography>
-      <div className="prestamos-grid">
+      <motion.div className="prestamos-grid" variants={varsLista} initial="oculto" animate="visible">
         {visacuotas.map(v => (
           <VisacuotaCard key={v.id} visacuota={v} tarjetaNombre={nombreTarjeta(v.tarjeta_id)}
             onEditar={() => abrirEditarVisacuota(v)}
             onPagar={() => setPagando({ tipo: 'visacuota', entidad: v })} />
         ))}
-        <button type="button" onClick={abrirNuevaVisacuota} className="tile-agregar">
+        <motion.button type="button" onClick={abrirNuevaVisacuota} className="tile-agregar" variants={varsItem}>
           <AddIcon fontSize="small" /> Agregar cuota
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {modalPrestamo && (
         <FormPrestamo editando={editandoPrestamo}

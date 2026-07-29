@@ -39,165 +39,156 @@
   --color-acc-5: var(--acc-5);
   --color-ink-on-acc: var(--ink-on-acc);
 
-  --font-display: 'Anton', 'Poppins', system-ui, sans-serif;
-  --font-sans: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-laton: var(--laton);
+
+  /* Tres roles tipográficos, sin mezclarlos: serif para titulares, Inter para
+     todo el cuerpo y la UI, y monoespaciada SOLO para cifras. */
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
 }
 
-/* ---------- Tipografía: Poppins (UI) + Anton (display/hero), autohospedadas.
-   Solo latin + latin-ext (cubre tildes/ñ) para no bajar los otros scripts. ---------- */
-@font-face {
-  font-family: 'Anton'; font-style: normal; font-weight: 400; font-display: swap;
-  src: url('/static/fonts/anton.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Poppins'; font-style: normal; font-weight: 400; font-display: swap;
-  src: url('/static/fonts/poppins-400-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Poppins'; font-style: normal; font-weight: 400; font-display: swap;
-  src: url('/static/fonts/poppins-400-latinext.woff2') format('woff2');
-  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Poppins'; font-style: normal; font-weight: 500; font-display: swap;
-  src: url('/static/fonts/poppins-500-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Poppins'; font-style: normal; font-weight: 500; font-display: swap;
-  src: url('/static/fonts/poppins-500-latinext.woff2') format('woff2');
-  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Poppins'; font-style: normal; font-weight: 600; font-display: swap;
-  src: url('/static/fonts/poppins-600-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Poppins'; font-style: normal; font-weight: 600; font-display: swap;
-  src: url('/static/fonts/poppins-600-latinext.woff2') format('woff2');
-  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Poppins'; font-style: normal; font-weight: 700; font-display: swap;
-  src: url('/static/fonts/poppins-700-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Poppins'; font-style: normal; font-weight: 700; font-display: swap;
-  src: url('/static/fonts/poppins-700-latinext.woff2') format('woff2');
-  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Poppins'; font-style: normal; font-weight: 800; font-display: swap;
-  src: url('/static/fonts/poppins-800-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Poppins'; font-style: normal; font-weight: 800; font-display: swap;
-  src: url('/static/fonts/poppins-800-latinext.woff2') format('woff2');
-  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
+/* ---------- Tipografía ----------
+   Instrument Serif + Inter + IBM Plex Mono se cargan desde Google Fonts (ver
+   los <link> de index.html). Poppins/Anton, que estaban autohospedadas en
+   /static/fonts, ya no se usan: los archivos quedan en public/ por si se
+   quiere volver a un esquema sin red.
+   ATENCIÓN: al venir de Google Fonts, sin internet la app cae a las fuentes
+   de respaldo (Georgia / system-ui / monoespaciada del sistema). El layout no
+   se rompe, pero el look editorial sí se pierde. ---------- */
 
-/* ---------- Tokens (tema CLARO por defecto): crema cálido + tinta casi negra ---------- */
+/* ---------- Tokens (tema CLARO por defecto) ----------
+   Paleta sobrio-editorial: fondo hueso, tinta marino, petróleo para lo
+   accionable y latón como único acento cálido. Mantener en sync con
+   theme/colores.js. Los ocho colores base son los únicos permitidos; el resto
+   (panel-2, borde-fuerte, primario-suave) se derivan de ellos. ---------- */
 :root, :root[data-theme="light"] {
-  --fondo: #fbe8cd;            /* crema cálido, como el fondo de la demo */
-  --panel: #fff8ec;            /* superficie ligeramente más clara que el fondo */
-  --panel-2: #f3e2c4;          /* superficies suaves (inputs, chips) */
-  --texto: #241206;            /* tinta casi negra, tono café, no gris frío */
-  --suave: #7a6650;
-  --borde: #e8d4ac;
-  --borde-fuerte: #d9bf8d;
-  --primario: #241206;         /* acento = tinta, botones sólidos */
-  --primario-texto: #fbe8cd;
-  --primario-suave: #eeddbb;
-  --anillo: rgba(36, 18, 6, .18);
-  --ink-on-acc: #201004;       /* texto sobre los colores de acento (cards) */
+  /* Los ocho de la paleta, con su nombre propio */
+  --marino: #0B1F3A;
+  --petroleo: #1E5F74;
+  --laton: #C9A227;
+  --alza: #0E8A5F;
+  --baja: #C0392B;
+  --texto-sec: #4A5568;
 
-  --gasto: #b23b3b;
-  --ingreso: #157a3d;
-  --pago: #a16207;
-  --azul: #2563eb;
-  --violeta: #7c6cf0;
-  --verde: #157a3d;
-  --amarillo: #a16207;
-  --rojo: #b23b3b;
+  --fondo: #FAF9F6;            /* hueso */
+  --panel: #FFFFFF;            /* el "papel": superficie plana sobre el hueso */
+  --panel-2: #F1EFE9;          /* inputs y chips */
+  --texto: var(--marino);
+  --suave: var(--texto-sec);
+  --borde: #E8E4DC;            /* filete de 1px */
+  --borde-fuerte: #D8D2C6;
+  --primario: var(--petroleo);
+  --primario-texto: var(--fondo);
+  --primario-suave: #E4EDF0;
+  --anillo: rgba(30, 95, 116, .35);
+  --ink-on-acc: #FAF9F6;
 
-  /* Paleta de acento saturada, como los bloques de color de la demo:
-     se usa SOLO en cards de cuentas/tarjetas, nunca en la UI densa */
-  --acc-0: #1abcb2;   /* teal */
-  --acc-1: #ef8130;   /* naranja */
-  --acc-2: #f0c93e;   /* amarillo/oro */
-  --acc-3: #c7b6f2;   /* lavanda */
-  --acc-4: #7ed957;   /* verde */
-  --acc-5: #f5a3c4;   /* rosa */
+  --gasto: var(--baja);
+  --ingreso: var(--alza);
+  /* Deuda/pago iba en ámbar; el latón como texto sobre hueso es ilegible
+     (~2.2:1), así que va en marino y el latón queda para filetes e íconos. */
+  --pago: var(--marino);
+  --azul: var(--petroleo);
+  --violeta: var(--marino);
+  --verde: var(--alza);
+  --amarillo: var(--laton);
+  --rojo: var(--baja);
 
-  --grid-grafica: #e3cfa4;
-  --tinta-grafica: #5c4a34;
+  /* Rampa de datos (puntos de cuenta, barras, acento de tarjeta): petróleo →
+     marino, con el latón como único punto cálido. Se lee como una tabla de
+     informe, no como un gráfico de dashboard. */
+  --acc-0: #1E5F74;
+  --acc-1: #0B1F3A;
+  --acc-2: #4E8195;
+  --acc-3: #C9A227;
+  --acc-4: #33566E;
+  --acc-5: #8AA6B2;
 
-  --radio: 18px;
-  --radio-sm: 10px;
-  --sombra: 0 2px 10px -4px rgba(36, 18, 6, .1);
+  --grid-grafica: #E8E4DC;
+  --tinta-grafica: #4A5568;
+
+  /* 12px en tarjetas, 8px en controles */
+  --radio: 12px;
+  --radio-sm: 8px;
+  /* Sin sombras difusas: la jerarquía la da el filete de 1px y el aire. */
+  --sombra: none;
 }
 
+/* El informe solo define el esquema claro; el oscuro se deriva usando el
+   marino como familia de superficie (sin colores nuevos). El petróleo se
+   aclara para que siga siendo legible sobre marino. */
 :root[data-theme="dark"] {
-  --fondo: #1b1108;
-  --panel: #241708;
-  --panel-2: #2e1e0d;
-  --texto: #f5e9d3;
-  --suave: #b8a486;
-  --borde: rgba(245, 233, 211, 0.1);
-  --borde-fuerte: rgba(245, 233, 211, 0.2);
-  --primario: #f5e9d3;
-  --primario-texto: #1b1108;
-  --primario-suave: rgba(245, 233, 211, .1);
-  --anillo: rgba(245, 233, 211, .25);
-  --ink-on-acc: #201004;
+  --marino: #0B1F3A;
+  --petroleo: #4FA3BC;
+  --laton: #D4B24A;
+  --alza: #3FBF8E;
+  --baja: #E8776A;
+  --texto-sec: #A8B4C4;
 
-  --gasto: #e08080;
-  --ingreso: #4fbf7a;
-  --pago: #d1a13d;
-  --azul: #3987e5;
-  --violeta: #9085e9;
-  --verde: #4fbf7a;
-  --amarillo: #d1a13d;
-  --rojo: #e08080;
+  --fondo: #08182D;
+  --panel: #0B1F3A;
+  --panel-2: #12294A;
+  --texto: #F0EEE8;
+  --suave: var(--texto-sec);
+  --borde: rgba(232, 228, 220, .14);
+  --borde-fuerte: rgba(232, 228, 220, .26);
+  --primario: var(--petroleo);
+  --primario-texto: #08182D;
+  --primario-suave: rgba(79, 163, 188, .16);
+  --anillo: rgba(79, 163, 188, .45);
+  --ink-on-acc: #08182D;
 
-  --acc-0: #1abcb2;
-  --acc-1: #ef8130;
-  --acc-2: #f0c93e;
-  --acc-3: #c7b6f2;
-  --acc-4: #7ed957;
-  --acc-5: #f5a3c4;
+  --gasto: var(--baja);
+  --ingreso: var(--alza);
+  --pago: #F0EEE8;
+  --azul: var(--petroleo);
+  --violeta: #8AB4C6;
+  --verde: var(--alza);
+  --amarillo: var(--laton);
+  --rojo: var(--baja);
 
-  --grid-grafica: rgba(245, 233, 211, .08);
-  --tinta-grafica: #b8a486;
+  --acc-0: #4FA3BC;
+  --acc-1: #8AB4C6;
+  --acc-2: #2E7B93;
+  --acc-3: #D4B24A;
+  --acc-4: #6C93A6;
+  --acc-5: #A9C2CE;
 
-  --sombra: 0 2px 10px -4px rgba(0, 0, 0, .5);
+  --grid-grafica: rgba(232, 228, 220, .12);
+  --tinta-grafica: #A8B4C4;
+
+  --sombra: none;
 }
 
 /* ---------- Escala de espaciado y tipografía (independiente de tema) ----------
-   La UI densa (paneles, forms, tablas) no cambia de tamaño: la escala "hero"
-   y la tipografía Anton solo se usan en título de vista y cifras de las
-   cards, para el look editorial inspirado en la demo GSAP/Webflow, sin
-   sacrificar legibilidad en el uso diario. ---------- */
+   Escala del informe: 44 titulares / 28 secciones / 20 subtítulos / 16 cuerpo.
+   El cuerpo sube de 15px a 16px con interlínea 1.65 — más aire vertical, que
+   es la mitad de lo que hace que algo se lea "editorial" y no "app". ---------- */
 :root {
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
   --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px;
 
-  --fs-xs: 11px;  --fs-sm: 13px;  --fs-base: 15px; --fs-md: 17px;
-  --fs-lg: 21px;  --fs-xl: 28px;
-  --fs-display: clamp(22px, 3vw, 30px);
-  --lh-tight: 0.95; --lh-normal: 1.5;
-  --ff-display: 'Anton', 'Poppins', system-ui, sans-serif;
+  --fs-xs: 11px;   /* antetítulos */
+  --fs-sm: 13px;
+  --fs-base: 16px; /* cuerpo */
+  --fs-md: 20px;   /* subtítulos */
+  --fs-lg: 28px;   /* secciones */
+  --fs-xl: 44px;   /* titulares */
+  --fs-display: clamp(30px, 4.2vw, 44px);
+  --lh-tight: 1.1; --lh-normal: 1.65;
+  --ff-display: 'Instrument Serif', Georgia, serif;
+  --ff-cifra: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --medida: 65ch;  /* ancho máximo de un párrafo legible */
 }
 
 html { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
 
 body {
-  font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
   transition: background .25s ease, color .25s ease;
   /* macOS renderiza las fuentes con subpíxeles por default — se ve más
      grueso/borroso que en Windows. Esto es lo que Safari/Chrome en Mac
@@ -206,6 +197,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
+
+/* Antetítulo: el rótulo chiquito en mayúsculas que encabeza cada bloque
+   ("¿CUÁNTO TENGO?", "DEUDA TOTAL"). 11px con mucho tracking — a ese tamaño,
+   sin abrir las letras, las mayúsculas se apelmazan. */
+.antetitulo {
+  font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .14em;
+  font-weight: 500; color: var(--suave); line-height: 1.4;
+}
+
+/* Cifras: monoespaciada + tabular-nums. Sin ancho fijo de dígito, una columna
+   de montos no alinea y los tickers animados tiemblan mientras cuentan.
+   El equivalente para JSX es `tabularNums` (components/shared/estilos.js) —
+   los dos tienen que decir lo mismo. */
+.cifra {
+  font-family: var(--ff-cifra);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+}
+
+/* Párrafos de texto corrido: nunca más anchos que la medida legible. */
+.medida { max-width: var(--medida); }
 
 /* Ícono base: hereda el color del texto (currentColor), como los íconos Lucide */
 .ico { width: 20px; height: 20px; flex: none; display: inline-block; }
@@ -236,7 +248,7 @@ body {
 .swiper-button-next, .swiper-button-prev {
   width: 30px; height: 30px; margin-top: -15px;
   background: var(--panel); border: 1px solid var(--borde);
-  border-radius: 999px; box-shadow: var(--sombra);
+  border-radius: var(--radio-sm);
 }
 .swiper-button-prev { left: 0; }
 .swiper-button-next { right: 0; }
@@ -246,13 +258,18 @@ body {
 
 #contenido { flex: 1; min-width: 0; }
 
-/* Encabezado editorial: saludo chico + título enorme en mayúsculas (el ancho
-   y padding del contenedor ahora los maneja el Container de MUI en App.jsx) */
-.saludo { font-size: 14px; color: var(--suave); font-weight: 600; margin-bottom: 6px; }
+/* Encabezado: titular serif grande + la pregunta que resuelve la vista.
+   Ya NO va en mayúsculas: una serif de titular en caja alta pierde el
+   contraste de astas que la hace serif — las mayúsculas quedaron para los
+   antetítulos de 11px. */
+.saludo {
+  font-size: var(--fs-base); color: var(--suave); font-weight: 400;
+  margin-top: 4px; max-width: var(--medida);
+}
 #titulo-vista {
   font-family: var(--ff-display);
-  font-size: 34px; font-weight: 400; letter-spacing: .02em;
-  line-height: var(--lh-tight); text-transform: uppercase;
+  font-size: var(--fs-display); font-weight: 400; letter-spacing: 0;
+  line-height: var(--lh-tight); color: var(--texto);
 }
 
 /* Vistas: cada vista solo se monta en React mientras su ruta está activa
@@ -282,12 +299,12 @@ body {
 .cuentas-grid, .tarjetas-grid, .prestamos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 700px) { .cuentas-grid, .tarjetas-grid, .prestamos-grid { grid-template-columns: 1fr; } }
 .tile-agregar {
-  border: 1.5px dashed var(--borde); background: transparent; border-radius: 14px;
+  border: 1px dashed var(--borde-fuerte); background: transparent; border-radius: var(--radio);
   padding: 18px; display: flex; align-items: center; justify-content: center; gap: 9px;
-  cursor: pointer; font-family: inherit; font-weight: 600; font-size: 14px;
+  cursor: pointer; font-family: inherit; font-weight: 500; font-size: 15px;
   color: var(--suave); min-height: 120px;
 }
-.tile-agregar:hover { color: var(--texto); border-color: var(--suave); }
+.tile-agregar:hover { color: var(--primario); border-color: var(--primario); }
 
 /* Grid de 2 columnas de Registro (FinanzasQ.dc.html): form a la izquierda un
    poco más ancho que "Registrado hoy" a la derecha; 1 columna en mobile. */
@@ -302,18 +319,21 @@ body {
   .grid-movs > :nth-child(3) { display: none; }
 }
 
-/* Banner de alerta (deuda supera ingresos) */
+/* Banner de alerta (deuda supera ingresos) — plano, sin relleno de color:
+   lo que avisa es el filete izquierdo grueso, como una llamada al margen en
+   un informe impreso. */
 .banner-alerta {
-  background: var(--panel-2);
-  border: 1px solid var(--rojo);
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--baja);
   color: var(--texto);
   border-radius: var(--radio); padding: 14px 18px; margin-bottom: 14px;
-  font-size: 14px; font-weight: 650;
+  font-size: 15px; font-weight: 400;
 }
 
 /* Texto secundario chico, usado por las gráficas (estados de carga/vacío)
    y por celdas/párrafos sueltos que no ameritan un componente MUI propio. */
-.texto-suave { color: var(--suave); font-size: 13px; margin-bottom: 10px; line-height: 1.55; }
+.texto-suave { color: var(--suave); font-size: 15px; margin-bottom: 10px; line-height: var(--lh-normal); max-width: var(--medida); }
 
 /* ---------- Accesibilidad ---------- */
 @media (prefers-reduced-motion: reduce) {

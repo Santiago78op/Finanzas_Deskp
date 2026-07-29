@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
@@ -8,6 +8,8 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDownOutlined';
 import ScheduleIcon from '@mui/icons-material/ScheduleOutlined';
 import MesSelector from './MesSelector.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
+import BarraProgreso from '../shared/BarraProgreso.jsx';
+import MontoAnimado from '../shared/MontoAnimado.jsx';
 import { getDashboard } from '../../api/dashboard.js';
 import { getMovimientos } from '../../api/movimientos.js';
 import { fmtQ, MESES } from '../../utils.js';
@@ -15,7 +17,6 @@ import { ACC } from '../../theme/colores.js';
 import { useDashboardReveal } from '../../hooks/useDashboardReveal.js';
 import { useDataVersion } from '../../context/DataVersionContext.jsx';
 import { useTopbarExtra } from '../../context/TopbarExtraContext.jsx';
-import { motionOK } from '../../motion.js';
 import { tabularNums, puntoAcento, bordeFilaLista } from '../shared/estilos.js';
 import { balanceIzquierda, balanceDerecha, barraFondo, circuloIconoPago } from './dashboard.styles.js';
 
@@ -34,8 +35,7 @@ export default function DashboardView() {
   const [movs, setMovs] = useState([]);
   const { version } = useDataVersion();
   const { setExtra } = useTopbarExtra();
-  const rootRef = useRef(null);
-  useDashboardReveal(rootRef, motionOK, [d]);
+  const scope = useDashboardReveal([d]);
 
   const cargar = useCallback(async () => {
     setD(await getDashboard(anio, mes));
@@ -89,7 +89,7 @@ export default function DashboardView() {
   };
 
   return (
-    <div id="vista-dashboard" className="vista" ref={rootRef}>
+    <div id="vista-dashboard" className="vista" ref={scope}>
       {d.deuda_supera_ingresos && (
         <div className="banner-alerta reveal-block">
           ⚠️ Tu deuda en tarjetas ({fmtQ(d.deuda_total)}) rebasa tus ingresos del mes ({fmtQ(d.ingresos)})
@@ -110,8 +110,8 @@ export default function DashboardView() {
           </div>
           <div style={balanceDerecha}>
             <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Balance del mes</Typography>
-            <Typography variant="h4" fontWeight={700} className={aFavor ? 'text-[var(--ingreso)]' : 'text-[var(--gasto)]'} style={tabularNums}>
-              {aFavor ? '+' : '−'}{fmtQ(Math.abs(d.balance))}
+            <Typography variant="h4" fontWeight={700} className={aFavor ? 'text-[var(--ingreso)]' : 'text-[var(--gasto)]'}>
+              <MontoAnimado valor={Math.abs(d.balance)} signo={aFavor ? '+' : '−'} />
             </Typography>
           </div>
         </Card>
@@ -119,7 +119,7 @@ export default function DashboardView() {
         <Card component="section" aria-labelledby="sec-cuanto-tengo" className="reveal-block p-5 dash-span-4 flex flex-col gap-3">
           <Typography id="sec-cuanto-tengo" variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">¿Cuánto tengo?</Typography>
           <div>
-            <Typography variant="h5" fontWeight={700} style={tabularNums}>{fmtQ(d.dinero_total)}</Typography>
+            <Typography variant="h5" fontWeight={700}><MontoAnimado valor={d.dinero_total} /></Typography>
             <Typography variant="body2" className="text-[var(--suave)]">Disponible en {d.cuentas.length} cuenta{d.cuentas.length === 1 ? '' : 's'}</Typography>
           </div>
           <div className="flex flex-col">
@@ -148,18 +148,17 @@ export default function DashboardView() {
                 <span className="flex items-center gap-2 text-[var(--ingreso)]"><TrendingUpIcon sx={{ fontSize: 16 }} /><span className="text-[var(--texto)]">Ingresos</span></span>
                 <span className="text-[var(--ingreso)]" style={tabularNums}>{fmtQ(d.ingresos)}</span>
               </div>
-              <div className="mt-1.5 h-2 rounded-full" style={barraFondo}>
-                <div className="h-full rounded-full" style={{ width: '100%', background: 'var(--ingreso)' }} />
-              </div>
+              {/* La de ingresos es la referencia (siempre 100%): crece junto
+                  con la de gastos para que se lean como una comparación, no
+                  como dos barras sueltas. */}
+              <BarraProgreso className="mt-1.5" pct={100} color="var(--ingreso)" fondo={barraFondo.background} etiqueta="Ingresos del mes" />
             </div>
             <div>
               <div className="flex items-center justify-between text-sm font-semibold">
                 <span className="flex items-center gap-2 text-[var(--gasto)]"><TrendingDownIcon sx={{ fontSize: 16 }} /><span className="text-[var(--texto)]">Gastos</span></span>
                 <span className="text-[var(--gasto)]" style={tabularNums}>{fmtQ(d.gastos)}</span>
               </div>
-              <div className="mt-1.5 h-2 rounded-full" style={barraFondo}>
-                <div className="h-full rounded-full" style={{ width: `${gastoBarW}%`, background: 'var(--gasto)' }} />
-              </div>
+              <BarraProgreso className="mt-1.5" pct={gastoBarW} color="var(--gasto)" fondo={barraFondo.background} etiqueta="Gastos sobre ingresos del mes" />
             </div>
           </div>
           <div className="flex items-center justify-between pt-3 mt-auto" style={{ borderTop: '1px solid var(--borde)' }}>
@@ -178,7 +177,7 @@ export default function DashboardView() {
           <div className="flex items-end justify-between">
             <div>
               <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Deuda total</Typography>
-              <Typography variant="h5" fontWeight={700} className="text-[var(--pago)]" style={tabularNums}>{fmtQ(deudaTotalGeneral)}</Typography>
+              <Typography variant="h5" fontWeight={700} className="text-[var(--pago)]"><MontoAnimado valor={deudaTotalGeneral} /></Typography>
               {hayOtraDeuda && (
                 <Typography variant="body2" className="text-[var(--suave)]">
                   {[
@@ -208,9 +207,10 @@ export default function DashboardView() {
                 <span className="font-semibold">{c.nombre}</span>
                 <span className="font-semibold" style={tabularNums}>{fmtQ(c.total)}</span>
               </div>
-              <div className="h-2.5 rounded-full" style={barraFondo}>
-                <div className="h-full rounded-full" style={{ width: `${Math.round(c.total / maxCategoria * 100)}%`, background: ACC[i % 6] }} />
-              </div>
+              <BarraProgreso
+                alto={10} pct={c.total / maxCategoria * 100} color={ACC[i % 6]}
+                fondo={barraFondo.background} etiqueta={`Gasto en ${c.nombre} respecto a la categoría más alta`}
+              />
             </div>
           ))}
           {d.analisis.top_categorias.length > 0 && (

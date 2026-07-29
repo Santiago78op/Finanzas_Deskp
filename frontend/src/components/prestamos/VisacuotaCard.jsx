@@ -1,9 +1,14 @@
+import { motion } from 'motion/react';
 import Card from '@mui/material/Card';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import EditIcon from '@mui/icons-material/EditOutlined';
 import { fmtQ } from '../../utils.js';
+import { alzarCard, varsItem } from '../../motion.js';
+import BarraProgreso from '../shared/BarraProgreso.jsx';
 import { tabularNums } from '../shared/estilos.js';
+
+const MotionCard = motion.create(Card);
 
 // Card de Visa Cuotas: descripción + tarjeta asociada (si hay), saldo
 // pendiente, barra de "X de Y cuotas" y cuota mensual. Sin botón de pago
@@ -15,7 +20,12 @@ export default function VisacuotaCard({ visacuota, tarjetaNombre, onEditar, onPa
   const completa = visacuota.cuotas_restantes <= 0;
 
   return (
-    <Card component="article" className={`p-[18px] flex flex-col gap-3 relative${visacuota.activo ? '' : ' opacity-60'}`}>
+    <MotionCard
+      component="article"
+      className={`p-[18px] flex flex-col gap-3 relative${visacuota.activo ? '' : ' opacity-60'}`}
+      variants={varsItem}
+      {...alzarCard}
+    >
       <IconButton size="small" onClick={onEditar} aria-label="Editar Visa Cuotas" sx={{ position: 'absolute', top: 8, right: 8, color: 'var(--suave)' }}>
         <EditIcon sx={{ fontSize: 16 }} />
       </IconButton>
@@ -34,14 +44,12 @@ export default function VisacuotaCard({ visacuota, tarjetaNombre, onEditar, onPa
         <div className="text-[11.5px] font-semibold uppercase tracking-wide text-[var(--suave)]">Saldo pendiente</div>
         <div className="text-[21px] font-bold" style={tabularNums}>{fmtQ(visacuota.saldo)}</div>
       </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--panel-2)' }}>
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--primario)' }} />
-      </div>
+      <BarraProgreso alto={6} pct={pct} color="var(--primario)" etiqueta={`Cuotas pagadas de ${visacuota.descripcion}`} />
       <div className="flex items-center justify-between text-xs">
         <span className="text-[var(--suave)]">{visacuota.cuotas_pagadas} de {visacuota.num_cuotas} cuotas</span>
         <span className="font-semibold" style={tabularNums}>{fmtQ(visacuota.cuota_mensual)}/mes</span>
       </div>
       {!completa && <Button size="small" variant="outlined" onClick={onPagar}>Registrar pago</Button>}
-    </Card>
+    </MotionCard>
   );
 }

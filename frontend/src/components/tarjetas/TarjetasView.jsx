@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/AddOutlined';
 import FormTarjeta from './FormTarjeta.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
+import MontoAnimado from '../shared/MontoAnimado.jsx';
 import { getTarjetas } from '../../api/tarjetas.js';
-import { fmtQ } from '../../utils.js';
+import { varsItem, varsLista } from '../../motion.js';
 
 // Solo tarjetas — "Mis cuentas" se fue a su propia vista (ver
 // components/cuentas/CuentasView.jsx). Alta/edición vía modal (no panel
@@ -35,7 +37,7 @@ export default function TarjetasView() {
       <Card component="section" aria-label="Deuda total en tarjetas" className="p-5 flex items-center justify-between gap-5 flex-wrap">
         <div>
           <Typography variant="caption" className="text-[var(--suave)] uppercase tracking-wide font-bold">Deuda total en tarjetas</Typography>
-          <Typography variant="h4" fontWeight={700} letterSpacing="-.02em" className="text-[var(--pago)]">{fmtQ(deudaTotal)}</Typography>
+          <Typography variant="h4" fontWeight={700} letterSpacing="-.02em" className="text-[var(--pago)]"><MontoAnimado valor={deudaTotal} /></Typography>
         </div>
         <Typography variant="body2" className="text-[var(--suave)] max-w-xs">
           Repartida en {activas.length} tarjeta{activas.length === 1 ? '' : 's'}.
@@ -45,14 +47,14 @@ export default function TarjetasView() {
 
       <Divider sx={{ mt: 5, mb: 3 }} />
 
-      <div className="tarjetas-grid">
+      <motion.div className="tarjetas-grid" variants={varsLista} initial="oculto" animate="visible">
         {tarjetas.map(t => (
           <CreditCard key={t.id} tarjeta={t} onEditar={() => abrirEditar(t)} />
         ))}
-        <button type="button" onClick={abrirNueva} className="tile-agregar">
+        <motion.button type="button" onClick={abrirNueva} className="tile-agregar" variants={varsItem}>
           <AddIcon fontSize="small" /> Agregar tarjeta
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {modalAbierto && (
         <FormTarjeta editando={editando} onGuardado={() => { cerrarModal(); cargar(); }} onCerrar={cerrarModal} />

@@ -145,6 +145,7 @@ class TarjetaIn(BaseModel):
     saldo_inicial: float = 0  # deuda que ya traía la tarjeta (opcional, puede ser 0)
     activa: bool = True
     color_idx: Optional[int] = None  # índice 0-5 sobre la paleta ACC; None = rotativo automático
+    marca: Optional[str] = None      # 'Visa' | 'Mastercard' | None (sin especificar)
     # Valores del resumen del banco, cargados a mano (opcionales, None = sin dato):
     saldo_dia: Optional[float] = None
     saldo_corte: Optional[float] = None
@@ -366,11 +367,11 @@ def crear_tarjeta(body: TarjetaIn):
             raise HTTPException(400, f"Ya existe una tarjeta llamada '{body.nombre.strip()}'")
         cur = conn.execute(
             "INSERT INTO tarjetas (banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, "
-            "activa, color_idx, saldo_dia, saldo_corte, pago_contado, resumen_actualizado) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "activa, color_idx, marca, saldo_dia, saldo_corte, pago_contado, resumen_actualizado) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (body.banco.strip(), body.nombre.strip(), validar_monto(body.limite),
              body.dia_corte, body.dia_pago, body.saldo_inicial, int(body.activa), body.color_idx,
-             body.saldo_dia, body.saldo_corte, body.pago_contado, _fecha_resumen(body)),
+             body.marca, body.saldo_dia, body.saldo_corte, body.pago_contado, _fecha_resumen(body)),
         )
         conn.commit()
         marcar_y_sincronizar(conn)
@@ -394,11 +395,11 @@ def editar_tarjeta(tarjeta_id: int, body: TarjetaIn):
             "FROM tarjetas WHERE id = ?", (tarjeta_id,)).fetchone()
         conn.execute(
             "UPDATE tarjetas SET banco=?, nombre=?, limite=?, dia_corte=?, dia_pago=?, "
-            "saldo_inicial=?, activa=?, color_idx=?, saldo_dia=?, saldo_corte=?, pago_contado=?, "
-            "resumen_actualizado=? WHERE id = ?",
+            "saldo_inicial=?, activa=?, color_idx=?, marca=?, saldo_dia=?, saldo_corte=?, "
+            "pago_contado=?, resumen_actualizado=? WHERE id = ?",
             (body.banco.strip(), body.nombre.strip(), validar_monto(body.limite),
              body.dia_corte, body.dia_pago, body.saldo_inicial, int(body.activa),
-             body.color_idx, body.saldo_dia, body.saldo_corte, body.pago_contado,
+             body.color_idx, body.marca, body.saldo_dia, body.saldo_corte, body.pago_contado,
              _fecha_resumen(body, previo), tarjeta_id),
         )
         conn.commit()
@@ -445,6 +446,8 @@ def _validar_tarjeta_in(body: TarjetaIn):
         raise HTTPException(400, "Banco y nombre son obligatorios")
     if body.color_idx is not None and not (0 <= body.color_idx <= 5):
         raise HTTPException(400, "color_idx debe estar entre 0 y 5")
+    if body.marca is not None and body.marca not in ("Visa", "Mastercard"):
+        raise HTTPException(400, "marca debe ser 'Visa' o 'Mastercard'")
     if not (1 <= body.dia_corte <= 31) or not (1 <= body.dia_pago <= 31):
         raise HTTPException(400, "Los días de corte y pago deben estar entre 1 y 31")
     if body.saldo_inicial < 0:
@@ -1754,9 +1757,9 @@ def _query_export(conn, tabla):
     consultas = {
         "categorias": ("nombre,tipo,activa",
                        "SELECT nombre, tipo, activa FROM categorias ORDER BY tipo, nombre"),
-        "tarjetas": ("banco,nombre,limite,dia_corte,dia_pago,saldo_inicial,activa,saldo_dia,saldo_corte,pago_contado,resumen_actualizado",
+        "tarjetas": ("banco,nombre,limite,dia_corte,dia_pago,saldo_inicial,activa,marca,saldo_dia,saldo_corte,pago_contado,resumen_actualizado",
                      "SELECT banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, activa, "
-                     "saldo_dia, saldo_corte, pago_contado, resumen_actualizado FROM tarjetas"),
+                     "marca, saldo_dia, saldo_corte, pago_contado, resumen_actualizado FROM tarjetas"),
         "cuentas": ("banco,nombre,tipo,saldo_inicial,activa",
                     "SELECT banco, nombre, tipo, saldo_inicial, activa FROM cuentas"),
         "ingresos": ("fecha,descripcion,categoria,monto,cuenta",
@@ -1944,14 +1947,20 @@ async def importar_csv(tabla: str, archivo: UploadFile = File(...)):
                     # o si el CSV es viejo y no trae esas columnas.
                     resumen = tuple(float(fila[c]) if fila.get(c) else None
                                     for c in ("saldo_dia", "saldo_corte", "pago_contado"))
+                    # marca: opcional y tolerante con CSV viejos (columna ausente
+                    # o vacía -> None); si viene con basura, se rechaza el archivo
+                    # en vez de guardar una red inválida.
+                    marca = fila.get("marca") or None
+                    if marca is not None and marca not in ("Visa", "Mastercard"):
+                        raise ValueError(f"marca inválida en la tarjeta '{fila['nombre']}': '{marca}'")
                     conn.execute(
                         "INSERT INTO tarjetas (banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, "
-                        "activa, saldo_dia, saldo_corte, pago_contado, resumen_actualizado) "
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        "activa, marca, saldo_dia, saldo_corte, pago_contado, resumen_actualizado) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         (fila["banco"], fila["nombre"], validar_monto(fila["limite"]),
                          int(fila["dia_corte"]), int(fila["dia_pago"]),
                          float(fila.get("saldo_inicial", "0") or 0),
-                         int(fila.get("activa", "1") or 1),
+                         int(fila.get("activa", "1") or 1), marca,
                          *resumen, fila.get("resumen_actualizado") or None))
                     tars = {t["nombre"].lower(): t["id"] for t in conn.execute("SELECT * FROM tarjetas")}
 

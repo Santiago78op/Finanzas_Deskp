@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Button from '@mui/material/Button';
@@ -11,7 +12,15 @@ import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { ACC } from '../../theme/colores.js';
 
-const VACIO = { banco: '', nombre: '', limite: '', dia_corte: '', dia_pago: '', saldo_inicial: '0', activa: true, color_idx: null, saldo_dia: '', saldo_corte: '', pago_contado: '' };
+const VACIO = { banco: '', nombre: '', limite: '', dia_corte: '', dia_pago: '', saldo_inicial: '0', activa: true, color_idx: null, marca: '', saldo_dia: '', saldo_corte: '', pago_contado: '' };
+
+// '' en el <select> = "sin especificar" -> null en la API (la cara de la
+// tarjeta entonces intenta adivinar la red por el nombre, como antes).
+const REDES = [
+  { valor: '', label: 'Sin especificar' },
+  { valor: 'Visa', label: 'Visa' },
+  { valor: 'Mastercard', label: 'Mastercard' },
+];
 
 // '' -> null, número -> float. Los valores del resumen son opcionales.
 const numOpt = (v) => (v === '' || v == null ? null : parseFloat(v));
@@ -28,7 +37,7 @@ export default function FormTarjeta({ editando, onGuardado, onCerrar }) {
     banco: editando.banco, nombre: editando.nombre, limite: String(editando.limite),
     dia_corte: String(editando.dia_corte), dia_pago: String(editando.dia_pago),
     saldo_inicial: String(editando.saldo_inicial), activa: !!editando.activa,
-    color_idx: editando.color_idx ?? null,
+    color_idx: editando.color_idx ?? null, marca: editando.marca ?? '',
     saldo_dia: strOpt(editando.saldo_dia), saldo_corte: strOpt(editando.saldo_corte),
     pago_contado: strOpt(editando.pago_contado),
   } : VACIO);
@@ -40,7 +49,7 @@ export default function FormTarjeta({ editando, onGuardado, onCerrar }) {
       banco: form.banco, nombre: form.nombre, limite: parseFloat(form.limite),
       dia_corte: parseInt(form.dia_corte), dia_pago: parseInt(form.dia_pago),
       saldo_inicial: parseFloat(form.saldo_inicial || 0), activa: form.activa,
-      color_idx: form.color_idx,
+      color_idx: form.color_idx, marca: form.marca || null,
       saldo_dia: numOpt(form.saldo_dia), saldo_corte: numOpt(form.saldo_corte),
       pago_contado: numOpt(form.pago_contado),
     };
@@ -79,6 +88,10 @@ export default function FormTarjeta({ editando, onGuardado, onCerrar }) {
         value={form.banco} onChange={e => setForm(f => ({ ...f, banco: e.target.value }))} />
       <TextField label="Nombre único" placeholder="ej. Visa BI" required
         value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+      <TextField select label="Red" helperText="El logo sale solo en la tarjeta"
+        value={form.marca} onChange={e => setForm(f => ({ ...f, marca: e.target.value }))}>
+        {REDES.map(r => <MenuItem key={r.valor || 'none'} value={r.valor}>{r.label}</MenuItem>)}
+      </TextField>
       <TextField label="Límite (Q)" type="number" inputProps={{ step: 0.01, min: 0.01 }} required
         value={form.limite} onChange={e => setForm(f => ({ ...f, limite: e.target.value }))} />
       <TextField label="Día de corte" type="number" inputProps={{ min: 1, max: 31 }} required
