@@ -8,6 +8,7 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDownOutlined';
 import ScheduleIcon from '@mui/icons-material/ScheduleOutlined';
 import MesSelector from './MesSelector.jsx';
 import CreditCard from '../shared/CreditCard.jsx';
+import PanelesSkeleton from '../shared/PanelesSkeleton.jsx';
 import BarraProgreso from '../shared/BarraProgreso.jsx';
 import MontoAnimado from '../shared/MontoAnimado.jsx';
 import { getDashboard } from '../../api/dashboard.js';
@@ -37,9 +38,12 @@ export default function DashboardView() {
   const { setExtra } = useTopbarExtra();
   const scope = useDashboardReveal([d]);
 
+  // En paralelo, no en cadena: son dos endpoints independientes y encadenados
+  // el usuario esperaba la suma de los dos viajes para ver la primera pantalla.
   const cargar = useCallback(async () => {
-    setD(await getDashboard(anio, mes));
-    setMovs(await getMovimientos());
+    const [dash, movimientos] = await Promise.all([getDashboard(anio, mes), getMovimientos()]);
+    setD(dash);
+    setMovs(movimientos);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anio, mes, version]);
 
@@ -60,7 +64,21 @@ export default function DashboardView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anio, mes]);
 
-  if (!d) return null;
+  // Esqueleto, NO `null`: con la transición de salida de <AnimatePresence
+  // mode="wait"> la vista anterior ya se fue, así que devolver null dejaba la
+  // pantalla en blanco durante todo el viaje a la API. Los spans replican la
+  // grilla de abajo para que al llegar los datos nada salte de lugar.
+  if (!d) {
+    return (
+      <PanelesSkeleton
+        id="vista-dashboard" etiqueta="Cargando el dashboard"
+        paneles={[
+          { span: 12, lineas: 2 }, { span: 4 }, { span: 4 }, { span: 4 },
+          { span: 7, lineas: 4 }, { span: 5, lineas: 2 },
+        ]}
+      />
+    );
+  }
 
   const aFavor = d.balance >= 0;
   const gastoBarW = d.ingresos > 0 ? Math.min(100, Math.round(d.gastos / d.ingresos * 100)) : (d.gastos > 0 ? 100 : 0);

@@ -6,6 +6,7 @@ import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import MesSelector from '../dashboard/MesSelector.jsx';
 import PanelAnalisis from '../dashboard/PanelAnalisis.jsx';
+import PanelesSkeleton from '../shared/PanelesSkeleton.jsx';
 import GraficaPastel from './GraficaPastel.jsx';
 import GraficaMetodo from './GraficaMetodo.jsx';
 import GraficaBarras from './GraficaBarras.jsx';
@@ -58,7 +59,16 @@ export default function AnalisisView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anio, mes]);
 
-  if (!d) return null;
+  // Mismo caso que el Dashboard: devolver `null` acá dejaba la pantalla en
+  // blanco al entrar desde otra pestaña (ver PanelesSkeleton).
+  if (!d) {
+    return (
+      <PanelesSkeleton
+        id="vista-analisis" etiqueta="Cargando el análisis"
+        paneles={[{ span: 4 }, { span: 4 }, { span: 4 }, { span: 7, lineas: 5 }, { span: 5, lineas: 5 }]}
+      />
+    );
+  }
 
   const hayTarjetas = d.tarjetas.length >= 2;
   const hayDeudas = d.tarjetas.length > 0 || d.prestamos.length > 0 || d.visacuotas.length > 0;

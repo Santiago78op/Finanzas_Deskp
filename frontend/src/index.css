@@ -331,6 +331,19 @@ body {
   font-size: 15px; font-weight: 400;
 }
 
+/* Bloques del esqueleto de carga (DashboardSkeleton). Latido lento y de poca
+   amplitud: un shimmer marcado convierte la espera en el elemento más vivo de
+   la pantalla, que es justo al revés de lo que se quiere. Se respeta
+   prefers-reduced-motion con la regla global del final del archivo. */
+.skeleton-bloque {
+  background: var(--panel-2);
+  animation: latido-skeleton 1.4s ease-in-out infinite;
+}
+@keyframes latido-skeleton {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
+}
+
 /* Texto secundario chico, usado por las gráficas (estados de carga/vacío)
    y por celdas/párrafos sueltos que no ameritan un componente MUI propio. */
 .texto-suave { color: var(--suave); font-size: 15px; margin-bottom: 10px; line-height: var(--lh-normal); max-width: var(--medida); }
