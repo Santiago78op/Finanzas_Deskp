@@ -6,6 +6,7 @@ import MovimientosView from './components/movimientos/MovimientosView.jsx';
 import CuentasView from './components/cuentas/CuentasView.jsx';
 import TarjetasView from './components/tarjetas/TarjetasView.jsx';
 import PrestamosView from './components/prestamos/PrestamosView.jsx';
+import AhorrosView from './components/ahorros/AhorrosView.jsx';
 import AnalisisView from './components/analisis/AnalisisView.jsx';
 import AjustesView from './components/ajustes/AjustesView.jsx';
 
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="cuentas" element={<CuentasView />} />
           <Route path="tarjetas" element={<TarjetasView />} />
           <Route path="prestamos" element={<PrestamosView />} />
+          <Route path="ahorros" element={<AhorrosView />} />
           <Route path="analisis" element={<AnalisisView />} />
           <Route path="movimientos" element={<MovimientosView />} />
           <Route path="ajustes" element={<AjustesView />} />

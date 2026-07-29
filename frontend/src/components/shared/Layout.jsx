@@ -14,8 +14,8 @@ import { varsPagina } from '../../motion.js';
 
 const TITULOS = {
   dashboard: 'Dashboard', registro: 'Registro rápido', cuentas: 'Mis cuentas',
-  tarjetas: 'Tarjetas', prestamos: 'Préstamos', analisis: 'Análisis', movimientos: 'Movimientos',
-  ajustes: 'Ajustes y datos',
+  tarjetas: 'Tarjetas', prestamos: 'Préstamos', ahorros: 'Ahorros',
+  analisis: 'Análisis', movimientos: 'Movimientos', ajustes: 'Ajustes y datos',
 };
 
 // Subtítulo = "la pregunta que resuelve" cada vista (FinanzasQ.dc.html,
@@ -24,6 +24,7 @@ const SUBTITULOS = {
   dashboard: '¿Cómo vas con tu dinero hoy?', registro: 'Anotá un gasto o ingreso en segundos.',
   cuentas: '¿Cuánto dinero tenés y dónde está?', tarjetas: '¿Cuánto debés y cuándo corta?',
   prestamos: 'Tus préstamos y Visa Cuotas, en un solo lugar.',
+  ahorros: '¿Cuánto tenés apartado y cuánto podés apartar?',
   analisis: '¿En qué se te va el dinero?', movimientos: 'Todo lo que registraste, con filtros.',
   ajustes: 'Categorías, recurrentes, Notion y respaldo.',
 };

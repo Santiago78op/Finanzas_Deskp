@@ -139,6 +139,17 @@ export default function DashboardView() {
           <div>
             <Typography variant="h5" fontWeight={700}><MontoAnimado valor={d.dinero_total} /></Typography>
             <Typography variant="body2" className="text-[var(--suave)]">Disponible en {d.cuentas.length} cuenta{d.cuentas.length === 1 ? '' : 's'}</Typography>
+            {/* Solo aparece si hay algo apartado: sin ahorros configurados, esta
+                línea sería ruido que repite el número de arriba. El apartado NO
+                se resta del total de arriba — sale de él (ver /ahorros). */}
+            {d.apartado_ahorros > 0 && (
+              <Typography variant="body2" className="text-[var(--suave)]">
+                {fmtQ(d.apartado_ahorros)} apartados ·{' '}
+                <b className={d.libre_para_gastar < 0 ? 'text-[var(--gasto)]' : 'text-[var(--texto)]'}>
+                  {fmtQ(d.libre_para_gastar)} libres
+                </b>
+              </Typography>
+            )}
           </div>
           <div className="flex flex-col">
             {d.cuentas.length === 0 && <Typography variant="body2" className="text-[var(--suave)]">Sin cuentas registradas.</Typography>}

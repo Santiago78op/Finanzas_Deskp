@@ -17,7 +17,12 @@ export default function Modal({ titulo, onCerrar, onGuardar, children, labelGuar
   return (
     <Dialog open onClose={onCerrar} fullWidth maxWidth="xs" fullScreen={fullScreen}>
       <DialogTitle>{titulo}</DialogTitle>
-      <DialogContent className="flex flex-col gap-3">{children}</DialogContent>
+      {/* pt:1 y overflow visible en el eje X: el DialogContent de MUI recorta
+          por arriba la etiqueta flotante del PRIMER campo (la "Tipo" o "Banco"
+          que aparecía cortada a la mitad), porque la etiqueta se dibuja fuera
+          del borde superior del input y el contenedor la corta al hacer
+          scroll. El padding le da el aire que necesita. */}
+      <DialogContent className="flex flex-col gap-3" sx={{ pt: 2 }}>{children}</DialogContent>
       <DialogActions sx={{ justifyContent: extra ? 'space-between' : 'flex-end' }}>
         {extra}
         <Box sx={{ display: 'flex', gap: 1 }}>

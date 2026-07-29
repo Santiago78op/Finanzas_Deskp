@@ -113,6 +113,46 @@ def init_db():
         monto        REAL NOT NULL CHECK (monto > 0)
     );
 
+    -- Ahorros: fondo de emergencia y metas de compra (celular, laptop...).
+    --
+    -- MODELO DE SOBRE, y esto es lo que hay que entender antes de tocar nada:
+    -- un ahorro NO guarda plata propia. Es una etiqueta sobre el dinero que ya
+    -- está en `cuentas`. Apartar Q500 no cambia tu saldo total — marca que
+    -- Q500 de lo que tenés están comprometidos. Por eso los ahorros JAMÁS se
+    -- suman a dinero_total: se restan de él para calcular lo que queda libre.
+    -- Si algún día se sumaran, la app te contaría la misma plata dos veces.
+    --
+    -- El objetivo se expresa de dos formas excluyentes:
+    --   · `objetivo`     — monto fijo en Q (las metas: "Q4,000 para el celular")
+    --   · `meses_gastos` — múltiplo del gasto mensual promedio real (el fondo
+    --     de emergencia: "3 meses"). Se recalcula solo cuando cambia tu nivel
+    --     de gasto, que es como se mide un fondo de emergencia.
+    CREATE TABLE IF NOT EXISTS ahorros (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre         TEXT NOT NULL UNIQUE,
+        tipo           TEXT NOT NULL CHECK (tipo IN ('emergencia', 'meta')),
+        objetivo       REAL CHECK (objetivo > 0),
+        meses_gastos   REAL CHECK (meses_gastos > 0),
+        fecha_objetivo TEXT,
+        nota           TEXT NOT NULL DEFAULT '',
+        color_idx      INTEGER CHECK (color_idx BETWEEN 0 AND 5),
+        activo         INTEGER NOT NULL DEFAULT 1,
+        -- Uno de los dos objetivos, no los dos ni ninguno.
+        CHECK ((objetivo IS NULL) <> (meses_gastos IS NULL))
+    );
+
+    -- Movimientos de un sobre. El monto puede ser NEGATIVO: así se registra
+    -- sacar plata del ahorro (usar el fondo de emergencia, o devolver algo que
+    -- se había apartado de más). Por eso el CHECK es `<> 0` y no `> 0` como en
+    -- el resto de las tablas de esta base.
+    CREATE TABLE IF NOT EXISTS aportes_ahorro (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        fecha     TEXT NOT NULL,
+        ahorro_id INTEGER NOT NULL REFERENCES ahorros(id),
+        monto     REAL NOT NULL CHECK (monto <> 0),
+        nota      TEXT NOT NULL DEFAULT ''
+    );
+
     -- Pagos hechos a tarjetas (reducen el saldo de la tarjeta;
     -- cuenta_id: de qué cuenta salió el pago, opcional)
     CREATE TABLE IF NOT EXISTS pagos_tarjetas (
@@ -504,6 +544,69 @@ def saldo_cuenta(conn, cuenta_id):
         "SELECT COALESCE(SUM(monto), 0) AS t FROM pagos_tarjetas WHERE cuenta_id = ?", (cuenta_id,)
     ).fetchone()["t"]
     return round(inicial + entradas - salidas - pagos, 2)
+
+
+def saldo_ahorro(conn, ahorro_id):
+    """Cuánto hay apartado en un sobre = suma de sus aportes (los retiros son negativos)."""
+    total = conn.execute(
+        "SELECT COALESCE(SUM(monto), 0) AS t FROM aportes_ahorro WHERE ahorro_id = ?",
+        (ahorro_id,),
+    ).fetchone()["t"]
+    return round(total, 2)
+
+
+def total_apartado(conn):
+    """
+    Suma de todos los sobres activos. Es lo que hay que RESTAR del dinero en
+    cuentas para saber cuánto queda libre — nunca sumar (ver el comentario del
+    esquema de `ahorros`).
+    """
+    total = conn.execute(
+        """SELECT COALESCE(SUM(a.monto), 0) AS t FROM aportes_ahorro a
+           JOIN ahorros h ON h.id = a.ahorro_id WHERE h.activo = 1"""
+    ).fetchone()["t"]
+    return round(total, 2)
+
+
+def gasto_mensual_promedio(conn, meses=6):
+    """
+    Gasto promedio de los últimos `meses` meses COMPLETOS (sin contar el mes en
+    curso, que siempre va a la mitad y tiraría el promedio para abajo).
+
+    Es la base del objetivo del fondo de emergencia. Solo promedia los meses
+    que efectivamente tienen gastos registrados: en una base recién empezada,
+    dividir entre 6 daría un objetivo ridículamente bajo y el fondo se vería
+    "completo" sin estarlo. Devuelve None si todavía no hay historial.
+    """
+    filas = conn.execute(
+        """SELECT strftime('%Y-%m', fecha) AS ym, SUM(monto) AS t
+           FROM gastos
+           WHERE strftime('%Y-%m', fecha) < strftime('%Y-%m', 'now')
+           GROUP BY ym ORDER BY ym DESC LIMIT ?""",
+        (meses,),
+    ).fetchall()
+    if not filas:
+        return None
+    return round(sum(f["t"] for f in filas) / len(filas), 2)
+
+
+def objetivo_ahorro(conn, fila, promedio=None):
+    """
+    Objetivo en quetzales de un sobre.
+
+    Las metas lo traen fijo. El fondo de emergencia lo deriva del gasto
+    promedio (meses_gastos × promedio) y devuelve None mientras no haya
+    historial suficiente — mejor no mostrar meta que mostrar una inventada.
+    `promedio` se puede pasar ya calculado para no repetir la consulta al
+    listar varios sobres.
+    """
+    if fila["objetivo"] is not None:
+        return round(fila["objetivo"], 2)
+    if promedio is None:
+        promedio = gasto_mensual_promedio(conn)
+    if not promedio:
+        return None
+    return round(fila["meses_gastos"] * promedio, 2)
 
 
 def saldo_cuentas_hasta(conn, ym):

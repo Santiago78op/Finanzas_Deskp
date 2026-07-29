@@ -207,6 +207,38 @@ Al registrar un gasto con **Débito o Transferencia** podés indicar de qué cue
 salió (opcional); igual en pagos de tarjeta e ingresos. Así el dashboard sabe
 cuánto dinero te queda en cada cuenta.
 
+### Ahorros: fondo de emergencia y metas
+
+En *Ahorros* se apartan dos cosas: un **fondo de emergencia** (plata para un
+imprevisto) y **metas** de compra (celular, laptop…).
+
+**Lo importante del modelo:** un ahorro es un *sobre*, no una cuenta. Apartar
+Q500 **no mueve dinero ni cambia tu saldo total** — marca que Q500 de lo que ya
+tenés están comprometidos. Por eso la app nunca suma los ahorros al disponible:
+los resta.
+
+```
+Disponible total    Q 4,700     ← lo que hay en tus cuentas
+Apartado            Q 1,500     ← comprometido en sobres
+Libre para gastar   Q 3,200     ← total − apartado
+```
+
+Si "libre" sale en rojo es que apartaste más de lo que tenés. El número no se
+recorta a cero a propósito: ese rojo es el aviso.
+
+| | Objetivo | Ejemplo |
+|---|---|---|
+| **Fondo de emergencia** | Meses de gastos | "3 meses" → se calcula con tu gasto promedio real y se ajusta solo si cambia tu nivel de vida |
+| **Meta** | Monto fijo en Q | "Q4,000 para el celular" |
+
+Con **fecha objetivo**, cada meta dice cuánto apartar por mes para llegar.
+
+El panel **"¿Cuánto puedo apartar?"** responde con tus números, no con una regla
+del pulgar: `ingreso recurrente − gasto promedio − cuotas de préstamos y Visa
+Cuotas`. Los pagos a tarjeta no se restan ahí porque las compras con tarjeta
+**ya están** contadas dentro del gasto promedio; restarlas otra vez descontaría
+dos veces la misma compra.
+
 ### Bono 14 y aguinaldo
 
 Las dos prestaciones anuales de Guatemala se configuran como ingresos
