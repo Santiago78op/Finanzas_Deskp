@@ -18,13 +18,24 @@ from api.modelos import ( CuentaIn,
 
 router = APIRouter()
 
+# Contrato de una cuenta (ver tests/test_contrato_api.py). Con columnas
+# explícitas, `dict(fila)` vuelve a ser seguro: lo que sale es lo que dice esta
+# lista, no lo que tenga la tabla. Lo peligroso era el `SELECT *`.
+CAMPOS = "id, banco, nombre, tipo, saldo_inicial, activa"
+
+
+def con_saldo(conn, fila):
+    """Una cuenta más su saldo calculado. La usa también el dashboard, para que
+    las dos vistas reciban exactamente la misma forma."""
+    return {**dict(fila), "saldo": db.saldo_cuenta(conn, fila["id"])}
+
 
 @router.get("/api/cuentas")
 def listar_cuentas(incluir_inactivas: bool = False):
     conn = db.get_conn()
     try:
-        sql = "SELECT * FROM cuentas" + ("" if incluir_inactivas else " WHERE activa = 1")
-        return [{**dict(c), "saldo": db.saldo_cuenta(conn, c["id"])}
+        sql = f"SELECT {CAMPOS} FROM cuentas" + ("" if incluir_inactivas else " WHERE activa = 1")
+        return [con_saldo(conn, c)
                 for c in conn.execute(sql + " ORDER BY banco, nombre").fetchall()]
     finally:
         conn.close()

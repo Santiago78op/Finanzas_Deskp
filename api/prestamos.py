@@ -21,6 +21,14 @@ from api.comun import _borrar
 
 router = APIRouter()
 
+# Contrato de un préstamo y de una Visa Cuotas (ver tests/test_contrato_api.py). Con columnas explícitas,
+# `dict(fila)` vuelve a ser seguro: lo que sale es lo que dice esta lista, no lo
+# que tenga la tabla. Lo peligroso era el `SELECT *`.
+CAMPOS_PRESTAMO = ("id, nombre, institucion, monto_original, saldo_inicial, "
+                   "cuota_mensual, tasa_interes, dia_pago, fecha_inicio, activo")
+CAMPOS_VISACUOTA = ("id, descripcion, tarjeta_id, monto_total, num_cuotas, "
+                    "cuota_mensual, fecha_inicio, dia_pago, activo")
+
 
 def _prestamo_con_saldo(conn, p):
     saldo = db.saldo_prestamo(conn, p["id"])
@@ -40,7 +48,7 @@ def _prestamo_con_saldo(conn, p):
 def listar_prestamos(incluir_inactivas: bool = False):
     conn = db.get_conn()
     try:
-        sql = "SELECT * FROM prestamos" + ("" if incluir_inactivas else " WHERE activo = 1")
+        sql = f"SELECT {CAMPOS_PRESTAMO} FROM prestamos" + ("" if incluir_inactivas else " WHERE activo = 1")
         return [_prestamo_con_saldo(conn, p) for p in conn.execute(sql + " ORDER BY nombre").fetchall()]
     finally:
         conn.close()
@@ -183,7 +191,7 @@ def _visacuota_con_saldo(conn, v):
 def listar_visacuotas(incluir_inactivas: bool = False):
     conn = db.get_conn()
     try:
-        sql = "SELECT * FROM visacuotas" + ("" if incluir_inactivas else " WHERE activo = 1")
+        sql = f"SELECT {CAMPOS_VISACUOTA} FROM visacuotas" + ("" if incluir_inactivas else " WHERE activo = 1")
         return [_visacuota_con_saldo(conn, v) for v in conn.execute(sql + " ORDER BY descripcion").fetchall()]
     finally:
         conn.close()

@@ -20,6 +20,12 @@ import notion_sync
 
 router = APIRouter()
 
+# Contrato de una tarjeta (ver tests/test_contrato_api.py). Con columnas
+# explícitas, `dict(fila)` vuelve a ser seguro: lo que sale es lo que dice esta
+# lista, no lo que tenga la tabla. Lo peligroso era el `SELECT *`.
+CAMPOS = ("id, banco, nombre, limite, dia_corte, dia_pago, saldo_inicial, activa, "
+          "color_idx, marca, saldo_dia, saldo_corte, pago_contado, resumen_actualizado")
+
 
 def _resumen_vencido(t):
     """True si los valores del resumen quedaron viejos: se cargaron antes del
@@ -54,7 +60,7 @@ def _tarjeta_con_saldo(conn, t):
 def listar_tarjetas(incluir_inactivas: bool = False):
     conn = db.get_conn()
     try:
-        sql = "SELECT * FROM tarjetas" + ("" if incluir_inactivas else " WHERE activa = 1")
+        sql = f"SELECT {CAMPOS} FROM tarjetas" + ("" if incluir_inactivas else " WHERE activa = 1")
         return [_tarjeta_con_saldo(conn, t)
                 for t in conn.execute(sql + " ORDER BY nombre").fetchall()]
     finally:

@@ -16,8 +16,11 @@ from api.comun import (
 
 import calendar
 import notion_sync
-from api.prestamos import _prestamo_con_saldo, _visacuota_con_saldo
-from api.tarjetas import _tarjeta_con_saldo
+from api import cuentas as mod_cuentas
+from api.prestamos import (
+    CAMPOS_PRESTAMO, CAMPOS_VISACUOTA, _prestamo_con_saldo, _visacuota_con_saldo,
+)
+from api.tarjetas import CAMPOS as CAMPOS_TARJETA, _tarjeta_con_saldo
 
 router = APIRouter()
 
@@ -123,11 +126,11 @@ def dashboard(anio: Optional[int] = None, mes: Optional[int] = None):
                 tendencia_categorias["series"][idx]["datos"].append(round(gasto_por_mes.get(ym_i, 0), 2))
 
         tarjetas = [_tarjeta_con_saldo(conn, t)
-                    for t in conn.execute("SELECT * FROM tarjetas WHERE activa = 1 ORDER BY nombre")]
+                    for t in conn.execute(f"SELECT {CAMPOS_TARJETA} FROM tarjetas WHERE activa = 1 ORDER BY nombre")]
 
         # Cuentas de dinero: cuánto tenés en total y por cuenta
-        cuentas = [{**dict(c), "saldo": db.saldo_cuenta(conn, c["id"])}
-                   for c in conn.execute("SELECT * FROM cuentas WHERE activa = 1 ORDER BY banco, nombre")]
+        cuentas = [mod_cuentas.con_saldo(conn, c)
+                   for c in conn.execute(f"SELECT {mod_cuentas.CAMPOS} FROM cuentas WHERE activa = 1 ORDER BY banco, nombre")]
         dinero_total = round(sum(c["saldo"] for c in cuentas), 2)
         apartado_ahorros = db.total_apartado(conn)
 
@@ -158,9 +161,9 @@ def dashboard(anio: Optional[int] = None, mes: Optional[int] = None):
 
         # --- Préstamos y Visa Cuotas: nivel real de endeudamiento y de pagos ---
         prestamos = [_prestamo_con_saldo(conn, p)
-                     for p in conn.execute("SELECT * FROM prestamos WHERE activo = 1 ORDER BY nombre")]
+                     for p in conn.execute(f"SELECT {CAMPOS_PRESTAMO} FROM prestamos WHERE activo = 1 ORDER BY nombre")]
         visacuotas = [_visacuota_con_saldo(conn, v)
-                      for v in conn.execute("SELECT * FROM visacuotas WHERE activo = 1 ORDER BY descripcion")]
+                      for v in conn.execute(f"SELECT {CAMPOS_VISACUOTA} FROM visacuotas WHERE activo = 1 ORDER BY descripcion")]
 
         deuda_prestamos = round(sum(p["saldo"] for p in prestamos), 2)
         deuda_visacuotas = round(sum(v["saldo"] for v in visacuotas), 2)

@@ -20,15 +20,36 @@ import calendar
 
 router = APIRouter()
 
+# Contrato de un ingreso recurrente y de un pago frecuente (ver
+# tests/test_contrato_api.py). Con columnas explícitas, `dict(fila)` vuelve a
+# ser seguro: lo que sale es lo que dice esta lista, no lo que tenga la tabla.
+# Los alias de los JOIN (categoria, tarjeta, cuenta) son parte del contrato.
+CAMPOS_RECURRENTE = ("r.id, r.descripcion, r.categoria_id, r.monto, r.dia_mes, "
+                     "r.frecuencia, r.dia_mes_2, r.mes_1, r.mes_2, r.activo")
+CAMPOS_GASTO_REC = ("g.id, g.descripcion, g.categoria_id, g.monto, g.dia_mes, "
+                    "g.frecuencia, g.dia_mes_2, g.metodo, g.tarjeta_id, "
+                    "g.cuenta_id, g.activo")
+
+# Los dos SELECT completos, para que el lister y el motor de pendientes usen
+# exactamente el mismo (si divergen, /pendientes devuelve otra forma que la
+# lista y el frontend recibe dos contratos para el mismo recurso).
+SQL_RECURRENTES = f"""SELECT {CAMPOS_RECURRENTE}, c.nombre AS categoria
+                      FROM ingresos_recurrentes r
+                      JOIN categorias c ON c.id = r.categoria_id"""
+SQL_GASTOS_REC = f"""SELECT {CAMPOS_GASTO_REC}, c.nombre AS categoria,
+                            t.nombre AS tarjeta, cu.nombre AS cuenta
+                     FROM gastos_recurrentes g
+                     JOIN categorias c ON c.id = g.categoria_id
+                     LEFT JOIN tarjetas t ON t.id = g.tarjeta_id
+                     LEFT JOIN cuentas cu ON cu.id = g.cuenta_id"""
+
 
 @router.get("/api/recurrentes")
 def listar_recurrentes():
     conn = db.get_conn()
     try:
         return [dict(f) for f in conn.execute(
-            """SELECT r.*, c.nombre AS categoria FROM ingresos_recurrentes r
-               JOIN categorias c ON c.id = r.categoria_id ORDER BY r.id"""
-        ).fetchall()]
+            SQL_RECURRENTES + " ORDER BY r.id").fetchall()]
     finally:
         conn.close()
 
@@ -186,11 +207,8 @@ def _pendientes(sql_recurrentes, tabla_confirmaciones):
 @router.get("/api/recurrentes/pendientes")
 def recurrentes_pendientes():
     """Ingresos recurrentes (salario, Bono 14, aguinaldo) pendientes de confirmar."""
-    return _pendientes(
-        """SELECT r.*, c.nombre AS categoria FROM ingresos_recurrentes r
-           JOIN categorias c ON c.id = r.categoria_id WHERE r.activo = 1""",
-        "recurrentes_confirmaciones",
-    )
+    return _pendientes(SQL_RECURRENTES + " WHERE r.activo = 1",
+                       "recurrentes_confirmaciones")
 
 
 def _marcar_confirmado(conn, rec_id, ym, quincena):
@@ -285,12 +303,7 @@ def listar_gastos_recurrentes():
     conn = db.get_conn()
     try:
         return [dict(f) for f in conn.execute(
-            """SELECT g.*, c.nombre AS categoria, t.nombre AS tarjeta, cu.nombre AS cuenta
-               FROM gastos_recurrentes g
-               JOIN categorias c ON c.id = g.categoria_id
-               LEFT JOIN tarjetas t ON t.id = g.tarjeta_id
-               LEFT JOIN cuentas cu ON cu.id = g.cuenta_id ORDER BY g.id"""
-        ).fetchall()]
+            SQL_GASTOS_REC + " ORDER BY g.id").fetchall()]
     finally:
         conn.close()
 
@@ -354,13 +367,8 @@ def borrar_gasto_recurrente(rec_id: int):
 @router.get("/api/gastos_recurrentes/pendientes")
 def gastos_recurrentes_pendientes():
     """Pagos frecuentes (renta, internet, streaming) pendientes de confirmar."""
-    return _pendientes(
-        """SELECT g.*, c.nombre AS categoria, t.nombre AS tarjeta, cu.nombre AS cuenta
-           FROM gastos_recurrentes g JOIN categorias c ON c.id = g.categoria_id
-           LEFT JOIN tarjetas t ON t.id = g.tarjeta_id
-           LEFT JOIN cuentas cu ON cu.id = g.cuenta_id WHERE g.activo = 1""",
-        "gastos_rec_confirmaciones",
-    )
+    return _pendientes(SQL_GASTOS_REC + " WHERE g.activo = 1",
+                       "gastos_rec_confirmaciones")
 
 
 def _marcar_gasto_confirmado(conn, rec_id, ym, quincena):

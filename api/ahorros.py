@@ -20,6 +20,13 @@ from datetime import date
 
 router = APIRouter()
 
+# Contrato de un ahorro y de un aporte (ver tests/test_contrato_api.py). Con columnas explícitas,
+# `dict(fila)` vuelve a ser seguro: lo que sale es lo que dice esta lista, no lo
+# que tenga la tabla. Lo peligroso era el `SELECT *`.
+CAMPOS_AHORRO = ("id, nombre, tipo, objetivo, meses_gastos, fecha_objetivo, "
+                 "nota, color_idx, activo")
+CAMPOS_APORTE = "id, fecha, ahorro_id, monto, nota"
+
 
 def _ahorro_con_saldo(conn, fila, promedio=None, hoy_=None):
     """Un sobre con lo que lleva juntado, su objetivo y cuánto le falta por mes."""
@@ -77,7 +84,7 @@ def _capacidad_de_ahorro(conn):
     cuotas = conn.execute(
         "SELECT COALESCE(SUM(cuota_mensual), 0) AS t FROM prestamos WHERE activo = 1"
     ).fetchone()["t"]
-    for v in conn.execute("SELECT * FROM visacuotas WHERE activo = 1"):
+    for v in conn.execute("SELECT id, num_cuotas, cuota_mensual FROM visacuotas WHERE activo = 1"):
         _, pagadas = db.saldo_visacuota(conn, v["id"])
         if v["num_cuotas"] - pagadas > 0:  # una cuota ya terminada no compromete nada
             cuotas += v["cuota_mensual"]
@@ -175,7 +182,7 @@ def aplicar_plan():
     try:
         promedio = db.gasto_mensual_promedio(conn)
         ahorros = [_ahorro_con_saldo(conn, f, promedio) for f in
-                   conn.execute("SELECT * FROM ahorros WHERE activo = 1")]
+                   conn.execute(f"SELECT {CAMPOS_AHORRO} FROM ahorros WHERE activo = 1")]
         plan = _plan_de_ahorro(ahorros, _capacidad_de_ahorro(conn)["mensual"])
         if not plan["asignaciones"]:
             raise HTTPException(400, "No hay nada que apartar con tu capacidad actual")
@@ -204,7 +211,7 @@ def listar_ahorros(incluir_inactivos: bool = False):
     """
     conn = db.get_conn()
     try:
-        sql = "SELECT * FROM ahorros" + ("" if incluir_inactivos else " WHERE activo = 1")
+        sql = f"SELECT {CAMPOS_AHORRO} FROM ahorros" + ("" if incluir_inactivos else " WHERE activo = 1")
         filas = conn.execute(sql + " ORDER BY tipo, nombre").fetchall()
         promedio = db.gasto_mensual_promedio(conn)
         ahorros = [_ahorro_con_saldo(conn, f, promedio) for f in filas]
@@ -311,7 +318,8 @@ def listar_aportes(ahorro_id: int):
     conn = db.get_conn()
     try:
         return [dict(a) for a in conn.execute(
-            "SELECT * FROM aportes_ahorro WHERE ahorro_id = ? ORDER BY fecha DESC, id DESC",
+            f"SELECT {CAMPOS_APORTE} FROM aportes_ahorro WHERE ahorro_id = ? "
+            "ORDER BY fecha DESC, id DESC",
             (ahorro_id,))]
     finally:
         conn.close()

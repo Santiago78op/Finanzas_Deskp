@@ -18,12 +18,18 @@ from api.modelos import ( CategoriaIn, CategoriaEdit,
 
 router = APIRouter()
 
+# Contrato de una categoría (ver tests/test_contrato_api.py).
+CAMPOS = "id, nombre, tipo, activa"
+
 
 @router.get("/api/categorias")
 def listar_categorias(tipo: Optional[str] = None, incluir_inactivas: bool = False):
     conn = db.get_conn()
     try:
-        sql, params = "SELECT * FROM categorias WHERE 1=1", []
+        # Columnas explícitas y no `SELECT *`: lo que la API promete no puede
+        # depender de las columnas que tenga la tabla ese día. Con * , agregar
+        # una columna interna la publicaba sola.
+        sql, params = f"SELECT {CAMPOS} FROM categorias WHERE 1=1", []
         if tipo:
             sql += " AND tipo = ?"; params.append(tipo)
         if not incluir_inactivas:
