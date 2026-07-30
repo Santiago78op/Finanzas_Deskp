@@ -238,15 +238,8 @@ def test_sin_historial_la_capacidad_no_se_inventa(cliente):
 
 # ---------- Cuánto apartar por mes para llegar a la fecha ----------
 
-def test_con_fecha_objetivo_dice_cuanto_apartar_por_mes(cliente, monkeypatch):
-    import app as app_modulo
-    from datetime import date
-
-    class Reloj(date):
-        @classmethod
-        def today(cls):
-            return date(2026, 7, 1)
-    monkeypatch.setattr(app_modulo, "date", Reloj)
+def test_con_fecha_objetivo_dice_cuanto_apartar_por_mes(cliente, en_fecha):
+    en_fecha(2026, 7, 1)
 
     # 4000 en ~4 meses (1 de julio -> 1 de noviembre) ≈ 1000/mes
     cliente.post("/api/ahorros", json={**META, "fecha_objetivo": "2026-11-01"})
@@ -301,15 +294,8 @@ def test_el_plan_le_da_primero_al_fondo_de_emergencia(cliente, base):
     assert plan["sin_asignar"] == 0
 
 
-def test_una_meta_con_fecha_cobra_antes_que_una_sin_fecha(cliente, base, monkeypatch):
-    import app as app_modulo
-    from datetime import date
-
-    class Reloj(date):
-        @classmethod
-        def today(cls):
-            return date(2026, 7, 1)
-    monkeypatch.setattr(app_modulo, "date", Reloj)
+def test_una_meta_con_fecha_cobra_antes_que_una_sin_fecha(cliente, base, en_fecha):
+    en_fecha(2026, 7, 1)
 
     _con_capacidad(cliente, base, ingreso=10000, gasto=7000)   # capacidad 3000
     cliente.post("/api/ahorros", json={**META, "fecha_objetivo": "2026-11-01"})  # ~1000/mes
@@ -322,15 +308,8 @@ def test_una_meta_con_fecha_cobra_antes_que_una_sin_fecha(cliente, base, monkeyp
     assert porNombre["Laptop"] == pytest.approx(2000, abs=15)
 
 
-def test_el_plan_avisa_si_no_alcanza_para_las_metas_con_fecha(cliente, base, monkeypatch):
-    import app as app_modulo
-    from datetime import date
-
-    class Reloj(date):
-        @classmethod
-        def today(cls):
-            return date(2026, 7, 1)
-    monkeypatch.setattr(app_modulo, "date", Reloj)
+def test_el_plan_avisa_si_no_alcanza_para_las_metas_con_fecha(cliente, base, en_fecha):
+    en_fecha(2026, 7, 1)
 
     _con_capacidad(cliente, base, ingreso=10000, gasto=9700)   # capacidad 300
     cliente.post("/api/ahorros", json={**META, "fecha_objetivo": "2026-11-01"})  # pide ~1000

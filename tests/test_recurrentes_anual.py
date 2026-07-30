@@ -9,11 +9,8 @@ Lo que se prueba acá es que un anual SOLO aparezca en su mes. Es el riesgo
 real de la feature: si la condición del mes falla, la app te avisa doce veces
 al año que cobres el Bono 14.
 """
-from datetime import date
-
 import pytest
 
-import app as app_modulo
 import db
 from conftest import id_categoria
 
@@ -33,23 +30,6 @@ def crear(cliente, cat_id, **extra):
     r = cliente.post("/api/recurrentes", json={**BASE, "categoria_id": cat_id, **extra})
     assert r.status_code == 200, r.text
     return r.json()["id"]
-
-
-class RelojFalso(date):
-    """date.today() fijo, para pararse en un mes concreto del calendario."""
-    _hoy = date(2026, 7, 20)
-
-    @classmethod
-    def today(cls):
-        return cls._hoy
-
-
-@pytest.fixture
-def en_fecha(monkeypatch):
-    def _en(anio, mes, dia):
-        RelojFalso._hoy = date(anio, mes, dia)
-        monkeypatch.setattr(app_modulo, "date", RelojFalso)
-    return _en
 
 
 # ---------- Categorías ----------

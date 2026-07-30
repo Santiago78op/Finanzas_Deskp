@@ -21,12 +21,15 @@ from pathlib import Path
 _DIR_TMP = Path(tempfile.mkdtemp(prefix="dedun-tests-"))
 os.environ["DEDUN_DB"] = str(_DIR_TMP / "arranque.db")
 
+from datetime import date  # noqa: E402
+
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 import db  # noqa: E402
 import app as app_modulo  # noqa: E402
 import notion_sync  # noqa: E402
+from api import comun  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -56,6 +59,24 @@ def base(tmp_path, monkeypatch):
 def cliente(base):
     """TestClient de FastAPI apuntando a la base del test (por `base`)."""
     return TestClient(app_modulo.app)
+
+
+@pytest.fixture
+def en_fecha(monkeypatch):
+    """
+    Para la app en una fecha fija: `en_fecha(2026, 12, 16)`.
+
+    Parchea `api.comun.hoy`, que es la ÚNICA función de la app que consulta el
+    reloj. Antes cada endpoint llamaba a `date.today()` por su cuenta y esto
+    tenía que parchear `app.date` con una subclase de `date` que redefinía
+    today(); al partir app.py en routers eso dejó de funcionar, porque cada
+    módulo pasó a tener su propio `date`. Con una sola costura, un test que
+    necesita pararse en diciembre parchea un solo nombre y vale para toda la
+    app — dashboard, ahorros y recurrentes incluidos.
+    """
+    def _en(anio, mes, dia):
+        monkeypatch.setattr(comun, "hoy", lambda: date(anio, mes, dia))
+    return _en
 
 
 # --- Helpers de datos ------------------------------------------------------
