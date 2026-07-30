@@ -131,10 +131,14 @@ class ConfirmarIn(BaseModel):
 class GastoRecurrenteIn(BaseModel):
     descripcion: str
     categoria_id: int
-    monto: float               # si es Quincenal, es el monto POR quincena
+    monto: float               # POR PAGO, no anual: si son dos pagos, es cada uno
     dia_mes: int
-    frecuencia: str = "Mensual"
-    dia_mes_2: Optional[int] = None
+    frecuencia: str = "Mensual"      # 'Mensual' | 'Quincenal' | 'Anual'
+    dia_mes_2: Optional[int] = None  # segundo día (Quincenal) o día del 2º pago (Anual)
+    # Solo 'Anual': en qué mes cae cada pago. Un seguro, el impuesto de
+    # circulación o una colegiatura se pagan una vez al año, no todos los meses.
+    mes_1: Optional[int] = None
+    mes_2: Optional[int] = None
     metodo: str = "Efectivo"
     tarjeta_id: Optional[int] = None
     cuenta_id: Optional[int] = None

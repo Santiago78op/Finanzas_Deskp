@@ -12,11 +12,12 @@ import { useToast } from '../shared/Toast.jsx';
 import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { fmtQ } from '../../utils.js';
+import CamposFrecuencia, { camposParaLaApi, describirFrecuencia } from './CamposFrecuencia.jsx';
 import { filaAcciones, filaItem } from './ajustes.styles.js';
 
 const VACIO = {
   descripcion: '', categoria_id: '', frecuencia: 'Mensual', monto: '', dia_mes: '', dia_mes_2: '',
-  metodo: '', cuenta_id: '', activo: true,
+  mes_1: '', mes_2: '', metodo: '', cuenta_id: '', activo: true,
 };
 
 export default function FormGastoRecurrente({ onCambio }) {
@@ -36,6 +37,8 @@ export default function FormGastoRecurrente({ onCambio }) {
         descripcion: editando.descripcion, categoria_id: String(editando.categoria_id),
         frecuencia: editando.frecuencia || 'Mensual', monto: String(editando.monto),
         dia_mes: String(editando.dia_mes), dia_mes_2: editando.dia_mes_2 ? String(editando.dia_mes_2) : '',
+        mes_1: editando.mes_1 ? String(editando.mes_1) : '',
+        mes_2: editando.mes_2 ? String(editando.mes_2) : '',
         metodo: editando.metodo === 'Tarjeta' ? `Tarjeta:${editando.tarjeta_id}` : editando.metodo,
         cuenta_id: editando.cuenta_id ? String(editando.cuenta_id) : '',
         activo: !!editando.activo,
@@ -47,6 +50,7 @@ export default function FormGastoRecurrente({ onCambio }) {
   }, [editando, catGasto, metodos]);
 
   const esQuincenal = form.frecuencia === 'Quincenal';
+  const dosPagosAnuales = form.frecuencia === 'Anual' && !!form.mes_2;
   const usaCuenta = (form.metodo === 'Débito' || form.metodo === 'Transferencia') && cuentas.length > 0;
 
   const submit = async (e) => {
@@ -56,7 +60,7 @@ export default function FormGastoRecurrente({ onCambio }) {
       descripcion: form.descripcion, categoria_id: parseInt(form.categoria_id),
       monto: parseFloat(form.monto), dia_mes: parseInt(form.dia_mes),
       frecuencia: form.frecuencia,
-      dia_mes_2: esQuincenal ? parseInt(form.dia_mes_2) : null,
+      ...camposParaLaApi(form),
       metodo: esTarjeta ? 'Tarjeta' : form.metodo,
       tarjeta_id: esTarjeta ? parseInt(form.metodo.split(':')[1]) : null,
       cuenta_id: form.cuenta_id ? parseInt(form.cuenta_id) : null,
@@ -97,23 +101,16 @@ export default function FormGastoRecurrente({ onCambio }) {
           onChange={e => setForm(f => ({ ...f, categoria_id: e.target.value }))}>
           {catGasto.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
         </TextField>
-        <TextField select label="Frecuencia" value={form.frecuencia}
-          onChange={e => setForm(f => ({ ...f, frecuencia: e.target.value }))}>
-          <MenuItem value="Mensual">Mensual (una vez al mes)</MenuItem>
-          <MenuItem value="Quincenal">Quincenal (dos veces al mes)</MenuItem>
-        </TextField>
-        <TextField label={esQuincenal ? 'Monto por quincena (Q)' : 'Monto (Q)'} type="number"
-          inputProps={{ step: 0.01, min: 0.01 }} required
+        <CamposFrecuencia
+          valores={form}
+          alCambiar={(campo, valor) => setForm(f => ({ ...f, [campo]: valor }))}
+          etiquetaAnual="Anual (seguro, impuesto, colegiatura)"
+        />
+        <TextField
+          label={esQuincenal ? 'Monto por quincena (Q)' : dosPagosAnuales ? 'Monto por pago (Q)' : 'Monto (Q)'}
+          type="number" inputProps={{ step: 0.01, min: 0.01 }} required
+          helperText={dosPagosAnuales ? 'Lo de cada pago, no el total del año' : undefined}
           value={form.monto} onChange={e => setForm(f => ({ ...f, monto: e.target.value }))} />
-        <TextField label="Día de pago" type="number" inputProps={{ min: 1, max: 31 }} required
-          value={form.dia_mes} onChange={e => setForm(f => ({ ...f, dia_mes: e.target.value }))} />
-        {esQuincenal && (
-          <TextField
-            label="Segundo día de pago" type="number" inputProps={{ min: 1, max: 31 }} required={esQuincenal}
-            title="El primer día de pago ya lo pusiste arriba — acá va la segunda fecha del mes (ej. si pagás los 15 y los 30, acá va 30)."
-            value={form.dia_mes_2} onChange={e => setForm(f => ({ ...f, dia_mes_2: e.target.value }))}
-          />
-        )}
         <TextField select label="Método de pago" value={form.metodo}
           onChange={e => setForm(f => ({ ...f, metodo: e.target.value }))}>
           {metodos.map(m => {
@@ -144,9 +141,7 @@ export default function FormGastoRecurrente({ onCambio }) {
           <Stack direction="row" sx={filaItem} key={r.id} className="border-t border-[var(--borde)] pt-2 pb-2">
             <span className={r.activo ? '' : 'opacity-50'}>
               <b>{r.descripcion}</b> ({r.categoria}) —{' '}
-              {r.frecuencia === 'Quincenal'
-                ? `${fmtQ(r.monto)} por quincena, los días ${r.dia_mes} y ${r.dia_mes_2}`
-                : `${fmtQ(r.monto)} el día ${r.dia_mes}`}
+              {describirFrecuencia(r, fmtQ)}
               {' · '}{r.metodo === 'Tarjeta' ? r.tarjeta : r.metodo}{r.cuenta ? ` (${r.cuenta})` : ''}
             </span>
             <Stack direction="row" sx={filaAcciones}>

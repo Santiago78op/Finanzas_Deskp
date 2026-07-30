@@ -104,6 +104,11 @@ GASTO_RECURRENTE = {
     'activo', 'categoria', 'categoria_id', 'cuenta', 'cuenta_id', 'descripcion',
     'dia_mes', 'dia_mes_2', 'frecuencia', 'id', 'metodo', 'monto', 'tarjeta',
     'tarjeta_id',
+    # mes_1/mes_2 se agregaron al habilitar la frecuencia Anual en los pagos
+    # frecuentes (un seguro, el impuesto de circulación). Los ingresos
+    # recurrentes ya los tenían: ahora las dos tablas exponen la misma forma
+    # de calendario.
+    'mes_1', 'mes_2',
 }
 
 MOVIMIENTO = {

@@ -27,8 +27,8 @@ router = APIRouter()
 CAMPOS_RECURRENTE = ("r.id, r.descripcion, r.categoria_id, r.monto, r.dia_mes, "
                      "r.frecuencia, r.dia_mes_2, r.mes_1, r.mes_2, r.activo")
 CAMPOS_GASTO_REC = ("g.id, g.descripcion, g.categoria_id, g.monto, g.dia_mes, "
-                    "g.frecuencia, g.dia_mes_2, g.metodo, g.tarjeta_id, "
-                    "g.cuenta_id, g.activo")
+                    "g.frecuencia, g.dia_mes_2, g.mes_1, g.mes_2, g.metodo, "
+                    "g.tarjeta_id, g.cuenta_id, g.activo")
 
 # Los dos SELECT completos, para que el lister y el motor de pendientes usen
 # exactamente el mismo (si divergen, /pendientes devuelve otra forma que la
@@ -54,7 +54,15 @@ def listar_recurrentes():
         conn.close()
 
 
-def _validar_recurrente_in(body: RecurrenteIn):
+def _validar_frecuencia(body):
+    """
+    Reglas de calendario, iguales para ingresos recurrentes y pagos frecuentes.
+
+    Compartida a propósito: son la MISMA regla de negocio, y tenerla dos veces
+    es cómo el soporte de 'Anual' quedó, en su momento, solo del lado de los
+    ingresos. Recibe cualquiera de los dos modelos porque ambos exponen los
+    mismos campos de calendario.
+    """
     if not (1 <= body.dia_mes <= 31):
         raise HTTPException(400, "El día del mes debe estar entre 1 y 31")
     if body.frecuencia not in ("Mensual", "Quincenal", "Anual"):
@@ -74,7 +82,11 @@ def _validar_recurrente_in(body: RecurrenteIn):
                 raise HTTPException(400, "Los dos pagos anuales deben caer en meses distintos")
 
 
-def _campos_anuales(body: RecurrenteIn):
+def _validar_recurrente_in(body: RecurrenteIn):
+    _validar_frecuencia(body)
+
+
+def _campos_anuales(body):
     """
     Normaliza los campos que dependen de la frecuencia, para no repetir la
     misma lógica en el INSERT y en el UPDATE.
@@ -171,10 +183,9 @@ def _pendientes(sql_recurrentes, tabla_confirmaciones):
     parámetros. El calendario y las etiquetas salen de db.ocurrencias_del_mes y
     db.etiqueta_ocurrencia.
 
-    NOTA: el motor ya soporta 'Anual', pero `gastos_recurrentes` todavía no
-    tiene las columnas mes_1/mes_2 ni ese valor en su CHECK, así que en la
-    práctica sus filas solo pueden ser Mensual o Quincenal. Habilitarlo es una
-    migración más el cambio del formulario.
+    Las dos tablas soportan las tres frecuencias, Anual incluida: Bono 14 y
+    aguinaldo del lado de los ingresos; un seguro o el impuesto de circulación
+    del lado de los gastos.
     """
     hoy_ = comun.hoy()
     ym = hoy_.strftime("%Y-%m")
@@ -275,15 +286,7 @@ def omitir_recurrente(rec_id: int, quincena: int = 1):
 def _validar_gasto_recurrente_in(conn, body: GastoRecurrenteIn):
     """Valida un pago frecuente y devuelve (tarjeta_id, cuenta_id) ya depurados."""
     validar_categoria(conn, body.categoria_id, "gasto")
-    if not (1 <= body.dia_mes <= 31):
-        raise HTTPException(400, "El día del mes debe estar entre 1 y 31")
-    if body.frecuencia not in ("Mensual", "Quincenal"):
-        raise HTTPException(400, "La frecuencia debe ser 'Mensual' o 'Quincenal'")
-    if body.frecuencia == "Quincenal":
-        if not body.dia_mes_2 or not (1 <= body.dia_mes_2 <= 31):
-            raise HTTPException(400, "Para frecuencia quincenal indicá el segundo día (1-31)")
-        if body.dia_mes_2 == body.dia_mes:
-            raise HTTPException(400, "Los dos días de la quincena deben ser distintos")
+    _validar_frecuencia(body)
     if body.metodo not in METODOS_VALIDOS:
         raise HTTPException(400, f"Método inválido: {body.metodo}")
     tarjeta_id, cuenta_id = None, None
@@ -316,10 +319,10 @@ def crear_gasto_recurrente(body: GastoRecurrenteIn):
         cur = conn.execute(
             "INSERT INTO gastos_recurrentes "
             "(descripcion, categoria_id, monto, dia_mes, frecuencia, dia_mes_2, "
-            " metodo, tarjeta_id, cuenta_id, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " mes_1, mes_2, metodo, tarjeta_id, cuenta_id, activo) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (body.descripcion.strip(), body.categoria_id, validar_monto(body.monto),
-             body.dia_mes, body.frecuencia,
-             body.dia_mes_2 if body.frecuencia == "Quincenal" else None,
+             body.dia_mes, body.frecuencia, *_campos_anuales(body),
              body.metodo, tarjeta_id, cuenta_id, int(body.activo)),
         )
         conn.commit()
@@ -337,10 +340,10 @@ def editar_gasto_recurrente(rec_id: int, body: GastoRecurrenteIn):
         tarjeta_id, cuenta_id = _validar_gasto_recurrente_in(conn, body)
         conn.execute(
             "UPDATE gastos_recurrentes SET descripcion=?, categoria_id=?, monto=?, dia_mes=?, "
-            "frecuencia=?, dia_mes_2=?, metodo=?, tarjeta_id=?, cuenta_id=?, activo=? WHERE id = ?",
+            "frecuencia=?, dia_mes_2=?, mes_1=?, mes_2=?, metodo=?, tarjeta_id=?, "
+            "cuenta_id=?, activo=? WHERE id = ?",
             (body.descripcion.strip(), body.categoria_id, validar_monto(body.monto),
-             body.dia_mes, body.frecuencia,
-             body.dia_mes_2 if body.frecuencia == "Quincenal" else None,
+             body.dia_mes, body.frecuencia, *_campos_anuales(body),
              body.metodo, tarjeta_id, cuenta_id, int(body.activo), rec_id),
         )
         conn.commit()

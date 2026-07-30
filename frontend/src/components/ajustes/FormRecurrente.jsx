@@ -12,12 +12,11 @@ import { useToast } from '../shared/Toast.jsx';
 import { useConfirm } from '../shared/ConfirmDialog.jsx';
 import { useCatalog } from '../../context/CatalogContext.jsx';
 import { fmtQ } from '../../utils.js';
+import CamposFrecuencia, { camposParaLaApi, describirFrecuencia } from './CamposFrecuencia.jsx';
 import { filaAcciones, filaItem } from './ajustes.styles.js';
 
 const VACIO = { descripcion: '', categoria_id: '', frecuencia: 'Mensual', monto: '', dia_mes: '', dia_mes_2: '', mes_1: '', mes_2: '', activo: true };
 
-const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 // Las dos prestaciones anuales obligatorias en Guatemala. Se ofrecen como
 // atajos porque sus fechas las fija la ley y no tiene sentido que el usuario
@@ -41,19 +40,6 @@ const PRESETS = [
     categoria: 'Aguinaldo',
   },
 ];
-
-// Frase legible de cuándo y cuánto cobra cada recurrente.
-function describir(r) {
-  if (r.frecuencia === 'Quincenal') {
-    return `${fmtQ(r.monto)} por quincena, los días ${r.dia_mes} y ${r.dia_mes_2}`;
-  }
-  if (r.frecuencia === 'Anual') {
-    const primero = `${MESES[r.mes_1 - 1]} ${r.dia_mes}`;
-    if (!r.mes_2) return `${fmtQ(r.monto)} una vez al año, el ${primero}`;
-    return `${fmtQ(r.monto)} por pago, el ${primero} y el ${MESES[r.mes_2 - 1]} ${r.dia_mes_2 || r.dia_mes}`;
-  }
-  return `${fmtQ(r.monto)} el día ${r.dia_mes}`;
-}
 
 export default function FormRecurrente({ onCambio }) {
   const { catIngreso } = useCatalog();
@@ -103,9 +89,7 @@ export default function FormRecurrente({ onCambio }) {
       frecuencia: form.frecuencia,
       // dia_mes_2 significa cosas distintas según la frecuencia: el segundo
       // día del mes en Quincenal, el día del segundo pago en Anual.
-      dia_mes_2: (esQuincenal || dosPagosAnuales) ? parseInt(form.dia_mes_2) : null,
-      mes_1: esAnual ? parseInt(form.mes_1) : null,
-      mes_2: dosPagosAnuales ? parseInt(form.mes_2) : null,
+      ...camposParaLaApi(form),
       activo: form.activo,
     };
     try {
@@ -157,46 +141,16 @@ export default function FormRecurrente({ onCambio }) {
           onChange={e => setForm(f => ({ ...f, categoria_id: e.target.value }))}>
           {catIngreso.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
         </TextField>
-        <TextField select label="Frecuencia" value={form.frecuencia}
-          onChange={e => setForm(f => ({ ...f, frecuencia: e.target.value }))}>
-          <MenuItem value="Mensual">Mensual (una vez al mes)</MenuItem>
-          <MenuItem value="Quincenal">Quincenal (dos veces al mes)</MenuItem>
-          <MenuItem value="Anual">Anual (Bono 14, aguinaldo)</MenuItem>
-        </TextField>
+        <CamposFrecuencia
+          valores={form}
+          alCambiar={(campo, valor) => setForm(f => ({ ...f, [campo]: valor }))}
+          etiquetaAnual="Anual (Bono 14, aguinaldo)"
+        />
         <TextField
           label={esQuincenal ? 'Monto por quincena (Q)' : dosPagosAnuales ? 'Monto por pago (Q)' : 'Monto (Q)'}
           type="number" inputProps={{ step: 0.01, min: 0.01 }} required
           helperText={dosPagosAnuales ? 'Lo de cada pago, no el total del año' : undefined}
           value={form.monto} onChange={e => setForm(f => ({ ...f, monto: e.target.value }))} />
-
-        {esAnual && (
-          <TextField select label="Mes del pago" required value={form.mes_1}
-            onChange={e => setForm(f => ({ ...f, mes_1: e.target.value }))}>
-            {MESES.map((m, i) => <MenuItem key={m} value={String(i + 1)}>{m}</MenuItem>)}
-          </TextField>
-        )}
-        <TextField label={esAnual ? 'Día del pago' : 'Día de pago'} type="number"
-          inputProps={{ min: 1, max: 31 }} required
-          value={form.dia_mes} onChange={e => setForm(f => ({ ...f, dia_mes: e.target.value }))} />
-
-        {esAnual && (
-          <TextField select label="Segundo pago (opcional)" value={form.mes_2}
-            helperText="El aguinaldo se paga mitad en diciembre y mitad en enero"
-            onChange={e => setForm(f => ({ ...f, mes_2: e.target.value }))}>
-            <MenuItem value="">Sin segundo pago</MenuItem>
-            {MESES.map((m, i) => <MenuItem key={m} value={String(i + 1)}>{m}</MenuItem>)}
-          </TextField>
-        )}
-        {(esQuincenal || dosPagosAnuales) && (
-          <TextField
-            label={esQuincenal ? 'Segundo día de pago' : 'Día del segundo pago'}
-            type="number" inputProps={{ min: 1, max: 31 }} required
-            title={esQuincenal
-              ? 'El primer día de pago ya lo pusiste arriba — acá va la segunda fecha del mes (ej. si cobrás los 15 y los 30, acá va 30).'
-              : 'Día del mes en que cae el segundo pago anual.'}
-            value={form.dia_mes_2} onChange={e => setForm(f => ({ ...f, dia_mes_2: e.target.value }))}
-          />
-        )}
         <FormControlLabel
           control={<Checkbox checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} />}
           label="Activo"
@@ -212,7 +166,7 @@ export default function FormRecurrente({ onCambio }) {
         {recs.map(r => (
           <Stack direction="row" sx={filaItem} key={r.id} className="border-t border-[var(--borde)] pt-2 pb-2">
             <span className={r.activo ? '' : 'opacity-50'}>
-              <b>{r.descripcion}</b> ({r.categoria}) — {describir(r)}
+              <b>{r.descripcion}</b> ({r.categoria}) — {describirFrecuencia(r, fmtQ)}
             </span>
             <Stack direction="row" sx={filaAcciones}>
               <Button size="small" variant="outlined" onClick={() => setEditando(r)}>Editar</Button>

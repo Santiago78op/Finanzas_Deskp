@@ -54,9 +54,9 @@ def _query_export(conn, tabla):
                                            r.frecuencia, r.dia_mes_2, r.mes_1, r.mes_2, r.activo
                                     FROM ingresos_recurrentes r
                                     JOIN categorias c ON c.id = r.categoria_id"""),
-        "gastos_recurrentes": ("descripcion,categoria,monto,dia_mes,frecuencia,dia_mes_2,metodo,cuenta,activo",
+        "gastos_recurrentes": ("descripcion,categoria,monto,dia_mes,frecuencia,dia_mes_2,mes_1,mes_2,metodo,cuenta,activo",
                                """SELECT g.descripcion, c.nombre, g.monto, g.dia_mes,
-                                         g.frecuencia, g.dia_mes_2,
+                                         g.frecuencia, g.dia_mes_2, g.mes_1, g.mes_2,
                                          CASE WHEN g.metodo = 'Tarjeta' THEN t.nombre ELSE g.metodo END,
                                          cu.nombre, g.activo
                                   FROM gastos_recurrentes g
@@ -270,11 +270,21 @@ async def importar_csv(tabla: str, archivo: UploadFile = File(...)):
                     if not cat_id:
                         raise ValueError(f"categoría de gasto desconocida: '{fila['categoria']}'")
                     frec = fila.get("frecuencia", "") or "Mensual"
-                    if frec not in ("Mensual", "Quincenal"):
-                        raise ValueError(f"frecuencia inválida: '{frec}' (Mensual o Quincenal)")
-                    dia2 = int(fila["dia_mes_2"]) if (frec == "Quincenal" and fila.get("dia_mes_2")) else None
+                    if frec not in ("Mensual", "Quincenal", "Anual"):
+                        raise ValueError(
+                            f"frecuencia inválida: '{frec}' (Mensual, Quincenal o Anual)")
+                    dia2 = int(fila["dia_mes_2"]) if fila.get("dia_mes_2") else None
                     if frec == "Quincenal" and not dia2:
                         raise ValueError("frecuencia Quincenal requiere la columna dia_mes_2")
+                    # mes_1/mes_2 solo aplican a Anual; en un CSV viejo la
+                    # columna no existe y quedan en None, que es lo correcto.
+                    mes1 = int(fila["mes_1"]) if fila.get("mes_1") else None
+                    mes2 = int(fila["mes_2"]) if fila.get("mes_2") else None
+                    if frec == "Anual":
+                        if not mes1:
+                            raise ValueError("frecuencia Anual requiere la columna mes_1 (1-12)")
+                    else:
+                        mes1 = mes2 = None
                     met = fila.get("metodo", "") or "Efectivo"
                     tid = None
                     if met.lower() in metodos_fijos:
@@ -286,10 +296,11 @@ async def importar_csv(tabla: str, archivo: UploadFile = File(...)):
                     conn.execute(
                         "INSERT INTO gastos_recurrentes "
                         "(descripcion, categoria_id, monto, dia_mes, frecuencia, dia_mes_2, "
-                        " metodo, tarjeta_id, cuenta_id, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        " mes_1, mes_2, metodo, tarjeta_id, cuenta_id, activo) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         (fila["descripcion"], cat_id, validar_monto(fila["monto"]),
-                         int(fila["dia_mes"]), frec, dia2, met, tid, cuenta_de(fila),
-                         int(fila.get("activo", "1") or 1)))
+                         int(fila["dia_mes"]), frec, dia2, mes1, mes2, met, tid,
+                         cuenta_de(fila), int(fila.get("activo", "1") or 1)))
 
                 elif tabla == "prestamos":
                     if fila["nombre"].lower() in pres:

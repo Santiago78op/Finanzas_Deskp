@@ -314,3 +314,158 @@ def test_init_db_es_idempotente_sobre_la_tabla_ya_migrada(base):
     db.init_db()
 
     assert base.execute("SELECT COUNT(*) c FROM ingresos_recurrentes").fetchone()["c"] == 1
+
+
+# ---------- Gastos recurrentes anuales ----------
+# Un seguro, el impuesto de circulación o una colegiatura: se pagan una vez al
+# año y antes no tenían dónde vivir (gastos_recurrentes solo admitía Mensual y
+# Quincenal). El motor de pendientes ya lo soportaba; faltaban las columnas.
+
+GASTO_ANUAL = {
+    "descripcion": "Seguro del carro", "monto": 3500.0, "dia_mes": 10,
+    "frecuencia": "Anual", "mes_1": 3, "metodo": "Efectivo", "activo": True,
+}
+
+
+def _cat_gasto(base):
+    return id_categoria(base, "Transporte", "gasto")
+
+
+def test_un_gasto_anual_se_puede_guardar(cliente, base):
+    r = cliente.post("/api/gastos_recurrentes",
+                     json={**GASTO_ANUAL, "categoria_id": _cat_gasto(base)})
+    assert r.status_code == 200, r.text
+
+    fila = base.execute(
+        "SELECT frecuencia, mes_1, mes_2 FROM gastos_recurrentes").fetchone()
+    assert (fila["frecuencia"], fila["mes_1"], fila["mes_2"]) == ("Anual", 3, None)
+
+
+def test_un_gasto_anual_solo_aparece_en_su_mes(cliente, base, en_fecha):
+    cliente.post("/api/gastos_recurrentes",
+                 json={**GASTO_ANUAL, "categoria_id": _cat_gasto(base)})
+
+    en_fecha(2026, 3, 20)   # ya pasó el 10 de marzo
+    pendientes = cliente.get("/api/gastos_recurrentes/pendientes").json()
+    assert [p["descripcion"] for p in pendientes] == ["Seguro del carro"]
+
+    en_fecha(2026, 3, 5)    # todavía no llega el 10
+    assert cliente.get("/api/gastos_recurrentes/pendientes").json() == []
+
+    en_fecha(2026, 8, 28)   # otro mes: no existe
+    assert cliente.get("/api/gastos_recurrentes/pendientes").json() == []
+
+
+def test_un_gasto_anual_puede_tener_dos_pagos(cliente, base, en_fecha):
+    # Una colegiatura que se paga en enero y julio.
+    cliente.post("/api/gastos_recurrentes", json={
+        **GASTO_ANUAL, "categoria_id": id_categoria(base, "Educación", "gasto"),
+        "descripcion": "Colegiatura", "mes_1": 1, "dia_mes": 15,
+        "mes_2": 7, "dia_mes_2": 20})
+
+    en_fecha(2026, 1, 20)
+    ene = cliente.get("/api/gastos_recurrentes/pendientes").json()
+    assert len(ene) == 1 and ene[0]["etiqueta"] == "Colegiatura (pago 1 de 2)"
+
+    en_fecha(2026, 7, 25)
+    jul = cliente.get("/api/gastos_recurrentes/pendientes").json()
+    assert len(jul) == 1 and jul[0]["quincena"] == 2
+    assert jul[0]["fecha_sugerida"] == "2026-07-20"
+
+
+def test_un_gasto_anual_sin_mes_se_rechaza(cliente, base):
+    r = cliente.post("/api/gastos_recurrentes", json={
+        **GASTO_ANUAL, "categoria_id": _cat_gasto(base), "mes_1": None})
+    assert r.status_code == 400
+
+
+def test_confirmar_un_gasto_anual_genera_el_gasto(cliente, base, en_fecha):
+    gid = cliente.post("/api/gastos_recurrentes",
+                       json={**GASTO_ANUAL, "categoria_id": _cat_gasto(base)}).json()["id"]
+
+    en_fecha(2026, 3, 20)
+    r = cliente.post(f"/api/gastos_recurrentes/{gid}/confirmar",
+                     json={"monto": 3500.0, "quincena": 1})
+    assert r.status_code == 200
+
+    gastos = base.execute("SELECT fecha, monto FROM gastos").fetchall()
+    assert len(gastos) == 1
+    assert gastos[0]["monto"] == 3500.0
+    assert cliente.get("/api/gastos_recurrentes/pendientes").json() == []
+
+
+def test_pasar_un_gasto_de_anual_a_mensual_limpia_los_meses(cliente, base):
+    cat = _cat_gasto(base)
+    gid = cliente.post("/api/gastos_recurrentes",
+                       json={**GASTO_ANUAL, "categoria_id": cat}).json()["id"]
+    cliente.put(f"/api/gastos_recurrentes/{gid}", json={
+        **GASTO_ANUAL, "categoria_id": cat, "frecuencia": "Mensual", "mes_1": None})
+
+    fila = base.execute(
+        "SELECT frecuencia, mes_1, mes_2 FROM gastos_recurrentes").fetchone()
+    assert (fila["frecuencia"], fila["mes_1"], fila["mes_2"]) == ("Mensual", None, None)
+
+
+def test_una_base_vieja_de_gastos_acepta_anual_tras_migrar(tmp_path, monkeypatch):
+    """
+    Mismo caso que los ingresos: el CHECK viejo de `gastos_recurrentes`
+    rechazaba 'Anual'. Y acá la trampa del RENAME vuelve a aplicar, porque
+    `gastos_rec_confirmaciones` referencia esta tabla.
+    """
+    import sqlite3
+    ruta = tmp_path / "vieja.db"
+    vieja = sqlite3.connect(ruta)
+    vieja.executescript("""
+        CREATE TABLE categorias (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL,
+            tipo TEXT NOT NULL, activa INTEGER NOT NULL DEFAULT 1,
+            UNIQUE (nombre, tipo));
+        INSERT INTO categorias (nombre, tipo) VALUES ('Transporte', 'gasto');
+        CREATE TABLE gastos_recurrentes (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            descripcion  TEXT NOT NULL,
+            categoria_id INTEGER NOT NULL REFERENCES categorias(id),
+            monto        REAL NOT NULL CHECK (monto > 0),
+            dia_mes      INTEGER NOT NULL CHECK (dia_mes BETWEEN 1 AND 31),
+            frecuencia   TEXT NOT NULL DEFAULT 'Mensual'
+                         CHECK (frecuencia IN ('Mensual', 'Quincenal')),
+            dia_mes_2    INTEGER,
+            metodo       TEXT NOT NULL DEFAULT 'Efectivo',
+            tarjeta_id   INTEGER, cuenta_id INTEGER,
+            activo       INTEGER NOT NULL DEFAULT 1);
+        INSERT INTO gastos_recurrentes (descripcion, categoria_id, monto, dia_mes)
+        VALUES ('Renta', 1, 2000, 1);
+        CREATE TABLE gastos_rec_confirmaciones (
+            recurrente_id INTEGER NOT NULL REFERENCES gastos_recurrentes(id),
+            anio_mes      TEXT NOT NULL,
+            quincena      INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (recurrente_id, anio_mes, quincena));
+        INSERT INTO gastos_rec_confirmaciones (recurrente_id, anio_mes, quincena)
+        VALUES (1, '2026-05', 1);
+    """)
+    vieja.commit()
+    vieja.close()
+
+    monkeypatch.setattr(db, "DB_PATH", str(ruta))
+    db.init_db()
+
+    conn = db.get_conn()
+    try:
+        # La renta que ya existía sobrevive...
+        assert conn.execute(
+            "SELECT descripcion FROM gastos_recurrentes").fetchone()["descripcion"] == "Renta"
+        # ...la FK no quedó colgando por el RENAME...
+        ddl = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE name='gastos_rec_confirmaciones'").fetchone()[0]
+        assert "_gastos_recurrentes_nuevo" not in ddl
+        conn.execute("INSERT INTO gastos_rec_confirmaciones "
+                     "(recurrente_id, anio_mes, quincena) VALUES (1, '2026-06', 1)")
+        # ...y 'Anual' ya entra.
+        conn.execute(
+            "INSERT INTO gastos_recurrentes (descripcion, categoria_id, monto, dia_mes, "
+            "frecuencia, mes_1) VALUES ('Seguro', 1, 3500, 10, 'Anual', 3)")
+        conn.commit()
+        assert conn.execute(
+            "SELECT COUNT(*) c FROM gastos_recurrentes").fetchone()["c"] == 2
+    finally:
+        conn.close()
